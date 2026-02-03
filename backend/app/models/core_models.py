@@ -107,7 +107,8 @@ class Requirement(SQLModel, table=True):
 # --- Scope & Asset Management (Shared Core) ---
 
 class ScopeType(str, Enum):
-    ORGANIZATION = "Organization"
+    ORGANIZATION = "Organization" # The Root (Municipality)
+    CLUSTER = "Cluster" # Business Cluster
     PROCESS = "Process"
     ASSET = "Asset"
     SUPPLIER = "Supplier"
@@ -126,12 +127,24 @@ class ClassificationLevel(str, Enum):
 class Scope(SQLModel, table=True):
     """
     The target of governance (Process, Asset, Organization).
+    Hierarchical: Organization -> Cluster -> Process -> Asset
     """
     id: Optional[int] = Field(default=None, primary_key=True)
+    parent_id: Optional[int] = Field(default=None, foreign_key="scope.id") # Parent Scope (e.g. Cluster)
+    
     name: str # e.g. "HR System"
     type: ScopeType = ScopeType.PROCESS
     description: Optional[str] = None
     owner: str # e.g. "Manager HR" (Placeholder for User ID)
+    
+    # Accountable Party (Head of Dept / Vendor Contact)
+    # If type=ORGANIZATION, this is the Department Head
+    # If type=SUPPLIER, this is the Internal Contract Owner
+    accountable_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    
+    # Vendor Specifics (Only if type=SUPPLIER)
+    vendor_contact_name: Optional[str] = None # External contact person
+    contract_end_date: Optional[datetime] = None
     
     # BIA / Classification (BIV: Beschikbaarheid, Integriteit, Vertrouwelijkheid)
     availability_rating: ClassificationLevel = ClassificationLevel.LOW
@@ -142,6 +155,14 @@ class Scope(SQLModel, table=True):
     user_roles: List["UserScopeRole"] = Relationship(back_populates="scope")
     incidents: List["Incident"] = Relationship(back_populates="scope")
     exceptions: List["Exception"] = Relationship(back_populates="scope")
+    
+    # Hierarchy (Tree Structure)
+    children: List["Scope"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all",
+            "remote_side": "Scope.id"
+        }
+    )
     
     # Dependencies: What this scope relies on (e.g. HR System relies on SQL Server)
     dependencies: List["Scope"] = Relationship(

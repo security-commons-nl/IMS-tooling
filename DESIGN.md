@@ -32,7 +32,9 @@ The IMS is a **Governance, Risk, and Compliance (GRC)** platform designed to enf
 
 ### A. Governance & Strategy
 1.  **Scope**: The target of governance (Asset, Process, Organization, Supplier).
+    *   **Multi-Tenancy**: Hierarchical model (Municipality -> Cluster -> Dept -> Asset).
     *   *Features*: **Dependencies** (Supply Chain), **BIA Ratings** (Confidentiality/Integrity/Availability).
+    *   *Accountability*: **Accountable User** (Head of Dept / Internal Contract Owner) + **Vendor Contact** (if Supplier).
     *   *Roles*: **RBAC** enforced via `UserScopeRole` (Process Owner, Editor, Viewer).
 2.  **Standard (Norm)**: External frameworks (BIO, ISO 27001, NIST).
     *   *Features*: **Multilingual** (NL/EN), **Versioning**.
