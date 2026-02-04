@@ -452,6 +452,60 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    # =========================================================================
+    # AI AGENTS / CHAT
+    # =========================================================================
+
+    async def get_agents(self) -> List[Dict[str, Any]]:
+        """Get list of available AI agents."""
+        async with self._get_client() as client:
+            response = await client.get("/agents/")
+            response.raise_for_status()
+            return response.json()
+
+    async def detect_agent(
+        self,
+        page: Optional[str] = None,
+        entity_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Detect recommended agent for context."""
+        async with self._get_client() as client:
+            params = {}
+            if page:
+                params["page"] = page
+            if entity_type:
+                params["entity_type"] = entity_type
+
+            response = await client.get("/agents/detect", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def chat_with_agent(
+        self,
+        message: str,
+        agent_name: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Send a chat message to an AI agent."""
+        async with self._get_client() as client:
+            payload = {
+                "message": message,
+                "context": context or {},
+            }
+            if agent_name:
+                payload["agent_name"] = agent_name
+
+            response = await client.post("/agents/chat", json=payload)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_agent_health(self) -> Dict[str, Any]:
+        """Check AI agent system health."""
+        async with self._get_client() as client:
+            response = await client.get("/agents/health")
+            response.raise_for_status()
+            return response.json()
+
 
 # Singleton instance
 api_client = APIClient()

@@ -9,3 +9,4 @@ from ims.state.measure import MeasureState
 from ims.state.compliance import ComplianceState
 from ims.state.asset import AssetState
 from ims.state.supplier import SupplierState
+from ims.state.chat import ChatState

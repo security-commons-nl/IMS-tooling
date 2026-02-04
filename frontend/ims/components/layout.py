@@ -3,6 +3,7 @@ Layout Components - Main layout with sidebar navigation
 """
 import reflex as rx
 from ims.state.auth import AuthState
+from ims.components.chat_island import chat_island
 
 
 def nav_link(label: str, href: str, icon: str) -> rx.Component:
@@ -113,29 +114,33 @@ def page_header(title: str, subtitle: str = "") -> rx.Component:
 
 
 def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Component:
-    """Main layout wrapper with sidebar."""
+    """Main layout wrapper with sidebar and AI chat island."""
     return rx.cond(
         AuthState.is_authenticated,
-        rx.hstack(
-            sidebar(),
-            rx.box(
-                rx.cond(
-                    title != "",
-                    page_header(title, subtitle),
-                ),
+        rx.fragment(
+            rx.hstack(
+                sidebar(),
                 rx.box(
-                    content,
-                    padding="24px",
-                    overflow_y="auto",
+                    rx.cond(
+                        title != "",
+                        page_header(title, subtitle),
+                    ),
+                    rx.box(
+                        content,
+                        padding="24px",
+                        overflow_y="auto",
+                    ),
+                    flex="1",
+                    height="100vh",
+                    overflow="hidden",
+                    display="flex",
+                    flex_direction="column",
                 ),
-                flex="1",
-                height="100vh",
-                overflow="hidden",
-                display="flex",
-                flex_direction="column",
+                width="100%",
+                spacing="0",
             ),
-            width="100%",
-            spacing="0",
+            # AI Chat Island - available on all pages
+            chat_island(),
         ),
         # Show login redirect message when not authenticated
         rx.center(
