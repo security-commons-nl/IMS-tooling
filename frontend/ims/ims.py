@@ -37,9 +37,11 @@ from ims.state.framework import FrameworkState
 # Create app
 app = rx.App(
     theme=rx.theme(
-        accent_color="blue",
-        gray_color="slate",
-        radius="medium",
+        appearance="light",  # Default to light, but allow toggling
+        has_background=True,
+        radius="large",      # More rounded "modern" look
+        accent_color="indigo", # Modern, professional accent
+        gray_color="slate",  # Cool gray is more modern than neutral
         scaling="95%",
     ),
     stylesheets=[

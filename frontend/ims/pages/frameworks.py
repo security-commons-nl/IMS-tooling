@@ -26,7 +26,11 @@ def framework_row(item: dict) -> rx.Component:
             ),
         ),
         rx.table.cell(
-            rx.badge(item["subcategory"] or "General", color_scheme="blue", variant="soft"),
+            rx.badge(
+                rx.cond(item["subcategory"] != "", item["subcategory"], "General"), 
+                color_scheme="blue", 
+                variant="soft"
+            ),
         ),
         _hover={"background": "var(--gray-a3)"},
     )

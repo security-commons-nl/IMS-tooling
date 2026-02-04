@@ -73,6 +73,15 @@ def sidebar() -> rx.Component:
                 ),
                 rx.spacer(),
                 rx.icon_button(
+                    rx.color_mode_cond(
+                        light=rx.icon("moon", size=16),
+                        dark=rx.icon("sun", size=16),
+                    ),
+                    variant="ghost",
+                    size="1",
+                    on_click=rx.toggle_color_mode,
+                ),
+                rx.icon_button(
                     rx.icon("log-out", size=16),
                     variant="ghost",
                     size="1",

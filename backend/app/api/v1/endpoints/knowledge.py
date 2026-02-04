@@ -35,8 +35,8 @@ async def get_knowledge_entries(
         )
         
     query = query.offset(skip).limit(limit)
-    result = await session.exec(query)
-    entries = result.all()
+    result = await session.execute(query)
+    entries = result.scalars().all()
     
     return entries
 
