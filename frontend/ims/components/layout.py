@@ -51,6 +51,8 @@ def sidebar() -> rx.Component:
                 nav_link("Assets", "/assets", "server"),
                 nav_link("Leveranciers", "/suppliers", "building-2"),
                 nav_link("Backlog", "/backlog", "list-todo"),
+                rx.divider(),
+                nav_link("Gebruikers", "/users", "users"),
                 spacing="1",
                 width="100%",
                 padding="8px",

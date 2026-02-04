@@ -18,6 +18,7 @@ from ims.pages.assets import assets_page
 from ims.pages.suppliers import suppliers_page
 from ims.pages.backlog import backlog_page
 from ims.pages.frameworks import frameworks_page
+from ims.pages.users import users_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -32,6 +33,7 @@ from ims.state.asset import AssetState
 from ims.state.supplier import SupplierState
 from ims.state.backlog import BacklogState
 from ims.state.framework import FrameworkState
+from ims.state.user import UserState
 
 
 # Create app
@@ -63,3 +65,4 @@ app.add_page(assets_page, route="/assets", title="Assets - IMS")
 app.add_page(suppliers_page, route="/suppliers", title="Leveranciers - IMS")
 app.add_page(backlog_page, route="/backlog", title="Backlog - IMS")
 app.add_page(frameworks_page, route="/frameworks", title="Frameworks - IMS")
+app.add_page(users_page, route="/users", title="Gebruikers - IMS")

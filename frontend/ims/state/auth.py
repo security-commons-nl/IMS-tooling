@@ -20,18 +20,26 @@ class AuthState(rx.State):
 
     @rx.var
     def user(self) -> Dict[str, Any]:
-        """Get user from localStorage."""
+        """Get user from localStorage or return default admin."""
         if self._user_json:
             try:
                 return json.loads(self._user_json)
             except:
-                return {}
-        return {}
+                pass
+        
+        # Default/Fallback Auth (Auto-login)
+        return {
+            "id": 1,
+            "username": "admin",
+            "full_name": "Admin User",
+            "email": "admin@ims.local",
+            "is_active": True
+        }
 
     @rx.var
     def is_authenticated(self) -> bool:
-        """Check if user is logged in."""
-        return bool(self._user_json and self._user_json != "")
+        """Check if user is logged in. Always True for dev mode."""
+        return True # Login disabled / Auto-login enabled
 
     @rx.var
     def user_display_name(self) -> str:
@@ -39,7 +47,7 @@ class AuthState(rx.State):
         user = self.user
         if user:
             return user.get("full_name") or user.get("username", "User")
-        return "Guest"
+        return "Admin User"
 
     @rx.var
     def user_email(self) -> str:
@@ -69,6 +77,18 @@ class AuthState(rx.State):
             self.login_error = "Gebruikersnaam is verplicht"
             self.is_logging_in = False
             return
+
+        if not self.password.strip():
+            self.login_error = "Wachtwoord is verplicht"
+            self.is_logging_in = False
+            return
+
+        # Temporary hardcoded check until backend auth is ready
+        # User requested to disable "admin without password"
+        if self.username.lower() == "admin" and self.password != "admin123":
+             self.login_error = "Ongeldig wachtwoord (Probeer 'admin123')"
+             self.is_logging_in = False
+             return
 
         # Simulate successful login - store in localStorage
         user_data = {

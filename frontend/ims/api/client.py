@@ -114,6 +114,27 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    async def create_measure(self, measure_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new measure."""
+        async with self._get_client() as client:
+            response = await client.post("/measures/", json=measure_data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_measure(self, measure_id: int, measure_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a measure."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/measures/{measure_id}", json=measure_data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_measure(self, measure_id: int) -> Dict[str, Any]:
+        """Delete a measure."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/measures/{measure_id}")
+            response.raise_for_status()
+            return response.json()
+
     # =========================================================================
     # SCOPES
     # =========================================================================
@@ -229,13 +250,26 @@ class APIClient:
             return response.json()
 
     # =========================================================================
-    # USERS (for auth simulation)
+    # USERS
     # =========================================================================
 
-    async def get_users(self) -> List[Dict[str, Any]]:
+    async def get_users(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        is_active: bool = True,
+    ) -> List[Dict[str, Any]]:
         """Get list of users."""
         async with self._get_client() as client:
-            response = await client.get("/users/")
+            params = {"skip": skip, "limit": limit, "is_active": is_active}
+            response = await client.get("/users/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_user(self, user_id: int) -> Dict[str, Any]:
+        """Get a single user by ID."""
+        async with self._get_client() as client:
+            response = await client.get(f"/users/{user_id}")
             response.raise_for_status()
             return response.json()
 
@@ -248,6 +282,94 @@ class APIClient:
                 return response.json()
             except httpx.HTTPStatusError:
                 return None
+
+    async def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new user."""
+        async with self._get_client() as client:
+            response = await client.post("/users/", json=user_data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_user(self, user_id: int, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a user."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/users/{user_id}", json=user_data)
+            response.raise_for_status()
+            return response.json()
+
+    async def deactivate_user(self, user_id: int) -> Dict[str, Any]:
+        """Deactivate a user (soft delete)."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/users/{user_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_user_scopes(
+        self,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get all scopes a user has access to with their roles."""
+        async with self._get_client() as client:
+            params = {}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            response = await client.get(f"/users/{user_id}/scopes", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def assign_user_scope_role(
+        self,
+        user_id: int,
+        scope_id: int,
+        role: str,
+        tenant_id: int,
+    ) -> Dict[str, Any]:
+        """Assign a role to a user for a specific scope."""
+        async with self._get_client() as client:
+            params = {"tenant_id": tenant_id}
+            response = await client.post(
+                f"/users/{user_id}/scopes/{scope_id}/roles/{role}",
+                params=params,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def remove_user_scope_role(
+        self,
+        user_id: int,
+        scope_id: int,
+        role: str,
+    ) -> Dict[str, Any]:
+        """Remove a role from a user for a specific scope."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/users/{user_id}/scopes/{scope_id}/roles/{role}")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_user_tenants(self, user_id: int) -> List[Dict[str, Any]]:
+        """Get all tenants a user belongs to."""
+        async with self._get_client() as client:
+            response = await client.get(f"/users/{user_id}/tenants")
+            response.raise_for_status()
+            return response.json()
+
+    async def add_user_to_tenant(
+        self,
+        user_id: int,
+        tenant_id: int,
+        role: str = "Member",
+        is_default: bool = False,
+    ) -> Dict[str, Any]:
+        """Add a user to a tenant."""
+        async with self._get_client() as client:
+            params = {"role": role, "is_default": is_default}
+            response = await client.post(
+                f"/users/{user_id}/tenants/{tenant_id}",
+                params=params,
+            )
+            response.raise_for_status()
+            return response.json()
 
 
     # =========================================================================
