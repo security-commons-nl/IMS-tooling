@@ -15,6 +15,10 @@ from app.models.core_models import (
     Status,
     VerificationStatus,
 )
+from app.services.knowledge_service import knowledge_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 crud_document = CRUDBase(Document)
@@ -144,7 +148,11 @@ async def approve_document(
     approved_by_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """Approve a document."""
+    """
+    Approve a document.
+
+    Also indexes the document in the AI knowledge base for RAG search.
+    """
     db_document = await crud_document.get_or_404(session, document_id)
 
     if db_document.verification_status != VerificationStatus.PENDING_APPROVAL:
@@ -153,13 +161,28 @@ async def approve_document(
             detail="Document must be pending approval"
         )
 
-    return await crud_document.update(session, db_obj=db_document, obj_in={
+    approved_document = await crud_document.update(session, db_obj=db_document, obj_in={
         "status": Status.ACTIVE,
         "verification_status": VerificationStatus.VERIFIED,
         "approved_by_id": approved_by_id,
         "approved_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
     })
+
+    # Index in knowledge base for AI RAG
+    try:
+        content = f"Document: {approved_document.title}\n\nType: {approved_document.document_type or ''}\n\nInhoud: {approved_document.content or ''}"
+        await knowledge_service.add_knowledge(
+            session=session,
+            key=f"document_{approved_document.id}_v{approved_document.version}",
+            title=approved_document.title or f"Document {approved_document.id}",
+            content=content,
+            category="document"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to index document {document_id} in knowledge base: {e}")
+
+    return approved_document
 
 
 @router.post("/{document_id}/reject", response_model=Document)

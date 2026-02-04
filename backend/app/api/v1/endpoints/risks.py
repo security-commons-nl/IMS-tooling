@@ -20,6 +20,10 @@ from app.models.core_models import (
     AttentionQuadrant,
     MitigationApproach,
 )
+from app.services.knowledge_service import knowledge_service
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 crud_risk = CRUDBase(Risk)
@@ -59,7 +63,7 @@ async def create_risk(
     risk: Risk,
     session: AsyncSession = Depends(get_session),
 ):
-    """Create a new risk."""
+    """Create a new risk. Also indexes in knowledge base for AI RAG."""
     # Calculate inherent risk score
     level_to_score = {RiskLevel.LOW: 1, RiskLevel.MEDIUM: 2, RiskLevel.HIGH: 3, RiskLevel.CRITICAL: 4}
     risk.inherent_risk_score = (
@@ -78,7 +82,22 @@ async def create_risk(
         level_to_score.get(risk.residual_impact, 1)
     )
 
-    return await crud_risk.create(session, obj_in=risk)
+    created_risk = await crud_risk.create(session, obj_in=risk)
+
+    # Index in knowledge base for AI RAG
+    try:
+        content = f"Risico: {created_risk.title}\n\nBeschrijving: {created_risk.description or ''}\n\nOorzaak: {created_risk.cause or ''}\n\nGevolg: {created_risk.consequence or ''}"
+        await knowledge_service.add_knowledge(
+            session=session,
+            key=f"risk_{created_risk.id}",
+            title=created_risk.title or f"Risk {created_risk.id}",
+            content=content,
+            category="risk"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to index risk {created_risk.id} in knowledge base: {e}")
+
+    return created_risk
 
 
 # =============================================================================
@@ -298,8 +317,23 @@ async def create_measure(
     measure: Measure,
     session: AsyncSession = Depends(get_session),
 ):
-    """Create a new measure."""
-    return await crud_measure.create(session, obj_in=measure)
+    """Create a new measure. Also indexes in knowledge base for AI RAG."""
+    created_measure = await crud_measure.create(session, obj_in=measure)
+
+    # Index in knowledge base for AI RAG
+    try:
+        content = f"Maatregel: {created_measure.title}\n\nBeschrijving: {created_measure.description or ''}\n\nImplementatie: {created_measure.implementation_details or ''}"
+        await knowledge_service.add_knowledge(
+            session=session,
+            key=f"measure_{created_measure.id}",
+            title=created_measure.title or f"Measure {created_measure.id}",
+            content=content,
+            category="measure"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to index measure {created_measure.id} in knowledge base: {e}")
+
+    return created_measure
 
 
 @router.get("/measures/{measure_id}", response_model=Measure)
