@@ -1,0 +1,7 @@
+/* Hide Reflex branding badge */
+[class*="reflex-badge"],
+[class*="RefexBadge"],
+a[href*="reflex.dev"] {
+    display: none !important;
+    visibility: hidden !important;
+}

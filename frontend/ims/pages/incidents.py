@@ -65,14 +65,17 @@ def incident_row(incident: dict) -> rx.Component:
         rx.table.cell(
             rx.hstack(
                 rx.icon_button(
-                    rx.icon("eye", size=14),
+                    rx.icon("pencil", size=14),
                     variant="ghost",
                     size="1",
+                    on_click=lambda: IncidentState.open_edit_dialog(incident["id"]),
                 ),
                 rx.icon_button(
-                    rx.icon("check", size=14),
+                    rx.icon("trash-2", size=14),
                     variant="ghost",
                     size="1",
+                    color_scheme="red",
+                    on_click=lambda: IncidentState.open_delete_dialog(incident["id"]),
                 ),
                 spacing="1",
             ),
@@ -171,6 +174,7 @@ def filter_bar() -> rx.Component:
             "Meld Incident",
             size="2",
             color_scheme="red",
+            on_click=IncidentState.open_create_dialog,
         ),
         width="100%",
         spacing="2",
@@ -232,9 +236,185 @@ def data_breach_warning() -> rx.Component:
     )
 
 
+def incident_form_dialog() -> rx.Component:
+    """Dialog for creating/editing an incident."""
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(
+                rx.cond(
+                    IncidentState.is_editing,
+                    "Incident Bewerken",
+                    "Incident Melden",
+                ),
+            ),
+            rx.dialog.description(
+                "Rapporteer een nieuw beveiligingsincident of datalek.",
+                size="2",
+                margin_bottom="16px",
+            ),
+
+            rx.cond(
+                IncidentState.error != "",
+                rx.callout(
+                    IncidentState.error,
+                    icon="circle-alert",
+                    color="red",
+                    margin_bottom="16px",
+                ),
+            ),
+
+            rx.vstack(
+                # Basic info
+                rx.text("Incident Details", weight="bold", size="3"),
+
+                rx.vstack(
+                    rx.text("Titel *", size="2", weight="medium"),
+                    rx.input(
+                        placeholder="Korte samenvatting van het incident",
+                        value=IncidentState.form_title,
+                        on_change=IncidentState.set_form_title,
+                        width="100%",
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
+                rx.vstack(
+                    rx.text("Beschrijving *", size="2", weight="medium"),
+                    rx.text_area(
+                        placeholder="Beschrijf wat er is gebeurd...",
+                        value=IncidentState.form_description,
+                        on_change=IncidentState.set_form_description,
+                        width="100%",
+                        rows="4",
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
+                rx.hstack(
+                    rx.vstack(
+                        rx.text("Ernst", size="2", weight="medium"),
+                        rx.select.root(
+                            rx.select.trigger(placeholder="Selecteer ernst"),
+                            rx.select.content(
+                                rx.select.item("Laag", value="LOW"),
+                                rx.select.item("Gemiddeld", value="MEDIUM"),
+                                rx.select.item("Hoog", value="HIGH"),
+                                rx.select.item("Kritiek", value="CRITICAL"),
+                            ),
+                            value=IncidentState.form_severity,
+                            on_change=IncidentState.set_form_severity,
+                        ),
+                        align_items="start",
+                        flex="1",
+                    ),
+                    rx.vstack(
+                        rx.text("Status", size="2", weight="medium"),
+                        rx.select.root(
+                            rx.select.trigger(placeholder="Status"),
+                            rx.select.content(
+                                rx.select.item("Nieuw", value="DRAFT"),
+                                rx.select.item("In behandeling", value="ACTIVE"),
+                                rx.select.item("Opgelost", value="CLOSED"),
+                            ),
+                            value=IncidentState.form_status,
+                            on_change=IncidentState.set_form_status,
+                        ),
+                        align_items="start",
+                        flex="1",
+                    ),
+                    spacing="3",
+                    width="100%",
+                ),
+
+                rx.divider(),
+
+                rx.hstack(
+                    rx.checkbox(
+                        checked=IncidentState.form_is_data_breach,
+                        on_change=IncidentState.set_form_is_data_breach,
+                    ),
+                    rx.vstack(
+                        rx.text("Dit is een datalek (AVG)", weight="medium"),
+                        rx.text("Er zijn persoonsgegevens betrokken bij dit incident", size="1", color="gray"),
+                        spacing="0",
+                    ),
+                    align_items="center",
+                    spacing="2",
+                ),
+
+                spacing="3",
+                width="100%",
+            ),
+
+            rx.hstack(
+                rx.dialog.close(
+                    rx.button(
+                        "Annuleren",
+                        variant="soft",
+                        color_scheme="gray",
+                        on_click=IncidentState.close_form_dialog,
+                    ),
+                ),
+                rx.button(
+                    rx.cond(IncidentState.is_editing, "Opslaan", "Melden"),
+                    on_click=IncidentState.save_incident,
+                    color_scheme="red",
+                ),
+                spacing="3",
+                justify="end",
+                margin_top="16px",
+            ),
+
+            max_width="600px",
+        ),
+        open=IncidentState.show_form_dialog,
+    )
+
+
+def delete_confirm_dialog() -> rx.Component:
+    """Dialog for confirming incident deletion."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Incident Verwijderen"),
+            rx.alert_dialog.description(
+                rx.vstack(
+                    rx.text("Weet u zeker dat u dit incident wilt verwijderen?"),
+                    rx.text(IncidentState.deleting_incident_title, weight="bold", color="red"),
+                    rx.text("Deze actie kan niet ongedaan worden gemaakt.", size="2", color="gray"),
+                    spacing="2",
+                    align_items="start",
+                ),
+            ),
+            rx.hstack(
+                rx.alert_dialog.cancel(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=IncidentState.close_delete_dialog),
+                ),
+                rx.alert_dialog.action(
+                    rx.button("Verwijderen", color_scheme="red", on_click=IncidentState.confirm_delete),
+                ),
+                spacing="3",
+                justify="end",
+                margin_top="16px",
+            ),
+        ),
+        open=IncidentState.show_delete_dialog,
+    )
+
+
 def incidents_content() -> rx.Component:
     """Incidents page content."""
     return rx.vstack(
+        rx.cond(
+            IncidentState.success_message != "",
+            rx.callout(
+                IncidentState.success_message,
+                icon="circle-check",
+                color="green",
+                margin_bottom="16px",
+            ),
+        ),
         rx.cond(
             IncidentState.error != "",
             rx.callout(
@@ -255,6 +435,11 @@ def incidents_content() -> rx.Component:
             width="100%",
             margin_top="16px",
         ),
+        
+        # Dialogs
+        incident_form_dialog(),
+        delete_confirm_dialog(),
+        
         width="100%",
         spacing="4",
         on_mount=IncidentState.load_incidents,

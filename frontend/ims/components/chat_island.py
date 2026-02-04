@@ -54,10 +54,10 @@ def chat_input() -> rx.Component:
             placeholder="Stel een vraag...",
             value=ChatState.current_input,
             on_change=ChatState.set_input,
-            on_key_down=lambda e: rx.cond(
-                e.key == "Enter",
-                ChatState.send_message,
-                rx.fragment(),
+            on_key_up=lambda key: rx.cond(
+                key == "Enter",
+                ChatState.send_message(),
+                rx.noop(),
             ),
             flex="1",
             size="2",
@@ -75,19 +75,20 @@ def chat_input() -> rx.Component:
 
 def agent_selector() -> rx.Component:
     """Dropdown to select current agent."""
-    return rx.select(
-        [
-            ("risk", "Risico Expert"),
-            ("measure", "Maatregelen Expert"),
-            ("policy", "Beleid Expert"),
-            ("compliance", "Compliance Expert"),
-            ("assessment", "Assessment Expert"),
-            ("incident", "Incident Expert"),
-            ("privacy", "Privacy Expert"),
-            ("bcm", "Continuïteit Expert"),
-            ("supplier", "Leverancier Expert"),
-            ("report", "Rapportage Expert"),
-        ],
+    return rx.select.root(
+        rx.select.trigger(placeholder="Selecteer agent"),
+        rx.select.content(
+            rx.select.item("Risico Expert", value="risk"),
+            rx.select.item("Maatregelen Expert", value="measure"),
+            rx.select.item("Beleid Expert", value="policy"),
+            rx.select.item("Compliance Expert", value="compliance"),
+            rx.select.item("Assessment Expert", value="assessment"),
+            rx.select.item("Incident Expert", value="incident"),
+            rx.select.item("Privacy Expert", value="privacy"),
+            rx.select.item("Continuïteit Expert", value="bcm"),
+            rx.select.item("Leverancier Expert", value="supplier"),
+            rx.select.item("Rapportage Expert", value="report"),
+        ),
         value=ChatState.current_agent,
         on_change=ChatState.set_agent,
         size="1",

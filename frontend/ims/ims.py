@@ -40,6 +40,9 @@ app = rx.App(
         radius="medium",
         scaling="95%",
     ),
+    stylesheets=[
+        "/custom.css",  # Hide Reflex badge
+    ],
 )
 
 # Add pages

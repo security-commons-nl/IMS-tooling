@@ -1,33 +1,28 @@
 from typing import List, Dict, Any, Optional
 from abc import ABC, abstractmethod
-from langchain_community.chat_models import ChatOllama
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import BaseTool
-from app.core.config import settings
+
+from app.services.ai_gateway import ai_gateway
 
 class BaseAgent(ABC):
     """
     Abstract base class for all IMS AI Agents.
-    Wraps LangChain ChatOllama for consistency.
+    Uses AI Gateway for multi-provider support (Mistral/Scaleway/Ollama).
     """
     
     def __init__(self, name: str, domain: str, model: str = None):
         self.name = name
         self.domain = domain
-        self.model = model or settings.AI_MODEL_NAME or "mistral"
-        self.llm = ChatOllama(
-            base_url=settings.AI_API_BASE,
-            model=self.model,
-            temperature=0.2,
-        )
+        # Model selection is now handled by the gateway primarily, 
+        # but we keep the field for logging/context if needed.
+        self.model = model 
+        
         self.system_prompt = self.get_system_prompt()
         self.tools = self.get_tools()
         
-        # Bind tools if available
-        if self.tools:
-            self.runnable = self.llm.bind_tools(self.tools)
-        else:
-            self.runnable = self.llm
+        # Get configured runnable from gateway
+        self.runnable = ai_gateway.get_runnable(self.tools)
 
     @abstractmethod
     def get_system_prompt(self) -> str:

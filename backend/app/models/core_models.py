@@ -1287,6 +1287,11 @@ class Scope(SQLModel, table=True):
     is_shared: bool = False  # Can this scope be shared with consuming tenants?
     shared_with_all_consumers: bool = False  # Auto-share with all related consumers?
 
+    # --- External Integration Sync ---
+    external_id: Optional[str] = Field(default=None, index=True)  # ID in external system
+    external_source: Optional[str] = None  # "topdesk", "servicenow", "proquro", "bluedolphin"
+    last_synced: Optional[datetime] = None  # Last sync timestamp
+
     # --- Status ---
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -1639,6 +1644,9 @@ class Incident(SQLModel, table=True):
     # Where is this incident tracked operationally?
     external_system: Optional[str] = None  # e.g., "TopDesk", "ServiceNow"
     external_reference: Optional[str] = None  # e.g., "INC-12345"
+    external_id: Optional[str] = Field(default=None, index=True)  # Unique ID in external system
+    external_source: Optional[str] = None  # "topdesk", "servicenow" (lowercase for consistency)
+    last_synced: Optional[datetime] = None  # Last sync timestamp
     external_url: Optional[str] = None  # Direct link to incident ticket
 
     # Relationships

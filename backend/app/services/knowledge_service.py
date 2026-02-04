@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import select, text
 from sqlmodel.ext.asyncio.session import AsyncSession
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from app.core.config import settings
 from app.models.core_models import AIKnowledgeBase
 

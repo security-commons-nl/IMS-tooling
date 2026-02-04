@@ -139,11 +139,12 @@ class ChatState(rx.State):
             self.messages = self.messages + [assistant_msg]
 
         except Exception as e:
-            self.error = f"Fout bij versturen: {str(e)}"
+            error_detail = str(e) or "Verbinding verbroken of time-out."
+            self.error = f"Fout bij versturen: {error_detail}"
             # Add error message
             error_msg = ChatMessage(
                 role="assistant",
-                content=f"Er ging iets mis: {str(e)}",
+                content=f"Er ging iets mis: {error_detail}",
                 agent=self.current_agent,
             )
             self.messages = self.messages + [error_msg]

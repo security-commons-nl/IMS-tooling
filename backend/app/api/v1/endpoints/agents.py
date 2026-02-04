@@ -111,6 +111,9 @@ async def chat_with_agent(request: ChatRequest):
             agent_used=agent_name,
         )
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Agent chat error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

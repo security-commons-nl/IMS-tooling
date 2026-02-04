@@ -45,14 +45,17 @@ def policy_row(policy: dict) -> rx.Component:
         rx.table.cell(
             rx.hstack(
                 rx.icon_button(
-                    rx.icon("eye", size=14),
-                    variant="ghost",
-                    size="1",
-                ),
-                rx.icon_button(
                     rx.icon("pencil", size=14),
                     variant="ghost",
                     size="1",
+                    on_click=lambda: PolicyState.open_edit_dialog(policy["id"]),
+                ),
+                rx.icon_button(
+                    rx.icon("trash-2", size=14),
+                    variant="ghost",
+                    size="1",
+                    color_scheme="red",
+                    on_click=lambda: PolicyState.open_delete_dialog(policy["id"]),
                 ),
                 spacing="1",
             ),
@@ -140,6 +143,7 @@ def filter_bar() -> rx.Component:
             rx.icon("plus", size=14),
             "Nieuw Beleid",
             size="2",
+            on_click=PolicyState.open_create_dialog,
         ),
         width="100%",
         spacing="2",
@@ -193,9 +197,165 @@ def stat_cards() -> rx.Component:
     )
 
 
+def policy_form_dialog() -> rx.Component:
+    """Dialog for creating/editing a policy."""
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(
+                rx.cond(
+                    PolicyState.is_editing,
+                    "Beleid Bewerken",
+                    "Nieuw Beleid",
+                ),
+            ),
+            rx.dialog.description(
+                "Beheer beleidsdocumenten en workflows.",
+                size="2",
+                margin_bottom="16px",
+            ),
+
+            rx.cond(
+                PolicyState.error != "",
+                rx.callout(
+                    PolicyState.error,
+                    icon="circle-alert",
+                    color="red",
+                    margin_bottom="16px",
+                ),
+            ),
+
+            rx.vstack(
+                # Basic info
+                rx.text("Beleid Details", weight="bold", size="3"),
+
+                rx.vstack(
+                    rx.text("Titel *", size="2", weight="medium"),
+                    rx.input(
+                        placeholder="Bijv. Wachtwoordbeleid",
+                        value=PolicyState.form_title,
+                        on_change=PolicyState.set_form_title,
+                        width="100%",
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
+                rx.vstack(
+                    rx.text("Inhoud *", size="2", weight="medium"),
+                    rx.text_area(
+                        placeholder="De tekst van het beleid...",
+                        value=PolicyState.form_content,
+                        on_change=PolicyState.set_form_content,
+                        width="100%",
+                        rows="6",
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
+                rx.hstack(
+                    rx.vstack(
+                        rx.text("Versie", size="2", weight="medium"),
+                        rx.input(
+                            placeholder="1.0",
+                            value=PolicyState.form_version,
+                            on_change=PolicyState.set_form_version,
+                            width="100%",
+                        ),
+                        align_items="start",
+                        flex="1",
+                    ),
+                    rx.vstack(
+                        rx.text("Status", size="2", weight="medium"),
+                        rx.select.root(
+                            rx.select.trigger(placeholder="Status"),
+                            rx.select.content(
+                                rx.select.item("Concept", value="Draft"),
+                                rx.select.item("In Review", value="Review"),
+                                rx.select.item("Goedgekeurd", value="Approved"),
+                                rx.select.item("Gepubliceerd", value="Published"),
+                                rx.select.item("Gearchiveerd", value="Archived"),
+                            ),
+                            value=PolicyState.form_state,
+                            on_change=PolicyState.set_form_state,
+                        ),
+                        align_items="start",
+                        flex="1",
+                    ),
+                    spacing="3",
+                    width="100%",
+                ),
+
+                spacing="3",
+                width="100%",
+            ),
+
+            rx.hstack(
+                rx.dialog.close(
+                    rx.button(
+                        "Annuleren",
+                        variant="soft",
+                        color_scheme="gray",
+                        on_click=PolicyState.close_form_dialog,
+                    ),
+                ),
+                rx.button(
+                    rx.cond(PolicyState.is_editing, "Opslaan", "Toevoegen"),
+                    on_click=PolicyState.save_policy,
+                ),
+                spacing="3",
+                justify="end",
+                margin_top="16px",
+            ),
+
+            max_width="600px",
+        ),
+        open=PolicyState.show_form_dialog,
+    )
+
+
+def delete_confirm_dialog() -> rx.Component:
+    """Dialog for confirming policy deletion."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Beleid Verwijderen"),
+            rx.alert_dialog.description(
+                rx.vstack(
+                    rx.text("Weet u zeker dat u dit beleid wilt verwijderen?"),
+                    rx.text(PolicyState.deleting_policy_title, weight="bold", color="red"),
+                    rx.text("Deze actie kan niet ongedaan worden gemaakt.", size="2", color="gray"),
+                    spacing="2",
+                    align_items="start",
+                ),
+            ),
+            rx.hstack(
+                rx.alert_dialog.cancel(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=PolicyState.close_delete_dialog),
+                ),
+                rx.alert_dialog.action(
+                    rx.button("Verwijderen", color_scheme="red", on_click=PolicyState.confirm_delete),
+                ),
+                spacing="3",
+                justify="end",
+                margin_top="16px",
+            ),
+        ),
+        open=PolicyState.show_delete_dialog,
+    )
+
+
 def policies_content() -> rx.Component:
     """Policies page content."""
     return rx.vstack(
+        rx.cond(
+            PolicyState.success_message != "",
+            rx.callout(
+                PolicyState.success_message,
+                icon="circle-check",
+                color="green",
+                margin_bottom="16px",
+            ),
+        ),
         rx.cond(
             PolicyState.error != "",
             rx.callout(
@@ -215,6 +375,11 @@ def policies_content() -> rx.Component:
             width="100%",
             margin_top="16px",
         ),
+        
+        # Dialogs
+        policy_form_dialog(),
+        delete_confirm_dialog(),
+
         width="100%",
         spacing="4",
         on_mount=PolicyState.load_policies,

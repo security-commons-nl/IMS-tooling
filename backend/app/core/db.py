@@ -7,6 +7,9 @@ from app.core.config import settings
 
 engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI, echo=True, future=True)
 
+# Alias for clarity in imports
+async_engine = engine
+
 async def init_db():
     async with engine.begin() as conn:
         from sqlalchemy import text

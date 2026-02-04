@@ -17,6 +17,8 @@ from app.api.v1.endpoints import (
     privacy,
     continuity,
     agents,
+    webhooks,
+    sync,
 )
 
 api_router = APIRouter()
@@ -138,4 +140,18 @@ api_router.include_router(
     agents.router,
     prefix="/agents",
     tags=["AI Agents"]
+)
+
+# External Integrations - Webhooks
+api_router.include_router(
+    webhooks.router,
+    prefix="/webhooks",
+    tags=["Integrations: Webhooks"]
+)
+
+# External Integrations - Sync
+api_router.include_router(
+    sync.router,
+    prefix="/sync",
+    tags=["Integrations: Sync"]
 )

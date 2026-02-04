@@ -12,7 +12,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: [ "CMD", "ollama", "list" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -45,6 +45,10 @@ services:
       POSTGRES_PORT: 5432
       AI_API_BASE: ${AI_API_BASE}
       AI_MODEL: ${AI_MODEL}
+      # Multi-Provider AI Keys
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      SCALEWAY_API_KEY: ${SCALEWAY_API_KEY}
+      AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY}
     ports:
       - "8001:8000"
     depends_on:
@@ -60,7 +64,7 @@ services:
     container_name: ims-frontend
     restart: always
     environment:
-      API_URL: ${API_URL}
+      API_URL: http://api:8000
     ports:
       - "3000:3000"
       - "8002:8002"

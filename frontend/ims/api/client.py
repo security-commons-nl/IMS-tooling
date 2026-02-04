@@ -3,9 +3,11 @@ API Client for IMS Backend
 Uses httpx for async HTTP requests
 """
 import httpx
+import os
 from typing import Optional, List, Dict, Any
 
-API_BASE_URL = "http://localhost:8000/api/v1"
+# Use environment variable for API URL, fallback to localhost for local development
+API_BASE_URL = os.getenv("API_URL", "http://localhost:8001") + "/api/v1"
 
 
 class APIClient:
@@ -13,7 +15,7 @@ class APIClient:
 
     def __init__(self, base_url: str = API_BASE_URL):
         self.base_url = base_url
-        self.timeout = httpx.Timeout(30.0)
+        self.timeout = httpx.Timeout(120.0)
 
     def _get_client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
