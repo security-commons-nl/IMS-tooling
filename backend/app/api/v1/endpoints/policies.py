@@ -14,6 +14,7 @@ from app.models.core_models import (
     Policy,
     PolicyState,
 )
+from app.services.knowledge_service import knowledge_service
 
 router = APIRouter()
 crud_policy = CRUDBase(Policy)
@@ -184,7 +185,11 @@ async def publish_policy(
     effective_date: Optional[datetime] = None,
     session: AsyncSession = Depends(get_session),
 ):
-    """Publish an approved policy."""
+    """
+    Publish an approved policy.
+
+    Also indexes the policy in the AI knowledge base for RAG search.
+    """
     db_policy = await crud_policy.get_or_404(session, policy_id)
 
     if db_policy.state != PolicyState.APPROVED:
@@ -193,11 +198,29 @@ async def publish_policy(
             detail=f"Only approved policies can be published. Current state: {db_policy.state}"
         )
 
-    return await crud_policy.update(session, db_obj=db_policy, obj_in={
+    # Update policy state
+    published_policy = await crud_policy.update(session, db_obj=db_policy, obj_in={
         "state": PolicyState.PUBLISHED,
         "effective_date": effective_date or datetime.utcnow(),
         "updated_at": datetime.utcnow(),
     })
+
+    # Index in knowledge base for AI RAG
+    try:
+        await knowledge_service.add_knowledge(
+            session=session,
+            key=f"policy_{published_policy.id}_v{published_policy.version}",
+            title=published_policy.title,
+            content=published_policy.content or "",
+            category="policy"
+        )
+    except Exception as e:
+        # Log error but don't fail the publish operation
+        # Knowledge indexing is non-critical
+        import logging
+        logging.warning(f"Failed to index policy {policy_id} in knowledge base: {e}")
+
+    return published_policy
 
 
 @router.post("/{policy_id}/archive", response_model=Policy)
