@@ -3,6 +3,7 @@ from app.api.v1.endpoints import (
     standards,
     scopes,
     risks,
+    measures,
     users,
     assessments,
     incidents,
@@ -46,6 +47,13 @@ api_router.include_router(
     risks.router,
     prefix="/risks",
     tags=["Risk Management"]
+)
+
+# Measure Management (Controls)
+api_router.include_router(
+    measures.router,
+    prefix="/measures",
+    tags=["Measure Management"]
 )
 
 # User Management & RBAC
