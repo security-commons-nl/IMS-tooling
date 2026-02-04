@@ -40,6 +40,7 @@ def sidebar() -> rx.Component:
             # Navigation
             rx.vstack(
                 nav_link("Dashboard", "/", "layout-dashboard"),
+                nav_link("Frameworks", "/frameworks", "library"),
                 nav_link("Risico's", "/risks", "triangle-alert"),
                 nav_link("Maatregelen", "/measures", "shield"),
                 nav_link("Compliance", "/compliance", "clipboard-list"),

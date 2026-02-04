@@ -103,7 +103,7 @@ class AgentOrchestrator:
         # Default to risk agent
         return "risk"
 
-    async def route_request(self, message: str, context: Dict[str, Any]) -> str:
+    async def route_request(self, message: str, context: Dict[str, Any], history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         Determine which agent should handle the request.
 
@@ -127,7 +127,7 @@ class AgentOrchestrator:
             if not agent:
                 return "Error: No agents available."
 
-        return await agent.chat(message, context)
+        return await agent.chat(message, context, history)
 
 
 # Global instance

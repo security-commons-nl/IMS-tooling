@@ -148,11 +148,19 @@ class ChatState(rx.State):
             if self.entity_id:
                 context["entity_id"] = self.entity_id
 
+            # Prepare history (exclude the just added user message from history to prevent duplication if backend adds it)
+            # Actually, standard pattern is to send full history excluding the NEWEST message which is sent as 'message'
+            history = [
+                {"role": m.role, "content": m.content} 
+                for m in self.messages[:-1]
+            ]
+
             # Send to API
             response = await api_client.chat_with_agent(
                 message=message,
                 agent_name=self.current_agent,
                 context=context,
+                history=history,
             )
 
             # Add assistant response

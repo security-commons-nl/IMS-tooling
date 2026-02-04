@@ -21,6 +21,7 @@ class ChatRequest(BaseModel):
     """Request model for chat endpoint."""
     message: str
     context: Optional[Dict[str, Any]] = {}
+    history: Optional[List[Dict[str, str]]] = []
     agent_name: Optional[str] = None  # Auto-detect if not provided
 
 
@@ -105,7 +106,7 @@ async def chat_with_agent(request: ChatRequest):
     )
 
     try:
-        response_text = await orchestrator.route_request(request.message, context)
+        response_text = await orchestrator.route_request(request.message, context, request.history)
         return ChatResponse(
             response=response_text,
             agent_used=agent_name,

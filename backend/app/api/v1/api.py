@@ -19,6 +19,7 @@ from app.api.v1.endpoints import (
     agents,
     webhooks,
     sync,
+    knowledge,
 )
 
 api_router = APIRouter()
@@ -154,4 +155,11 @@ api_router.include_router(
     sync.router,
     prefix="/sync",
     tags=["Integrations: Sync"]
+)
+
+# Knowledge Base
+api_router.include_router(
+    knowledge.router,
+    prefix="/knowledge",
+    tags=["Knowledge Base"]
 )

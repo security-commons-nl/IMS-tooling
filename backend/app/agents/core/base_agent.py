@@ -34,15 +34,26 @@ class BaseAgent(ABC):
         """Return list of tools available to this agent."""
         pass
         
-    async def chat(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
+    async def chat(self, message: str, context: Optional[Dict[str, Any]] = None, history: Optional[List[Dict[str, str]]] = None) -> str:
         """
         Send a message to the agent and get a response.
         Context can be used to inject dynamic information into the prompt if needed.
+        History is a list of {"role": "user"|"assistant", "content": "..."}
         """
-        messages = [
-            SystemMessage(content=self.system_prompt),
-            HumanMessage(content=message)
-        ]
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        messages = [SystemMessage(content=self.system_prompt)]
+        
+        # Add history if provided
+        if history:
+            for msg in history:
+                if msg.get("role") == "user":
+                    messages.append(HumanMessage(content=msg.get("content", "")))
+                elif msg.get("role") == "assistant":
+                    messages.append(AIMessage(content=msg.get("content", "")))
+
+        # Add current message
+        messages.append(HumanMessage(content=message))
         
         # In a real implementation, we would handle tool calling loops here.
         # For now, we just invoke the LLM.

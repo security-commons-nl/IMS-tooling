@@ -487,12 +487,14 @@ class APIClient:
         message: str,
         agent_name: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
+        history: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         """Send a chat message to an AI agent."""
         async with self._get_client() as client:
             payload = {
                 "message": message,
                 "context": context or {},
+                "history": history or [],
             }
             if agent_name:
                 payload["agent_name"] = agent_name
@@ -505,6 +507,32 @@ class APIClient:
         """Check AI agent system health."""
         async with self._get_client() as client:
             response = await client.get("/agents/health")
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # KNOWLEDGE BASE
+    # =========================================================================
+
+    async def get_knowledge_entries(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        category: Optional[str] = None,
+        subcategory: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get list of knowledge base entries."""
+        async with self._get_client() as client:
+            params = {"skip": skip, "limit": limit}
+            if category:
+                params["category"] = category
+            if subcategory:
+                params["subcategory"] = subcategory
+            if search:
+                params["search"] = search
+                
+            response = await client.get("/knowledge/", params=params)
             response.raise_for_status()
             return response.json()
 
