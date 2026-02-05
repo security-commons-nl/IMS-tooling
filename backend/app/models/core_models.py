@@ -1559,6 +1559,29 @@ class Risk(SQLModel, table=True):
     control_links: List["ControlRiskLink"] = Relationship(back_populates="risk")
 
 
+class RiskQuantificationProfile(SQLModel, table=True):
+    """
+    Configuration for Monte Carlo simulation mappings.
+    Maps Qualitative Risk Levels (Low/Med/High/Critical) to Quantitative ranges.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+
+    # Global default mappings
+    # Stored as JSON: { "LOW": {"freq_min": 0, "freq_max": 0.5, "impact_min": 0, "impact_max": 1000}, ... }
+    global_config: str
+
+    # Category overrides
+    # Stored as JSON: { "Legal": { "CRITICAL": {"impact_min": 1000000, "impact_max": 5000000} }, ... }
+    category_configs: Optional[str] = None
+
+    currency: str = "EUR"
+    iterations: int = 10000  # Default iterations
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # =============================================================================
 # CONTROLS (Context-specific implementations)
 # =============================================================================
