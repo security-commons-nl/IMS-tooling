@@ -3,6 +3,7 @@ Seed Data for IMS Development and Testing.
 Run: python -m app.seed_data
 """
 import asyncio
+import json
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -17,7 +18,7 @@ from app.models.core_models import (
     # Scope
     Scope, ScopeType, ClassificationLevel, AssetType,
     # Risk
-    Risk, Measure, MeasureRiskLink, RiskLevel, Status, AttentionQuadrant, MitigationApproach,
+    Risk, Measure, RiskLevel, Status, AttentionQuadrant, MitigationApproach,
     # Compliance
     ApplicabilityStatement, ImplementationStatus, CoverageType,
     # Assessment
@@ -35,7 +36,7 @@ from app.models.core_models import (
 
 async def seed_database():
     """Seed the database with initial data."""
-    engine = create_async_engine(settings.DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.SQLALCHEMY_DATABASE_URI, echo=True)
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with engine.begin() as conn:
@@ -48,8 +49,8 @@ async def seed_database():
         tenant = Tenant(
             name="Demo Organisatie",
             slug="demo",
-            description="Demo tenant voor ontwikkeling en testen",
-            settings={"theme": "light", "locale": "nl"},
+            display_name="Demo tenant voor ontwikkeling en testen",
+            settings=json.dumps({"theme": "light", "locale": "nl"}),
             is_active=True,
         )
         session.add(tenant)
@@ -78,11 +79,14 @@ async def seed_database():
                 is_active=True,
             )
             session.add(user)
-            await session.commit()
-            await session.refresh(user)
             users.append(user)
 
-            # Add to tenant
+        # Commit all users to generate IDs
+        await session.commit()
+
+        # Create TenantUsers
+        for i, user in enumerate(users):
+            user_data = users_data[i]
             tenant_user = TenantUser(
                 tenant_id=tenant.id,
                 user_id=user.id,
@@ -93,6 +97,7 @@ async def seed_database():
 
         await session.commit()
         print(f"Created {len(users)} users")
+
 
         # =========================================================================
         # STANDARDS (Frameworks)
@@ -334,36 +339,15 @@ async def seed_database():
         for measure_data in measures_data:
             measure = Measure(
                 tenant_id=tenant.id,
-                scope_id=org_scope.id,
-                title=measure_data["title"],
+                name=measure_data["title"],
                 description=measure_data["description"],
-                effectiveness_percentage=measure_data["effectiveness"],
-                status=Status.ACTIVE,
-                owner_id=users[1].id,  # CISO
+                typical_effectiveness=measure_data["effectiveness"],
+                is_active=True,
             )
             session.add(measure)
             await session.commit()
             await session.refresh(measure)
             measures.append(measure)
-
-        print(f"Created {len(measures)} measures")
-
-        # Link measures to risks
-        links = [
-            (0, 0), (0, 4), (0, 6),  # Risk 0 -> MFA, Network Seg, Access Review
-            (1, 1), (1, 6),          # Risk 1 -> Training, Access Review
-            (2, 2), (2, 3), (2, 5),  # Risk 2 -> Backup, Endpoint, Patching
-            (3, 2), (3, 4),          # Risk 3 -> Backup, Network Seg
-        ]
-        for risk_idx, measure_idx in links:
-            link = MeasureRiskLink(
-                risk_id=risks[risk_idx].id,
-                measure_id=measures[measure_idx].id,
-                effectiveness_contribution=50,
-            )
-            session.add(link)
-        await session.commit()
-        print(f"Created {len(links)} risk-measure links")
 
         # =========================================================================
         # POLICIES
