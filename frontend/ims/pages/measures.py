@@ -6,14 +6,14 @@ from ims.state.measure import MeasureState
 from ims.components.layout import layout
 
 
-def status_badge(status: str) -> rx.Component:
-    """Badge for measure status."""
+def control_type_badge(control_type: str) -> rx.Component:
+    """Badge for control type."""
     return rx.match(
-        status,
-        ("DRAFT", rx.badge("Gepland", color_scheme="gray", variant="soft")),
-        ("ACTIVE", rx.badge("In uitvoering", color_scheme="blue", variant="soft")),
-        ("CLOSED", rx.badge("Geïmplementeerd", color_scheme="green", variant="soft")),
-        rx.badge(status, color_scheme="gray", variant="outline"),
+        control_type,
+        ("Preventive", rx.badge("Preventief", color_scheme="blue", variant="soft")),
+        ("Detective", rx.badge("Detectief", color_scheme="yellow", variant="soft")),
+        ("Corrective", rx.badge("Correctief", color_scheme="orange", variant="soft")),
+        rx.badge("-", color_scheme="gray", variant="outline"),
     )
 
 
@@ -25,7 +25,7 @@ def measure_row(measure: dict) -> rx.Component:
         ),
         rx.table.cell(
             rx.vstack(
-                rx.text(measure["title"], weight="medium", size="2"),
+                rx.text(measure["name"], weight="medium", size="2"),
                 rx.text(
                     measure["description"],
                     size="1",
@@ -36,12 +36,12 @@ def measure_row(measure: dict) -> rx.Component:
                 spacing="0",
             ),
         ),
-        rx.table.cell(status_badge(measure["status"])),
+        rx.table.cell(control_type_badge(measure["control_type"])),
         rx.table.cell(
             rx.cond(
-                measure["effectiveness_percentage"] != None,
+                measure["typical_effectiveness"] != None,
                 rx.hstack(
-                    rx.text(measure["effectiveness_percentage"], size="2"),
+                    rx.text(measure["typical_effectiveness"], size="2"),
                     rx.text("%", size="2", color="gray"),
                     spacing="0",
                 ),
@@ -77,7 +77,7 @@ def measures_table() -> rx.Component:
             rx.table.row(
                 rx.table.column_header_cell("ID", width="60px"),
                 rx.table.column_header_cell("Maatregel"),
-                rx.table.column_header_cell("Status", width="130px"),
+                rx.table.column_header_cell("Type", width="120px"),
                 rx.table.column_header_cell("Effectiviteit", width="120px"),
                 rx.table.column_header_cell("Acties", width="100px"),
             ),
@@ -122,25 +122,9 @@ def measures_table() -> rx.Component:
 def filter_bar() -> rx.Component:
     """Filter bar for measures."""
     return rx.hstack(
-        rx.select.root(
-            rx.select.trigger(placeholder="Filter op status"),
-            rx.select.content(
-                rx.select.item("Alle statussen", value="ALLE"),
-                rx.select.item("Gepland", value="DRAFT"),
-                rx.select.item("In uitvoering", value="ACTIVE"),
-                rx.select.item("Geïmplementeerd", value="CLOSED"),
-            ),
-            value=MeasureState.filter_status,
-            on_change=MeasureState.set_filter_status,
-            size="2",
-            default_value="ALLE",
-        ),
-        rx.button(
-            rx.icon("x", size=14),
-            "Reset",
-            variant="ghost",
-            size="2",
-            on_click=MeasureState.clear_filters,
+        rx.input(
+            placeholder="Zoek maatregel...",
+            width="250px",
         ),
         rx.spacer(),
         rx.button(
@@ -159,23 +143,10 @@ def stat_cards() -> rx.Component:
     return rx.hstack(
         rx.card(
             rx.hstack(
-                rx.icon("clock", size=20, color="var(--blue-9)"),
+                rx.icon("shield", size=20, color="var(--blue-9)"),
                 rx.vstack(
-                    rx.text("In uitvoering", size="1", color="gray"),
-                    rx.text(MeasureState.active_count, size="4", weight="bold"),
-                    spacing="0",
-                    align_items="start",
-                ),
-                spacing="3",
-            ),
-            padding="12px",
-        ),
-        rx.card(
-            rx.hstack(
-                rx.icon("circle-check", size=20, color="var(--green-9)"),
-                rx.vstack(
-                    rx.text("Geïmplementeerd", size="1", color="gray"),
-                    rx.text(MeasureState.implemented_count, size="4", weight="bold"),
+                    rx.text("Totaal Maatregelen", size="1", color="gray"),
+                    rx.text(MeasureState.measures.length(), size="4", weight="bold"),
                     spacing="0",
                     align_items="start",
                 ),
@@ -220,11 +191,11 @@ def measure_form_dialog() -> rx.Component:
                 rx.text("Maatregel Details", weight="bold", size="3"),
 
                 rx.vstack(
-                    rx.text("Titel *", size="2", weight="medium"),
+                    rx.text("Naam *", size="2", weight="medium"),
                     rx.input(
                         placeholder="Bijv. Multifactor authenticatie",
-                        value=MeasureState.form_title,
-                        on_change=MeasureState.set_form_title,
+                        value=MeasureState.form_name,
+                        on_change=MeasureState.set_form_name,
                         width="100%",
                     ),
                     align_items="start",
@@ -232,7 +203,7 @@ def measure_form_dialog() -> rx.Component:
                 ),
 
                 rx.vstack(
-                    rx.text("Beschrijving", size="2", weight="medium"),
+                    rx.text("Beschrijving *", size="2", weight="medium"),
                     rx.text_area(
                         placeholder="Wat houdt deze maatregel in?",
                         value=MeasureState.form_description,
@@ -244,38 +215,19 @@ def measure_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                rx.hstack(
-                    rx.vstack(
-                        rx.text("Status", size="2", weight="medium"),
-                        rx.select.root(
-                            rx.select.trigger(placeholder="Status"),
-                            rx.select.content(
-                                rx.select.item("Gepland", value="DRAFT"),
-                                rx.select.item("In uitvoering", value="ACTIVE"),
-                                rx.select.item("Geïmplementeerd", value="CLOSED"),
-                            ),
-                            value=MeasureState.form_status,
-                            on_change=MeasureState.set_form_status,
+                rx.vstack(
+                    rx.text("Type Control", size="2", weight="medium"),
+                    rx.select.root(
+                        rx.select.trigger(placeholder="Type"),
+                        rx.select.content(
+                            rx.select.item("Preventief", value="Preventive"),
+                            rx.select.item("Detectief", value="Detective"),
+                            rx.select.item("Correctief", value="Corrective"),
                         ),
-                        align_items="start",
-                        flex="1",
+                        value=MeasureState.form_control_type,
+                        on_change=MeasureState.set_form_control_type,
                     ),
-                    rx.vstack(
-                        rx.text("Type Control", size="2", weight="medium"),
-                        rx.select.root(
-                            rx.select.trigger(placeholder="Type"),
-                            rx.select.content(
-                                rx.select.item("Preventief", value="Preventive"),
-                                rx.select.item("Detectief", value="Detective"),
-                                rx.select.item("Correctief", value="Corrective"),
-                            ),
-                            value=MeasureState.form_control_type,
-                            on_change=MeasureState.set_form_control_type,
-                        ),
-                        align_items="start",
-                        flex="1",
-                    ),
-                    spacing="3",
+                    align_items="start",
                     width="100%",
                 ),
 

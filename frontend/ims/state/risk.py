@@ -257,16 +257,32 @@ class RiskState(rx.State):
             self.error = "Titel is verplicht"
             return
 
+        # Map form values to API enum values
+        # RiskLevel: "LOW" -> "Low", "MEDIUM" -> "Medium", etc.
+        level_form_to_api = {
+            "LOW": "Low",
+            "MEDIUM": "Medium",
+            "HIGH": "High",
+            "CRITICAL": "Critical",
+        }
+        # AttentionQuadrant: "MITIGATE" -> "Mitigeren", etc.
+        quadrant_form_to_api = {
+            "MITIGATE": "Mitigeren",
+            "ASSURANCE": "Zekerheid verkrijgen",
+            "MONITOR": "Meten & monitoren",
+            "ACCEPT": "Accepteren",
+        }
+
         risk_data = {
             "title": self.form_title.strip(),
             "description": self.form_description.strip(),
-            "inherent_likelihood": self.form_inherent_likelihood,
-            "inherent_impact": self.form_inherent_impact,
+            "inherent_likelihood": level_form_to_api.get(self.form_inherent_likelihood, self.form_inherent_likelihood),
+            "inherent_impact": level_form_to_api.get(self.form_inherent_impact, self.form_inherent_impact),
             "tenant_id": 1,  # Default tenant for now
         }
 
         if self.form_attention_quadrant and self.form_attention_quadrant != "NONE":
-            risk_data["attention_quadrant"] = self.form_attention_quadrant
+            risk_data["attention_quadrant"] = quadrant_form_to_api.get(self.form_attention_quadrant, self.form_attention_quadrant)
         if self.form_treatment_justification:
             risk_data["treatment_justification"] = self.form_treatment_justification
 

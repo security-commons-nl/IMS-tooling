@@ -7,7 +7,8 @@ import os
 from typing import Optional, List, Dict, Any
 
 # Use environment variable for API URL, fallback to localhost for local development
-API_BASE_URL = os.getenv("API_URL", "http://localhost:8001") + "/api/v1"
+# FastAPI backend runs on port 8000
+API_BASE_URL = os.getenv("API_URL", "http://localhost:8000") + "/api/v1"
 
 
 class APIClient:

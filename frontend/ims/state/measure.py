@@ -12,9 +12,6 @@ class MeasureState(rx.State):
     measures: List[Dict[str, Any]] = []
     selected_measure: Dict[str, Any] = {}
 
-    # Filters
-    filter_status: str = "ALLE"
-
     # Loading
     is_loading: bool = False
     error: str = ""
@@ -25,12 +22,11 @@ class MeasureState(rx.State):
     editing_measure_id: Optional[int] = None
 
     # Form fields
-    form_title: str = ""
+    form_name: str = ""
     form_description: str = ""
-    form_status: str = "DRAFT"
     form_control_type: str = "Preventive"
     form_scope_id: str = ""
-    
+
     # Delete confirmation
     show_delete_dialog: bool = False
     deleting_measure_id: Optional[int] = None
@@ -39,14 +35,6 @@ class MeasureState(rx.State):
     # Success/Error messages
     success_message: str = ""
 
-    @rx.var
-    def active_count(self) -> int:
-        return len([m for m in self.measures if m.get("status") == "ACTIVE"])
-
-    @rx.var
-    def implemented_count(self) -> int:
-        return len([m for m in self.measures if m.get("status") == "CLOSED"])
-
     async def load_measures(self):
         """Load measures from API."""
         self.is_loading = True
@@ -54,26 +42,12 @@ class MeasureState(rx.State):
         self.success_message = ""
 
         try:
-            params = {}
-            if self.filter_status and self.filter_status != "ALLE":
-                params["status"] = self.filter_status
-
-            self.measures = await api_client.get_measures(**params)
+            self.measures = await api_client.get_measures()
         except Exception as e:
             self.error = f"Kan maatregelen niet laden: {str(e)}"
             self.measures = []
         finally:
             self.is_loading = False
-
-    def set_filter_status(self, status: str):
-        """Set status filter."""
-        self.filter_status = status
-        return MeasureState.load_measures
-
-    def clear_filters(self):
-        """Clear all filters."""
-        self.filter_status = "ALLE"
-        return MeasureState.load_measures
 
     # ==========================================================================
     # FORM METHODS
@@ -81,9 +55,8 @@ class MeasureState(rx.State):
 
     def _reset_form(self):
         """Reset form fields."""
-        self.form_title = ""
+        self.form_name = ""
         self.form_description = ""
-        self.form_status = "DRAFT"
         self.form_control_type = "Preventive"
         self.form_scope_id = ""
         self.error = ""
@@ -101,10 +74,9 @@ class MeasureState(rx.State):
             if measure.get("id") == measure_id:
                 self.is_editing = True
                 self.editing_measure_id = measure_id
-                self.form_title = measure.get("title", "")
+                self.form_name = measure.get("name", "")
                 self.form_description = measure.get("description", "") or ""
-                self.form_status = measure.get("status", "DRAFT")
-                self.form_control_type = measure.get("control_type", "Preventive")
+                self.form_control_type = measure.get("control_type", "Preventive") or "Preventive"
                 # Scope ID handling to be added whenever scope selection is implemented
                 self.show_form_dialog = True
                 break
@@ -114,15 +86,12 @@ class MeasureState(rx.State):
         self._reset_form()
 
     # Form field setters
-    def set_form_title(self, value: str):
-        self.form_title = value
+    def set_form_name(self, value: str):
+        self.form_name = value
 
     def set_form_description(self, value: str):
         self.form_description = value
 
-    def set_form_status(self, value: str):
-        self.form_status = value
-        
     def set_form_control_type(self, value: str):
         self.form_control_type = value
 
@@ -132,18 +101,19 @@ class MeasureState(rx.State):
 
     async def save_measure(self):
         """Save measure (create or update)."""
-        if not self.form_title.strip():
-            self.error = "Titel is verplicht"
+        if not self.form_name.strip():
+            self.error = "Naam is verplicht"
+            return
+        if not self.form_description.strip():
+            self.error = "Beschrijving is verplicht"
             return
 
         try:
             data = {
-                "title": self.form_title.strip(),
-                "description": self.form_description.strip() or None,
-                "status": self.form_status,
+                "name": self.form_name.strip(),
+                "description": self.form_description.strip(),
                 "control_type": self.form_control_type,
-                # "scope_id": int(self.form_scope_id) if self.form_scope_id else None,
-                "tenant_id": 1, 
+                "tenant_id": 1,
             }
 
             if self.is_editing and self.editing_measure_id:
@@ -169,7 +139,7 @@ class MeasureState(rx.State):
         for measure in self.measures:
             if measure.get("id") == measure_id:
                 self.deleting_measure_id = measure_id
-                self.deleting_measure_name = measure.get("title", "")
+                self.deleting_measure_name = measure.get("name", "")
                 self.show_delete_dialog = True
                 break
 

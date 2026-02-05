@@ -10,10 +10,11 @@ def severity_badge(severity: str) -> rx.Component:
     """Badge for incident severity."""
     return rx.match(
         severity,
-        ("LOW", rx.badge("Laag", color_scheme="green", variant="soft")),
-        ("MEDIUM", rx.badge("Gemiddeld", color_scheme="yellow", variant="soft")),
-        ("HIGH", rx.badge("Hoog", color_scheme="orange", variant="soft")),
-        ("CRITICAL", rx.badge("Kritiek", color_scheme="red", variant="soft")),
+        ("Low", rx.badge("Laag", color_scheme="green", variant="soft")),
+        ("Medium", rx.badge("Gemiddeld", color_scheme="yellow", variant="soft")),
+        ("High", rx.badge("Hoog", color_scheme="orange", variant="soft")),
+        ("Critical", rx.badge("Kritiek", color_scheme="red", variant="soft")),
+        ("Observation", rx.badge("Observatie", color_scheme="gray", variant="soft")),
         rx.badge(severity, color_scheme="gray", variant="outline"),
     )
 
@@ -22,9 +23,10 @@ def status_badge(status: str) -> rx.Component:
     """Badge for incident status."""
     return rx.match(
         status,
-        ("DRAFT", rx.badge("Nieuw", color_scheme="gray", variant="soft")),
-        ("ACTIVE", rx.badge("In behandeling", color_scheme="blue", variant="soft")),
-        ("CLOSED", rx.badge("Opgelost", color_scheme="green", variant="soft")),
+        ("Draft", rx.badge("Nieuw", color_scheme="gray", variant="soft")),
+        ("Active", rx.badge("In behandeling", color_scheme="blue", variant="soft")),
+        ("Deprecated", rx.badge("Vervallen", color_scheme="orange", variant="soft")),
+        ("Closed", rx.badge("Opgelost", color_scheme="green", variant="soft")),
         rx.badge(status, color_scheme="gray", variant="outline"),
     )
 

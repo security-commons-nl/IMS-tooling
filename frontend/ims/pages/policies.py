@@ -10,11 +10,11 @@ def state_badge(state: str) -> rx.Component:
     """Badge for policy state."""
     return rx.match(
         state,
-        ("DRAFT", rx.badge("Concept", color_scheme="gray", variant="soft")),
-        ("REVIEW", rx.badge("In Review", color_scheme="yellow", variant="soft")),
-        ("APPROVED", rx.badge("Goedgekeurd", color_scheme="blue", variant="soft")),
-        ("PUBLISHED", rx.badge("Gepubliceerd", color_scheme="green", variant="soft")),
-        ("ARCHIVED", rx.badge("Gearchiveerd", color_scheme="orange", variant="soft")),
+        ("Draft", rx.badge("Concept", color_scheme="gray", variant="soft")),
+        ("Review", rx.badge("In Review", color_scheme="yellow", variant="soft")),
+        ("Approved", rx.badge("Goedgekeurd", color_scheme="blue", variant="soft")),
+        ("Published", rx.badge("Gepubliceerd", color_scheme="green", variant="soft")),
+        ("Archived", rx.badge("Gearchiveerd", color_scheme="orange", variant="soft")),
         rx.badge(state, color_scheme="gray", variant="outline"),
     )
 
@@ -120,11 +120,11 @@ def filter_bar() -> rx.Component:
             rx.select.trigger(placeholder="Filter op status"),
             rx.select.content(
                 rx.select.item("Alle statussen", value="ALLE"),
-                rx.select.item("Concept", value="DRAFT"),
-                rx.select.item("In Review", value="REVIEW"),
-                rx.select.item("Goedgekeurd", value="APPROVED"),
-                rx.select.item("Gepubliceerd", value="PUBLISHED"),
-                rx.select.item("Gearchiveerd", value="ARCHIVED"),
+                rx.select.item("Concept", value="Draft"),
+                rx.select.item("In Review", value="Review"),
+                rx.select.item("Goedgekeurd", value="Approved"),
+                rx.select.item("Gepubliceerd", value="Published"),
+                rx.select.item("Gearchiveerd", value="Archived"),
             ),
             value=PolicyState.filter_state,
             on_change=PolicyState.set_filter_state,
