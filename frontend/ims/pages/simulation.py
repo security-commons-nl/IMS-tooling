@@ -4,6 +4,7 @@ Simulation Page - Monte Carlo Simulation for Risk Analysis
 import reflex as rx
 from ims.state.simulation import SimulationState
 from ims.components.layout import layout
+from typing import Any
 
 def config_input(label: str, value: rx.Var, on_change: Any, unit: str = "") -> rx.Component:
     """Helper for config input fields."""
