@@ -29,20 +29,6 @@ def control_type_badge(control_type: str) -> rx.Component:
     )
 
 
-def get_scope_name(control, scopes) -> str:
-    """Get scope name for a control by looking up scope_id in scopes list."""
-    scope_id = control.get("scope_id")
-    if not scope_id:
-        return "-"
-    
-    # Find matching scope in scopes list
-    for scope in scopes:
-        if scope.get("id") == scope_id:
-            return scope.get("name", "-")
-    
-    return "-"
-
-
 def control_row(control: dict) -> rx.Component:
     """Single row in controls table."""
     return rx.table.row(
@@ -64,9 +50,9 @@ def control_row(control: dict) -> rx.Component:
         ),
         rx.table.cell(
             rx.text(
-                get_scope_name(control, ControlState.scopes),
+                control["scope_name"],
                 size="2",
-                color="gray" if not control.get("scope_id") else "default",
+                color=rx.cond(control["scope_id"], "default", "gray"),
             ),
         ),
         rx.table.cell(status_badge(control["status"])),
@@ -363,6 +349,72 @@ def control_form_dialog() -> rx.Component:
                     ),
                     align_items="start",
                     width="100%",
+                ),
+
+                # Linked Risks Section (only in edit mode)
+                rx.cond(
+                    ControlState.is_editing,
+                    rx.vstack(
+                        rx.divider(),
+                        rx.text("Gekoppelde Risico's", size="2", weight="medium"),
+
+                        # List of linked risks
+                        rx.cond(
+                            ControlState.linked_risks.length() > 0,
+                            rx.vstack(
+                                rx.foreach(
+                                    ControlState.linked_risks,
+                                    lambda risk: rx.hstack(
+                                        rx.icon("triangle-alert", size=16, color="orange"),
+                                        rx.text(risk["title"], size="2", flex="1"),
+                                        rx.icon_button(
+                                            rx.icon("x", size=14),
+                                            variant="ghost",
+                                            size="1",
+                                            color_scheme="red",
+                                            on_click=lambda: ControlState.unlink_risk(risk["id"]),
+                                        ),
+                                        width="100%",
+                                        align_items="center",
+                                        padding="4px 8px",
+                                        background="var(--gray-a2)",
+                                        border_radius="4px",
+                                    ),
+                                ),
+                                spacing="2",
+                                width="100%",
+                            ),
+                            rx.text("Nog geen risico's gekoppeld.", size="1", color="gray", font_style="italic"),
+                        ),
+
+                        # Add new link
+                        rx.hstack(
+                            rx.select.root(
+                                rx.select.trigger(placeholder="Selecteer risico om te koppelen..."),
+                                rx.select.content(
+                                    rx.foreach(
+                                        ControlState.all_risks,
+                                        lambda r: rx.select.item(r["title"], value=r["id"].to_string()),
+                                    ),
+                                ),
+                                value=ControlState.selected_risk_id_to_link,
+                                on_change=ControlState.set_selected_risk_id_to_link,
+                                width="100%",
+                            ),
+                            rx.button(
+                                "Koppelen",
+                                on_click=ControlState.link_risk,
+                                disabled=ControlState.selected_risk_id_to_link == "",
+                            ),
+                            width="100%",
+                            spacing="2",
+                            margin_top="8px",
+                        ),
+
+                        spacing="3",
+                        width="100%",
+                        align_items="start",
+                    ),
                 ),
 
                 spacing="3",

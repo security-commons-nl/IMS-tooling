@@ -48,6 +48,11 @@ class RiskState(rx.State):
     form_attention_quadrant: str = "NONE"
     form_treatment_justification: str = ""
 
+    # Control linkage
+    linked_controls: List[Dict[str, Any]] = []
+    all_controls: List[Dict[str, Any]] = []
+    selected_control_id_to_link: str = ""
+
     # Delete confirmation
     show_delete_dialog: bool = False
     deleting_risk_id: Optional[int] = None
@@ -166,11 +171,18 @@ class RiskState(rx.State):
         """Open dialog for creating a new risk."""
         self.is_editing = False
         self.editing_risk_id = None
+        self.linked_controls = []
+        self.all_controls = []
         self._reset_form()
         self.show_form_dialog = True
 
-    def open_edit_dialog(self, risk_id: int):
+    async def open_edit_dialog(self, risk_id: int):
         """Open dialog for editing an existing risk."""
+        # Reset linkage data
+        self.linked_controls = []
+        self.all_controls = []
+        self.selected_control_id_to_link = ""
+
         # Mapping from API values (Dutch) to form values (enum names)
         quadrant_api_to_form = {
             "Mitigeren": "MITIGATE",
@@ -201,6 +213,10 @@ class RiskState(rx.State):
                 self.form_attention_quadrant = quadrant_api_to_form.get(quadrant, "NONE") if quadrant else "NONE"
                 self.form_treatment_justification = risk.get("treatment_justification", "") or ""
                 self.show_form_dialog = True
+
+                # Load linked and all controls
+                await self.load_linked_controls(risk_id)
+                await self.load_all_controls()
                 break
 
     def close_form_dialog(self):
@@ -242,6 +258,52 @@ class RiskState(rx.State):
 
     def set_form_treatment_justification(self, value: str):
         self.form_treatment_justification = value
+
+    # ==========================================================================
+    # LINKING METHODS
+    # ==========================================================================
+
+    async def load_linked_controls(self, risk_id: int):
+        """Load controls linked to this risk."""
+        try:
+            self.linked_controls = await api_client.get_risk_controls(risk_id)
+        except Exception:
+            self.linked_controls = []
+
+    async def load_all_controls(self):
+        """Load all controls for selection."""
+        try:
+            self.all_controls = await api_client.get_controls()
+        except Exception:
+            self.all_controls = []
+
+    async def link_control(self):
+        """Link selected control to current risk."""
+        if not self.editing_risk_id or not self.selected_control_id_to_link:
+            return
+
+        try:
+            await api_client.link_risk_control(
+                self.editing_risk_id,
+                int(self.selected_control_id_to_link)
+            )
+            self.success_message = "Control gekoppeld"
+            await self.load_linked_controls(self.editing_risk_id)
+            self.selected_control_id_to_link = ""
+        except Exception as e:
+            self.error = f"Fout bij koppelen: {str(e)}"
+
+    async def unlink_control(self, control_id: int):
+        """Unlink control from current risk."""
+        if not self.editing_risk_id:
+            return
+
+        try:
+            await api_client.unlink_risk_control(self.editing_risk_id, control_id)
+            self.success_message = "Control ontkoppeld"
+            await self.load_linked_controls(self.editing_risk_id)
+        except Exception as e:
+            self.error = f"Fout bij ontkoppelen: {str(e)}"
 
     # ==========================================================================
     # CRUD METHODS

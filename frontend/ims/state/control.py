@@ -33,6 +33,11 @@ class ControlState(rx.State):
     form_automation_level: str = "Manual"
     form_scope_id: str = "0"
 
+    # Risk linkage
+    linked_risks: List[Dict[str, Any]] = []
+    all_risks: List[Dict[str, Any]] = []
+    selected_risk_id_to_link: str = ""
+
     # Delete confirmation
     show_delete_dialog: bool = False
     deleting_control_id: Optional[int] = None
@@ -67,6 +72,16 @@ class ControlState(rx.State):
             self.controls = await api_client.get_controls(**params)
             # Also load scopes for the dropdown
             self.scopes = await api_client.get_scopes()
+
+            # Enrich controls with scope name for display
+            scope_map = {str(s["id"]): s["name"] for s in self.scopes}
+            for control in self.controls:
+                scope_id = str(control.get("scope_id", ""))
+                if scope_id and scope_id != "0" and scope_id != "None":
+                    control["scope_name"] = scope_map.get(scope_id, "-")
+                else:
+                    control["scope_name"] = "-"
+
         except Exception as e:
             self.error = f"Kan controls niet laden: {str(e)}"
             self.controls = []
@@ -101,11 +116,18 @@ class ControlState(rx.State):
         """Open dialog for creating a new control."""
         self.is_editing = False
         self.editing_control_id = None
+        self.linked_risks = []
+        self.all_risks = []
         self._reset_form()
         self.show_form_dialog = True
 
-    def open_edit_dialog(self, control_id: int):
+    async def open_edit_dialog(self, control_id: int):
         """Open dialog for editing an existing control."""
+        # Reset linkage data
+        self.linked_risks = []
+        self.all_risks = []
+        self.selected_risk_id_to_link = ""
+
         for control in self.controls:
             if control.get("id") == control_id:
                 self.is_editing = True
@@ -120,6 +142,10 @@ class ControlState(rx.State):
                 self.form_automation_level = control.get("automation_level", "Manual") or "Manual"
                 self.form_scope_id = str(control.get("scope_id", "")) if control.get("scope_id") else "0"
                 self.show_form_dialog = True
+
+                # Load linked and all risks
+                await self.load_linked_risks(control_id)
+                await self.load_all_risks()
                 break
 
     def close_form_dialog(self):
@@ -144,6 +170,52 @@ class ControlState(rx.State):
 
     def set_form_scope_id(self, value: str):
         self.form_scope_id = value
+
+    # ==========================================================================
+    # LINKING METHODS
+    # ==========================================================================
+
+    async def load_linked_risks(self, control_id: int):
+        """Load risks linked to this control."""
+        try:
+            self.linked_risks = await api_client.get_control_risks(control_id)
+        except Exception:
+            self.linked_risks = []
+
+    async def load_all_risks(self):
+        """Load all risks for selection."""
+        try:
+            self.all_risks = await api_client.get_risks()
+        except Exception:
+            self.all_risks = []
+
+    async def link_risk(self):
+        """Link selected risk to current control."""
+        if not self.editing_control_id or not self.selected_risk_id_to_link:
+            return
+
+        try:
+            await api_client.link_control_risk(
+                self.editing_control_id,
+                int(self.selected_risk_id_to_link)
+            )
+            self.success_message = "Risico gekoppeld"
+            await self.load_linked_risks(self.editing_control_id)
+            self.selected_risk_id_to_link = ""
+        except Exception as e:
+            self.error = f"Fout bij koppelen: {str(e)}"
+
+    async def unlink_risk(self, risk_id: int):
+        """Unlink risk from current control."""
+        if not self.editing_control_id:
+            return
+
+        try:
+            await api_client.unlink_control_risk(self.editing_control_id, risk_id)
+            self.success_message = "Risico ontkoppeld"
+            await self.load_linked_risks(self.editing_control_id)
+        except Exception as e:
+            self.error = f"Fout bij ontkoppelen: {str(e)}"
 
     # ==========================================================================
     # CRUD METHODS

@@ -333,6 +333,72 @@ def risk_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
+                # Linked Controls Section (only in edit mode)
+                rx.cond(
+                    RiskState.is_editing,
+                    rx.vstack(
+                        rx.divider(),
+                        rx.text("Gekoppelde Controls", size="2", weight="medium"),
+
+                        # List of linked controls
+                        rx.cond(
+                            RiskState.linked_controls.length() > 0,
+                            rx.vstack(
+                                rx.foreach(
+                                    RiskState.linked_controls,
+                                    lambda control: rx.hstack(
+                                        rx.icon("shield-check", size=16, color="green"),
+                                        rx.text(control["title"], size="2", flex="1"),
+                                        rx.icon_button(
+                                            rx.icon("x", size=14),
+                                            variant="ghost",
+                                            size="1",
+                                            color_scheme="red",
+                                            on_click=lambda: RiskState.unlink_control(control["id"]),
+                                        ),
+                                        width="100%",
+                                        align_items="center",
+                                        padding="4px 8px",
+                                        background="var(--gray-a2)",
+                                        border_radius="4px",
+                                    ),
+                                ),
+                                spacing="2",
+                                width="100%",
+                            ),
+                            rx.text("Nog geen controls gekoppeld.", size="1", color="gray", font_style="italic"),
+                        ),
+
+                        # Add new link
+                        rx.hstack(
+                            rx.select.root(
+                                rx.select.trigger(placeholder="Selecteer control om te koppelen..."),
+                                rx.select.content(
+                                    rx.foreach(
+                                        RiskState.all_controls,
+                                        lambda c: rx.select.item(c["title"], value=c["id"].to_string()),
+                                    ),
+                                ),
+                                value=RiskState.selected_control_id_to_link,
+                                on_change=RiskState.set_selected_control_id_to_link,
+                                width="100%",
+                            ),
+                            rx.button(
+                                "Koppelen",
+                                on_click=RiskState.link_control,
+                                disabled=RiskState.selected_control_id_to_link == "",
+                            ),
+                            width="100%",
+                            spacing="2",
+                            margin_top="8px",
+                        ),
+
+                        spacing="3",
+                        width="100%",
+                        align_items="start",
+                    ),
+                ),
+
                 spacing="4",
                 width="100%",
             ),

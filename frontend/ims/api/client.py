@@ -147,6 +147,54 @@ class APIClient:
             return response.json()
 
     # =========================================================================
+    # RISK-CONTROL LINKAGE
+    # =========================================================================
+
+    async def link_risk_control(self, risk_id: int, control_id: int, mitigation_percent: int = 50) -> Dict[str, Any]:
+        """Link a control to a risk."""
+        async with self._get_client() as client:
+            params = {"mitigation_percent": mitigation_percent}
+            response = await client.post(f"/risks/{risk_id}/controls/{control_id}", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def unlink_risk_control(self, risk_id: int, control_id: int) -> Dict[str, Any]:
+        """Unlink a control from a risk."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/risks/{risk_id}/controls/{control_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_risk_controls(self, risk_id: int) -> List[Dict[str, Any]]:
+        """Get controls linked to a risk."""
+        async with self._get_client() as client:
+            response = await client.get(f"/risks/{risk_id}/controls")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_control_risks(self, control_id: int) -> List[Dict[str, Any]]:
+        """Get risks linked to a control."""
+        async with self._get_client() as client:
+            response = await client.get(f"/controls/{control_id}/risks")
+            response.raise_for_status()
+            return response.json()
+
+    async def link_control_risk(self, control_id: int, risk_id: int, mitigation_percent: int = 50) -> Dict[str, Any]:
+        """Link a risk to a control."""
+        async with self._get_client() as client:
+            params = {"mitigation_percent": mitigation_percent}
+            response = await client.post(f"/controls/{control_id}/risks/{risk_id}", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def unlink_control_risk(self, control_id: int, risk_id: int) -> Dict[str, Any]:
+        """Unlink a risk from a control."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/controls/{control_id}/risks/{risk_id}")
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
     # MEASURES (Catalog - reusable building blocks)
     # =========================================================================
 
