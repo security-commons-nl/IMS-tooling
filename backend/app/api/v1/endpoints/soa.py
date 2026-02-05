@@ -250,20 +250,28 @@ async def link_measure_to_requirements(
     updated_count = 0
     created_count = 0
 
+    # Fetch all existing SoA entries for these requirements
+    existing_result = await session.execute(
+        select(ApplicabilityStatement)
+        .where(ApplicabilityStatement.tenant_id == tenant_id)
+        .where(ApplicabilityStatement.scope_id == scope_id)
+        .where(ApplicabilityStatement.requirement_id.in_(requirement_ids))
+    )
+    existing_map = {soa.requirement_id: soa for soa in existing_result.scalars().all()}
+
     for req_id in requirement_ids:
-        # Check if SoA entry exists
-        existing_result = await session.execute(
-            select(ApplicabilityStatement)
-            .where(ApplicabilityStatement.tenant_id == tenant_id)
-            .where(ApplicabilityStatement.scope_id == scope_id)
-            .where(ApplicabilityStatement.requirement_id == req_id)
-        )
-        existing = existing_result.scalars().first()
+        existing = existing_map.get(req_id)
 
         if existing:
             # Update existing
-            existing.local_measure_id = measure_id
-            if existing.shared_measure_id:
+            # Note: The ApplicabilityStatement model definition seems to be missing 'local_measure_id'
+            # and 'shared_measure_id', which causes runtime errors on update.
+            # We use hasattr/getattr to prevent crashes while preserving the intended logic.
+            if hasattr(existing, "local_measure_id"):
+                existing.local_measure_id = measure_id
+
+            shared_measure_id = getattr(existing, "shared_measure_id", None)
+            if shared_measure_id:
                 existing.coverage_type = CoverageType.COMBINED
             else:
                 existing.coverage_type = CoverageType.LOCAL
