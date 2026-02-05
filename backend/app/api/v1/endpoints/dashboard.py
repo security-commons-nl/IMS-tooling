@@ -38,8 +38,12 @@ class MyTasksResponse(BaseModel):
 
 @router.get("/my-tasks", response_model=MyTasksResponse)
 async def get_my_tasks(
-    user_id: int = Query(..., description="ID of the user to fetch tasks for"),
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant context"),
+    # SECURITY TODO: Replace these query params with auth dependencies:
+    # user_id should come from: Depends(get_current_user) -> current_user.id
+    # tenant_id should come from: Depends(get_current_tenant) -> tenant_id
+    # NEVER trust client-provided user_id - this creates an IDOR vulnerability
+    user_id: int = Query(..., description="ID of the user (TEMPORARY - must come from auth)"),
+    tenant_id: int = Query(..., description="Tenant context (REQUIRED to prevent cross-tenant leakage)"),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -48,6 +52,8 @@ async def get_my_tasks(
     - Corrective Actions assigned to the user
     - Scheduled Reviews responsible by the user
     - Workflow approvals/tasks assigned to the user
+    
+    SECURITY NOTE: tenant_id is required to enforce tenant isolation.
     """
     tasks: List[TaskItem] = []
     now = datetime.utcnow()
@@ -55,11 +61,10 @@ async def get_my_tasks(
 
     # 1. Corrective Actions
     query_actions = select(CorrectiveAction).where(
+        CorrectiveAction.tenant_id == tenant_id,  # SECURITY: tenant filter ALWAYS applied
         CorrectiveAction.assigned_to_id == user_id,
         CorrectiveAction.completed == False
     )
-    if tenant_id:
-        query_actions = query_actions.where(CorrectiveAction.tenant_id == tenant_id)
 
     result_actions = await session.execute(query_actions)
     actions = result_actions.scalars().all()
@@ -79,12 +84,11 @@ async def get_my_tasks(
 
     # 2. Review Schedules
     query_reviews = select(ReviewSchedule).where(
+        ReviewSchedule.tenant_id == tenant_id,  # SECURITY: tenant filter ALWAYS applied
         ReviewSchedule.responsible_id == user_id,
         ReviewSchedule.is_active == True,
         ReviewSchedule.next_review <= now + timedelta(days=30)
     )
-    if tenant_id:
-        query_reviews = query_reviews.where(ReviewSchedule.tenant_id == tenant_id)
 
     result_reviews = await session.execute(query_reviews)
     reviews = result_reviews.scalars().all()
@@ -105,14 +109,13 @@ async def get_my_tasks(
     # 3. Workflow Instances
     # Tasks where user is assignee OR approver
     query_workflows = select(WorkflowInstance).where(
+        WorkflowInstance.tenant_id == tenant_id,  # SECURITY: tenant filter ALWAYS applied
         or_(
             WorkflowInstance.current_assignee_id == user_id,
             WorkflowInstance.current_approver_id == user_id
         ),
         WorkflowInstance.status.in_([WorkflowStatus.IN_PROGRESS, WorkflowStatus.WAITING_APPROVAL])
     )
-    if tenant_id:
-        query_workflows = query_workflows.where(WorkflowInstance.tenant_id == tenant_id)
 
     result_workflows = await session.execute(query_workflows)
     workflows = result_workflows.scalars().all()
