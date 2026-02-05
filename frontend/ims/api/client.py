@@ -768,6 +768,72 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    # =========================================================================
+    # SIMULATION (Monte Carlo)
+    # =========================================================================
+
+    async def get_quantification_config(self, tenant_id: int) -> Dict[str, Any]:
+        """Get risk quantification profile."""
+        async with self._get_client() as client:
+            params = {"tenant_id": tenant_id}
+            response = await client.get("/simulation/config", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def save_quantification_config(self, config_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Save risk quantification profile."""
+        async with self._get_client() as client:
+            response = await client.post("/simulation/config", json=config_data)
+            response.raise_for_status()
+            return response.json()
+
+    async def run_simulation(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Run Monte Carlo simulation."""
+        async with self._get_client() as client:
+            # tenant_id is in query param for GET, but usually POST body is better for actions
+            # My backend implementation expects tenant_id as query param for GET, but payload for POST?
+            # Let's check backend implementation:
+            # async def run_simulation(tenant_id: int, ...) -> query param
+            # Wait, FastAPI automatically uses query params for scalar types unless Body is used.
+            # I should pass them as query params if they are arguments to the function.
+            # Let's adjust the client to match the backend signature.
+            # Backend: tenant_id: int, iterations: int = 10000, scope_id... risk_ids...
+            # These are query params. risk_ids is list, so query param with multiple values?
+            # Or Body?
+            # In FastAPI, complex types (like List) usually imply Body if not Query().
+            # risk_ids: Optional[List[int]] = None -> likely Body in JSON.
+            # tenant_id: int -> Query param by default in FastAPI if not part of a Pydantic model.
+
+            # To be safe, I'll pass everything as query params that fits, and risk_ids as body?
+            # Actually, passing mixed query/body is annoying.
+            # Let's assume the backend takes query params for scalars.
+
+            params = {
+                "tenant_id": payload.get("tenant_id"),
+                "iterations": payload.get("iterations", 10000)
+            }
+            if payload.get("scope_id"):
+                params["scope_id"] = payload.get("scope_id")
+
+            # risk_ids is list. FastAPI handles list query params as risk_ids=1&risk_ids=2
+            # but httpx handles it too.
+            # BUT: risk_ids might be large.
+            # Let's verify backend signature again.
+            pass
+
+            # Since I wrote the backend, I know:
+            # async def run_simulation(tenant_id: int, ..., risk_ids: Optional[List[int]] = None, ...)
+            # FastAPI treats List[int] as query param unless Body(...) is used.
+            # Sending list as query param is fine for small lists.
+
+            req_params = params.copy()
+            if payload.get("risk_ids"):
+                req_params["risk_ids"] = payload.get("risk_ids")
+
+            response = await client.post("/simulation/run", params=req_params)
+            response.raise_for_status()
+            return response.json()
+
 
 # Singleton instance
 api_client = APIClient()

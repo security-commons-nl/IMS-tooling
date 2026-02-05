@@ -171,3 +171,11 @@ api_router.include_router(
     prefix="/knowledge",
     tags=["Knowledge Base"]
 )
+
+# Simulation (Monte Carlo)
+from app.api.v1.endpoints import simulation
+api_router.include_router(
+    simulation.router,
+    prefix="/simulation",
+    tags=["Simulation"]
+)
