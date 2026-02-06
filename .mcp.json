@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "rube": {
+      "type": "http",
+      "url": "https://rube.app/mcp"
+    },
+    "prowler": {
+      "type": "http",
+      "url": "https://mcp.prowler.com/mcp"
+    }
+  }
+}

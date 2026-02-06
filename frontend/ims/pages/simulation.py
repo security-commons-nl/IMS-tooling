@@ -192,7 +192,7 @@ def simulation_tab() -> rx.Component:
     """Simulation tab content."""
     return rx.vstack(
         rx.hstack(
-            rx.heading("Monte Carlo Simulatie", size="4"),
+            rx.heading("Kwantitatieve Risico Analyse (Monte Carlo)", size="4"),
             rx.spacer(),
             rx.button(
                 rx.cond(
