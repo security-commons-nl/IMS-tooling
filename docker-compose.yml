@@ -58,6 +58,20 @@ services:
       ollama:
         condition: service_healthy
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: ims-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
   frontend:
     build:
       context: ./frontend
@@ -67,7 +81,7 @@ services:
     environment:
       API_URL: http://api:8000
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
       - "127.0.0.1:8002:8002"
     depends_on:
       - api
@@ -87,3 +101,5 @@ services:
 volumes:
   postgres_data:
   ollama_data:
+  caddy_data:
+  caddy_config:

@@ -13,6 +13,7 @@ langchain-mistralai>=0.1.0
 langchain-openai>=0.1.0
 ollama>=0.1.6
 pgvector>=0.2.0
+slowapi>=0.1.9
 passlib[bcrypt]>=1.7.4
 bcrypt>=4.0.0,<4.1
 

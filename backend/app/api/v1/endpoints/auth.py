@@ -1,6 +1,8 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
@@ -10,6 +12,7 @@ from app.models.core_models import User, UserRead
 
 router = APIRouter()
 crud_user = CRUDBase(User)
+limiter = Limiter(key_func=get_remote_address)
 
 
 class LoginRequest(BaseModel):
@@ -18,7 +21,9 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/login", response_model=UserRead)
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     credentials: LoginRequest,
     session: AsyncSession = Depends(get_session),
 ):
