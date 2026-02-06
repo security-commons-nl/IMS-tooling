@@ -1,13 +1,15 @@
 """
 Layout Components - Main layout with sidebar navigation
+Responsive: desktop sidebar + mobile drawer
 """
 import reflex as rx
 from ims.state.auth import AuthState
+from ims.state.base import BaseState
 from ims.components.chat_island import chat_island
 
 
 def nav_link(label: str, href: str, icon: str) -> rx.Component:
-    """Navigation link in sidebar."""
+    """Navigation link in sidebar (desktop)."""
     return rx.link(
         rx.hstack(
             rx.icon(icon, size=20),
@@ -24,8 +26,27 @@ def nav_link(label: str, href: str, icon: str) -> rx.Component:
     )
 
 
+def mobile_nav_link(label: str, href: str, icon: str) -> rx.Component:
+    """Navigation link in mobile drawer with larger touch targets."""
+    return rx.link(
+        rx.hstack(
+            rx.icon(icon, size=20),
+            rx.text(label, size="3"),
+            width="100%",
+            padding="14px 16px",
+            border_radius="md",
+            _hover={"background": "var(--gray-a3)"},
+        ),
+        href=href,
+        width="100%",
+        text_decoration="none",
+        color="inherit",
+        on_click=BaseState.close_sidebar,
+    )
+
+
 def sidebar() -> rx.Component:
-    """Sidebar navigation."""
+    """Sidebar navigation (desktop only)."""
     return rx.box(
         rx.vstack(
             # Logo / Title
@@ -105,12 +126,137 @@ def sidebar() -> rx.Component:
     )
 
 
+def mobile_top_bar() -> rx.Component:
+    """Sticky top bar for mobile with hamburger menu."""
+    return rx.box(
+        rx.hstack(
+            rx.icon_button(
+                rx.icon("menu", size=22),
+                variant="ghost",
+                size="3",
+                on_click=BaseState.toggle_sidebar,
+            ),
+            rx.hstack(
+                rx.icon("shield-check", size=22, color="var(--accent-9)"),
+                rx.text("IMS", size="4", weight="bold"),
+                spacing="2",
+                align="center",
+            ),
+            rx.spacer(),
+            rx.icon_button(
+                rx.color_mode_cond(
+                    light=rx.icon("moon", size=16),
+                    dark=rx.icon("sun", size=16),
+                ),
+                variant="ghost",
+                size="2",
+                on_click=rx.toggle_color_mode,
+            ),
+            width="100%",
+            padding="8px 12px",
+            align="center",
+        ),
+        border_bottom="1px solid var(--gray-a5)",
+        background="var(--color-background)",
+        position="sticky",
+        top="0",
+        z_index="10",
+        class_name="block md:hidden",
+    )
+
+
+def mobile_drawer() -> rx.Component:
+    """Mobile navigation drawer."""
+    return rx.drawer.root(
+        rx.drawer.overlay(),
+        rx.drawer.content(
+            rx.vstack(
+                # Header
+                rx.hstack(
+                    rx.icon("shield-check", size=28, color="var(--accent-9)"),
+                    rx.text("IMS", size="5", weight="bold"),
+                    rx.spacer(),
+                    rx.icon_button(
+                        rx.icon("x", size=20),
+                        variant="ghost",
+                        size="2",
+                        on_click=BaseState.close_sidebar,
+                    ),
+                    width="100%",
+                    padding="16px",
+                    align="center",
+                ),
+                rx.divider(),
+
+                # Navigation links
+                rx.vstack(
+                    mobile_nav_link("Dashboard", "/", "layout-dashboard"),
+                    mobile_nav_link("Frameworks", "/frameworks", "library"),
+                    mobile_nav_link("Risico's", "/risks", "triangle-alert"),
+                    mobile_nav_link("Analyses", "/simulation", "chart-bar"),
+                    mobile_nav_link("Controls", "/controls", "shield-check"),
+                    mobile_nav_link("Compliance", "/compliance", "clipboard-list"),
+                    mobile_nav_link("Assessments", "/assessments", "clipboard-check"),
+                    mobile_nav_link("Incidenten", "/incidents", "circle-alert"),
+                    mobile_nav_link("Beleid", "/policies", "file-text"),
+                    mobile_nav_link("Scopes", "/scopes", "git-branch"),
+                    mobile_nav_link("Assets", "/assets", "server"),
+                    mobile_nav_link("Leveranciers", "/suppliers", "building-2"),
+                    mobile_nav_link("Backlog", "/backlog", "list-todo"),
+                    rx.divider(),
+                    mobile_nav_link("Gebruikers", "/users", "users"),
+                    spacing="0",
+                    width="100%",
+                    padding="8px",
+                    overflow_y="auto",
+                ),
+
+                rx.spacer(),
+                rx.divider(),
+
+                # User section
+                rx.hstack(
+                    rx.avatar(
+                        fallback=AuthState.user_display_name[0],
+                        size="2",
+                    ),
+                    rx.vstack(
+                        rx.text(AuthState.user_display_name, size="2", weight="medium"),
+                        rx.text(AuthState.user_email, size="1", color="gray"),
+                        spacing="0",
+                        align_items="start",
+                    ),
+                    rx.spacer(),
+                    rx.icon_button(
+                        rx.icon("log-out", size=16),
+                        variant="ghost",
+                        size="1",
+                        on_click=AuthState.logout,
+                    ),
+                    width="100%",
+                    padding="12px",
+                ),
+
+                height="100%",
+                width="100%",
+                align_items="stretch",
+            ),
+            background="var(--color-background)",
+            width="280px",
+            height="100vh",
+        ),
+        open=BaseState.sidebar_open,
+        on_open_change=lambda open: rx.cond(~open, BaseState.close_sidebar(), rx.noop()),
+        direction="left",
+    )
+
+
 def page_header(title: str, subtitle: str = "") -> rx.Component:
-    """Page header with title."""
+    """Page header with title — responsive padding and font size."""
     return rx.box(
         rx.hstack(
             rx.vstack(
-                rx.heading(title, size="6"),
+                rx.heading(title, size=rx.breakpoints(initial="5", md="6")),
                 rx.cond(
                     subtitle != "",
                     rx.text(subtitle, size="2", color="gray"),
@@ -121,26 +267,28 @@ def page_header(title: str, subtitle: str = "") -> rx.Component:
             rx.spacer(),
             width="100%",
         ),
-        padding="24px",
+        padding=rx.breakpoints(initial="12px 16px", md="24px"),
         border_bottom="1px solid var(--gray-a5)",
     )
 
 
 def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Component:
-    """Main layout wrapper with sidebar and AI chat island."""
+    """Main layout wrapper with responsive sidebar and AI chat island."""
     return rx.cond(
         AuthState.is_authenticated,
         rx.fragment(
+            mobile_drawer(),
             rx.hstack(
-                sidebar(),
+                rx.box(sidebar(), class_name="hidden md:block"),
                 rx.box(
+                    mobile_top_bar(),
                     rx.cond(
                         title != "",
                         page_header(title, subtitle),
                     ),
                     rx.box(
                         content,
-                        padding="24px",
+                        padding=rx.breakpoints(initial="12px", md="24px"),
                         overflow_y="auto",
                     ),
                     flex="1",
@@ -152,7 +300,6 @@ def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Com
                 width="100%",
                 spacing="0",
             ),
-            # AI Chat Island - available on all pages
             chat_island(),
         ),
         # Show login redirect message when not authenticated

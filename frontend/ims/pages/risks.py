@@ -269,17 +269,12 @@ def risk_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                # Risk Matrix and Selection Display (Side-by-side)
-                rx.hstack(
-                    rx.box(
-                        risk_matrix(),
-                        flex="1",
-                    ),
-                    rx.box(
-                        selected_risk_display(),
-                        width="auto", 
-                    ),
-                    spacing="4",
+                # Risk Matrix and Selection Display (responsive)
+                rx.flex(
+                    rx.box(risk_matrix(), flex="1", min_width="220px"),
+                    rx.box(selected_risk_display(), min_width="150px"),
+                    wrap="wrap",
+                    gap="4",
                     width="100%",
                     align_items="start",
                 ),
@@ -426,7 +421,7 @@ def risk_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="700px",  # Increased width more for side-by-side
+            max_width=rx.breakpoints(initial="95vw", md="700px"),
         ),
         open=RiskState.show_form_dialog,
     )
@@ -564,6 +559,64 @@ def risk_row(risk: dict) -> rx.Component:
     )
 
 
+def risk_mobile_card(risk: dict) -> rx.Component:
+    """Mobile card view for a single risk."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(risk["title"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: RiskState.open_edit_dialog(risk["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: RiskState.open_delete_dialog(risk["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(risk["description"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                rx.match(
+                    risk["attention_quadrant"],
+                    ("Mitigeren", rx.badge("Mitigeren", color_scheme="red", variant="soft", size="1")),
+                    ("Zekerheid verkrijgen", rx.badge("Zekerheid", color_scheme="blue", variant="soft", size="1")),
+                    ("Meten & monitoren", rx.badge("Monitoren", color_scheme="yellow", variant="soft", size="1")),
+                    ("Accepteren", rx.badge("Accepteren", color_scheme="green", variant="soft", size="1")),
+                    rx.badge("Niet ingedeeld", color_scheme="gray", variant="outline", size="1"),
+                ),
+                rx.match(
+                    risk["inherent_impact"],
+                    ("Low", rx.badge("Laag", color_scheme="green", variant="soft", size="1")),
+                    ("Medium", rx.badge("Gemiddeld", color_scheme="yellow", variant="soft", size="1")),
+                    ("High", rx.badge("Hoog", color_scheme="orange", variant="soft", size="1")),
+                    ("Critical", rx.badge("Kritiek", color_scheme="red", variant="soft", size="1")),
+                    rx.badge("N/A", color_scheme="gray", variant="soft", size="1"),
+                ),
+                rx.badge(
+                    rx.fragment("Score: ", risk["inherent_risk_score"]),
+                    variant="outline",
+                    size="1",
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def risks_table() -> rx.Component:
     """Risks data table."""
     return rx.table.root(
@@ -625,7 +678,7 @@ def risks_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for risks."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op behandeling"),
             rx.select.content(
@@ -639,6 +692,7 @@ def filter_bar() -> rx.Component:
             on_change=RiskState.set_filter_quadrant,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -646,16 +700,19 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=RiskState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuw Risico",
             size="2",
             on_click=RiskState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
@@ -687,7 +744,7 @@ def risks_content() -> rx.Component:
         # Filter bar
         filter_bar(),
 
-        # Table
+        # Table (desktop)
         rx.box(
             rx.card(
                 risks_table(),
@@ -695,6 +752,26 @@ def risks_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    RiskState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        RiskState.risks.length() > 0,
+                        rx.foreach(RiskState.risks, risk_mobile_card),
+                        rx.center(rx.text("Geen risico's gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Dialogs

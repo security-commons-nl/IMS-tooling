@@ -240,7 +240,7 @@ def scope_form_dialog() -> rx.Component:
                                 margin_bottom="8px",
                             ),
 
-                            rx.hstack(
+                            rx.flex(
                                 rx.vstack(
                                     rx.text("Beschikbaarheid", size="2", weight="medium"),
                                     rx.select.root(
@@ -257,6 +257,7 @@ def scope_form_dialog() -> rx.Component:
                                     ),
                                     align_items="start",
                                     flex="1",
+                                    min_width="140px",
                                 ),
                                 rx.vstack(
                                     rx.text("Integriteit", size="2", weight="medium"),
@@ -274,6 +275,7 @@ def scope_form_dialog() -> rx.Component:
                                     ),
                                     align_items="start",
                                     flex="1",
+                                    min_width="140px",
                                 ),
                                 rx.vstack(
                                     rx.text("Vertrouwelijkheid", size="2", weight="medium"),
@@ -291,15 +293,17 @@ def scope_form_dialog() -> rx.Component:
                                     ),
                                     align_items="start",
                                     flex="1",
+                                    min_width="140px",
                                 ),
                                 width="100%",
-                                spacing="2",
+                                wrap="wrap",
+                                gap="2",
                             ),
 
                             rx.divider(margin_y="12px"),
                             rx.text("BCM Recovery Doelen", weight="bold", size="3", margin_bottom="8px"),
 
-                            rx.hstack(
+                            rx.flex(
                                 rx.vstack(
                                     rx.text("RTO (uren)", size="2", weight="medium"),
                                     rx.input(
@@ -311,6 +315,7 @@ def scope_form_dialog() -> rx.Component:
                                     rx.text("Recovery Time Objective", size="1", color="gray"),
                                     align_items="start",
                                     flex="1",
+                                    min_width="140px",
                                 ),
                                 rx.vstack(
                                     rx.text("RPO (uren)", size="2", weight="medium"),
@@ -323,6 +328,7 @@ def scope_form_dialog() -> rx.Component:
                                     rx.text("Recovery Point Objective", size="1", color="gray"),
                                     align_items="start",
                                     flex="1",
+                                    min_width="140px",
                                 ),
                                 rx.vstack(
                                     rx.text("MTPD (uren)", size="2", weight="medium"),
@@ -335,9 +341,11 @@ def scope_form_dialog() -> rx.Component:
                                     rx.text("Max Tolerable Downtime", size="1", color="gray"),
                                     align_items="start",
                                     flex="1",
+                                    min_width="140px",
                                 ),
                                 width="100%",
-                                spacing="2",
+                                wrap="wrap",
+                                gap="2",
                             ),
 
                             align_items="start",
@@ -376,7 +384,7 @@ def scope_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="600px",
+            max_width=rx.breakpoints(initial="95vw", md="600px"),
         ),
         open=ScopeState.show_form_dialog,
     )
@@ -513,6 +521,50 @@ def scope_row(scope: dict) -> rx.Component:
     )
 
 
+def scope_mobile_card(scope: dict) -> rx.Component:
+    """Mobile card view for a single scope."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(scope["name"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: ScopeState.open_edit_dialog(scope["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: ScopeState.open_delete_dialog(scope["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(scope["description"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                type_badge(scope["type"]),
+                rx.text(scope["owner"], size="1", color="gray"),
+                rx.cond(
+                    scope["is_active"],
+                    rx.badge("Actief", color_scheme="green", variant="soft", size="1"),
+                    rx.badge("Inactief", color_scheme="gray", variant="soft", size="1"),
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def scopes_table() -> rx.Component:
     """Scopes data table."""
     return rx.table.root(
@@ -573,7 +625,7 @@ def scopes_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for scopes."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op type"),
             rx.select.content(
@@ -589,6 +641,7 @@ def filter_bar() -> rx.Component:
             on_change=ScopeState.set_filter_type,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -596,22 +649,25 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=ScopeState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuwe Scope",
             size="2",
             on_click=ScopeState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
 def stat_cards() -> rx.Component:
     """Statistics cards."""
-    return rx.hstack(
+    return rx.grid(
         rx.card(
             rx.hstack(
                 rx.icon("building-2", size=20, color="var(--purple-9)"),
@@ -677,6 +733,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
+        columns=rx.breakpoints(initial="2", sm="3", md="5"),
         spacing="3",
         width="100%",
     )
@@ -710,6 +767,7 @@ def scopes_content() -> rx.Component:
         stat_cards(),
         filter_bar(),
 
+        # Table (desktop)
         rx.box(
             rx.card(
                 scopes_table(),
@@ -717,6 +775,26 @@ def scopes_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    ScopeState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        ScopeState.scopes.length() > 0,
+                        rx.foreach(ScopeState.scopes, scope_mobile_card),
+                        rx.center(rx.text("Geen scopes gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Dialogs

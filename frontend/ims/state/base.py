@@ -19,6 +19,17 @@ class BaseState(rx.State):
     toast_message: str = ""
     toast_type: str = "info"  # info, success, error, warning
 
+    # Mobile sidebar
+    sidebar_open: bool = False
+
+    def toggle_sidebar(self):
+        """Toggle mobile sidebar drawer."""
+        self.sidebar_open = not self.sidebar_open
+
+    def close_sidebar(self):
+        """Close mobile sidebar drawer."""
+        self.sidebar_open = False
+
     def set_loading(self, loading: bool):
         """Set loading state."""
         self.is_loading = loading

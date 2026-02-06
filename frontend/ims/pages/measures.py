@@ -70,6 +70,44 @@ def measure_row(measure: dict) -> rx.Component:
     )
 
 
+def measure_mobile_card(measure: dict) -> rx.Component:
+    """Mobile card view for a single measure."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(measure["name"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: MeasureState.open_edit_dialog(measure["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: MeasureState.open_delete_dialog(measure["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(measure["description"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                control_type_badge(measure["control_type"]),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def measures_table() -> rx.Component:
     """Measures data table."""
     return rx.table.root(
@@ -121,20 +159,23 @@ def measures_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for measures."""
-    return rx.hstack(
+    return rx.flex(
         rx.input(
             placeholder="Zoek maatregel...",
-            width="250px",
+            class_name="w-full md:w-auto",
+            style={"min_width": "200px"},
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuwe Maatregel",
             size="2",
             on_click=MeasureState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
@@ -253,7 +294,7 @@ def measure_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="550px",
+            max_width=rx.breakpoints(initial="95vw", md="550px"),
         ),
         open=MeasureState.show_form_dialog,
     )
@@ -312,6 +353,7 @@ def measures_content() -> rx.Component:
         ),
         stat_cards(),
         filter_bar(),
+        # Table (desktop)
         rx.box(
             rx.card(
                 measures_table(),
@@ -319,6 +361,26 @@ def measures_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    MeasureState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        MeasureState.measures.length() > 0,
+                        rx.foreach(MeasureState.measures, measure_mobile_card),
+                        rx.center(rx.text("Geen maatregelen gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
         
         # Dialogs

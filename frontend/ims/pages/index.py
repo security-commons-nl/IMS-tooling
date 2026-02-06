@@ -64,7 +64,7 @@ def dashboard_content() -> rx.Component:
             stat_card("Te Mitigeren", RiskState.mitigate_risks.length(), "shield-alert", "red"),
             stat_card("Zekerheid", RiskState.assurance_risks.length(), "shield-check", "blue"),
             stat_card("Geaccepteerd", RiskState.accept_risks.length(), "circle-check", "green"),
-            columns="4",
+            columns=rx.breakpoints(initial="1", sm="2", md="4"),
             spacing="4",
             width="100%",
         ),
@@ -84,7 +84,7 @@ def dashboard_content() -> rx.Component:
             rx.card(
                 rx.vstack(
                     rx.heading("Snelle Acties", size="4"),
-                    rx.hstack(
+                    rx.flex(
                         rx.button(
                             rx.icon("plus", size=16),
                             "Nieuw Risico",
@@ -101,7 +101,8 @@ def dashboard_content() -> rx.Component:
                             variant="soft",
                             color_scheme="red",
                         ),
-                        spacing="2",
+                        wrap="wrap",
+                        gap="2",
                     ),
                     align_items="start",
                     spacing="3",

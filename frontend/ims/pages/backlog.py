@@ -315,7 +315,7 @@ def backlog_page() -> rx.Component:
     """Main backlog page with Kanban board."""
     return layout(
         rx.vstack(
-            rx.hstack(
+            rx.flex(
                 rx.vstack(
                     rx.text("Productbacklog", size="1", color="gray"),
                     rx.text(
@@ -326,21 +326,24 @@ def backlog_page() -> rx.Component:
                     spacing="0",
                     align_items="start",
                 ),
-                rx.spacer(),
+                rx.spacer(class_name="hidden md:block"),
                 rx.select(
                     ["ALLE", "Technisch", "Functioneel", "Proces", "Tooling", "Artificial Intelligence", "Overig"],
                     value=BacklogState.filter_type,
                     on_change=BacklogState.set_filter_type,
                     placeholder="Type",
                     size="2",
+                    class_name="w-full md:w-auto",
                 ),
                 rx.button(
                     rx.icon("plus", size=16),
                     "Nieuw Verzoek",
                     on_click=BacklogState.open_create_dialog,
+                    class_name="w-full md:w-auto",
                 ),
+                wrap="wrap",
+                gap="3",
                 width="100%",
-                spacing="3",
                 align_items="center",
             ),
             

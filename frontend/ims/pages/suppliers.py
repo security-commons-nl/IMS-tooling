@@ -85,7 +85,7 @@ def supplier_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Interne Eigenaar *", size="2", weight="medium"),
                         rx.input(
@@ -96,6 +96,7 @@ def supplier_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Gekoppeld aan", size="2", weight="medium"),
@@ -116,8 +117,10 @@ def supplier_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -126,7 +129,7 @@ def supplier_form_dialog() -> rx.Component:
                 # Contact info
                 rx.text("Contactpersoon Leverancier", weight="bold", size="3"),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Contactpersoon", size="2", weight="medium"),
                         rx.input(
@@ -137,6 +140,7 @@ def supplier_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("E-mail", size="2", weight="medium"),
@@ -149,8 +153,10 @@ def supplier_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -176,7 +182,7 @@ def supplier_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="550px",
+            max_width=rx.breakpoints(initial="95vw", md="550px"),
         ),
         open=SupplierState.show_form_dialog,
     )
@@ -276,6 +282,52 @@ def supplier_row(supplier: dict) -> rx.Component:
     )
 
 
+def supplier_mobile_card(supplier: dict) -> rx.Component:
+    """Mobile card view for a single supplier."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(supplier["name"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: SupplierState.open_edit_dialog(supplier["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: SupplierState.open_delete_dialog(supplier["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.cond(
+                supplier["vendor_contact_name"],
+                rx.text(supplier["vendor_contact_name"], size="1", color="gray"),
+                rx.text("-", size="1", color="gray"),
+            ),
+            rx.hstack(
+                rx.badge("Actief", color_scheme="green", variant="soft", size="1"),
+                rx.cond(
+                    supplier["owner"],
+                    rx.text(supplier["owner"], size="1", color="gray"),
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def suppliers_table() -> rx.Component:
     """Suppliers data table."""
     return rx.table.root(
@@ -332,20 +384,23 @@ def suppliers_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for suppliers."""
-    return rx.hstack(
+    return rx.flex(
         rx.input(
             placeholder="Zoek leverancier...",
-            width="250px",
+            class_name="w-full md:w-auto",
+            style={"min_width": "200px"},
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuwe Leverancier",
             size="2",
             on_click=SupplierState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
@@ -377,7 +432,7 @@ def suppliers_content() -> rx.Component:
             stat_card("Totaal Leveranciers", SupplierState.total_suppliers, "building-2", "blue"),
             stat_card("Actieve Contracten", SupplierState.active_contracts, "file-check", "green"),
             stat_card("Binnenkort Verlopend", SupplierState.expiring_soon, "clock", "orange"),
-            columns="3",
+            columns=rx.breakpoints(initial="1", sm="2", md="3"),
             spacing="4",
             width="100%",
         ),
@@ -389,11 +444,31 @@ def suppliers_content() -> rx.Component:
             margin_top="16px",
         ),
 
-        # Table
+        # Table (desktop)
         rx.box(
             rx.card(suppliers_table(), padding="0"),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    SupplierState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        SupplierState.suppliers.length() > 0,
+                        rx.foreach(SupplierState.suppliers, supplier_mobile_card),
+                        rx.center(rx.text("Geen leveranciers gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Dialogs

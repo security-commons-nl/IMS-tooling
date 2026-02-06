@@ -90,6 +90,46 @@ def control_row(control: dict) -> rx.Component:
     )
 
 
+def control_mobile_card(control: dict) -> rx.Component:
+    """Mobile card view for a single control."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(control["title"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: ControlState.open_edit_dialog(control["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: ControlState.open_delete_dialog(control["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(control["description"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                status_badge(control["status"]),
+                control_type_badge(control["control_type"]),
+                rx.text(control["scope_name"], size="1", color="gray"),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def controls_table() -> rx.Component:
     """Controls data table."""
     return rx.table.root(
@@ -143,7 +183,7 @@ def controls_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for controls."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op status"),
             rx.select.content(
@@ -156,6 +196,7 @@ def filter_bar() -> rx.Component:
             on_change=ControlState.set_filter_status,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -163,22 +204,25 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=ControlState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuwe Control",
             size="2",
             on_click=ControlState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
 def stat_cards() -> rx.Component:
     """Statistics cards."""
-    return rx.hstack(
+    return rx.grid(
         rx.card(
             rx.hstack(
                 rx.icon("file-pen", size=20, color="var(--gray-9)"),
@@ -218,6 +262,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
+        columns=rx.breakpoints(initial="1", sm="3"),
         spacing="3",
         width="100%",
     )
@@ -279,7 +324,7 @@ def control_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Status", size="2", weight="medium"),
                         rx.select.root(
@@ -294,6 +339,7 @@ def control_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Type", size="2", weight="medium"),
@@ -309,8 +355,10 @@ def control_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -439,7 +487,7 @@ def control_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="550px",
+            max_width=rx.breakpoints(initial="95vw", md="550px"),
         ),
         open=ControlState.show_form_dialog,
     )
@@ -498,6 +546,7 @@ def controls_content() -> rx.Component:
         ),
         stat_cards(),
         filter_bar(),
+        # Table (desktop)
         rx.box(
             rx.card(
                 controls_table(),
@@ -505,6 +554,26 @@ def controls_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    ControlState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        ControlState.controls.length() > 0,
+                        rx.foreach(ControlState.controls, control_mobile_card),
+                        rx.center(rx.text("Geen controls gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Dialogs

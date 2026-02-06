@@ -81,6 +81,25 @@ def assessment_row(assessment: dict) -> rx.Component:
     )
 
 
+def assessment_mobile_card(assessment: dict) -> rx.Component:
+    """Mobile card view for a single assessment."""
+    return rx.card(
+        rx.vstack(
+            rx.text(assessment["title"], weight="medium", size="2"),
+            rx.text(assessment["description"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                type_badge(assessment["type"]),
+                status_badge(assessment["status"]),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def assessments_table() -> rx.Component:
     """Assessments data table."""
     return rx.table.root(
@@ -132,7 +151,7 @@ def assessments_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for assessments."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op type"),
             rx.select.content(
@@ -146,6 +165,7 @@ def filter_bar() -> rx.Component:
             on_change=AssessmentState.set_filter_type,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.select.root(
             rx.select.trigger(placeholder="Filter op status"),
@@ -159,6 +179,7 @@ def filter_bar() -> rx.Component:
             on_change=AssessmentState.set_filter_status,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -166,21 +187,24 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=AssessmentState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuw Assessment",
             size="2",
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
 def stat_cards() -> rx.Component:
     """Statistics cards."""
-    return rx.hstack(
+    return rx.grid(
         rx.card(
             rx.hstack(
                 rx.icon("circle-play", size=20, color="var(--blue-9)"),
@@ -207,6 +231,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
+        columns=rx.breakpoints(initial="1", sm="2"),
         spacing="3",
         width="100%",
     )
@@ -226,6 +251,7 @@ def assessments_content() -> rx.Component:
         ),
         stat_cards(),
         filter_bar(),
+        # Table (desktop)
         rx.box(
             rx.card(
                 assessments_table(),
@@ -233,6 +259,26 @@ def assessments_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    AssessmentState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        AssessmentState.assessments.length() > 0,
+                        rx.foreach(AssessmentState.assessments, assessment_mobile_card),
+                        rx.center(rx.text("Geen assessments gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
         width="100%",
         spacing="4",

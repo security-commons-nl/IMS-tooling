@@ -86,6 +86,54 @@ def incident_row(incident: dict) -> rx.Component:
     )
 
 
+def incident_mobile_card(incident: dict) -> rx.Component:
+    """Mobile card view for a single incident."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(incident["title"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: IncidentState.open_edit_dialog(incident["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: IncidentState.open_delete_dialog(incident["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(incident["description"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                severity_badge(incident["severity"]),
+                status_badge(incident["status"]),
+                rx.cond(
+                    incident["is_data_breach"],
+                    rx.badge(
+                        rx.hstack(rx.icon("triangle-alert", size=10), rx.text("Datalek"), spacing="1"),
+                        color_scheme="red",
+                        variant="surface",
+                        size="1",
+                    ),
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def incidents_table() -> rx.Component:
     """Incidents data table."""
     return rx.table.root(
@@ -137,7 +185,7 @@ def incidents_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for incidents."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op status"),
             rx.select.content(
@@ -150,6 +198,7 @@ def filter_bar() -> rx.Component:
             on_change=IncidentState.set_filter_status,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.select.root(
             rx.select.trigger(placeholder="Datalek"),
@@ -162,6 +211,7 @@ def filter_bar() -> rx.Component:
             on_change=IncidentState.set_filter_data_breach,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -169,23 +219,26 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=IncidentState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Meld Incident",
             size="2",
             color_scheme="red",
             on_click=IncidentState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
 def stat_cards() -> rx.Component:
     """Statistics cards."""
-    return rx.hstack(
+    return rx.grid(
         rx.card(
             rx.hstack(
                 rx.icon("circle-alert", size=20, color="var(--orange-9)"),
@@ -212,6 +265,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
+        columns=rx.breakpoints(initial="1", sm="2"),
         spacing="3",
         width="100%",
     )
@@ -294,7 +348,7 @@ def incident_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Ernst", size="2", weight="medium"),
                         rx.select.root(
@@ -310,6 +364,7 @@ def incident_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Status", size="2", weight="medium"),
@@ -325,8 +380,10 @@ def incident_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -369,7 +426,7 @@ def incident_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="600px",
+            max_width=rx.breakpoints(initial="95vw", md="600px"),
         ),
         open=IncidentState.show_form_dialog,
     )
@@ -429,6 +486,7 @@ def incidents_content() -> rx.Component:
         data_breach_warning(),
         stat_cards(),
         filter_bar(),
+        # Table (desktop)
         rx.box(
             rx.card(
                 incidents_table(),
@@ -436,6 +494,26 @@ def incidents_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    IncidentState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        IncidentState.incidents.length() > 0,
+                        rx.foreach(IncidentState.incidents, incident_mobile_card),
+                        rx.center(rx.text("Geen incidenten gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
         
         # Dialogs

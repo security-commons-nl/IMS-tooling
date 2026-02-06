@@ -64,6 +64,49 @@ def policy_row(policy: dict) -> rx.Component:
     )
 
 
+def policy_mobile_card(policy: dict) -> rx.Component:
+    """Mobile card view for a single policy."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(policy["title"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: PolicyState.open_edit_dialog(policy["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: PolicyState.open_delete_dialog(policy["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(policy["content"], size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                state_badge(policy["state"]),
+                rx.badge(
+                    rx.fragment("v", policy["version"]),
+                    variant="outline",
+                    size="1",
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def policies_table() -> rx.Component:
     """Policies data table."""
     return rx.table.root(
@@ -115,7 +158,7 @@ def policies_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for policies."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op status"),
             rx.select.content(
@@ -130,6 +173,7 @@ def filter_bar() -> rx.Component:
             on_change=PolicyState.set_filter_state,
             size="2",
             default_value="ALLE",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -137,22 +181,25 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=PolicyState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuw Beleid",
             size="2",
             on_click=PolicyState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
 def stat_cards() -> rx.Component:
     """Statistics cards."""
-    return rx.hstack(
+    return rx.grid(
         rx.card(
             rx.hstack(
                 rx.icon("file-pen", size=20, color="var(--gray-9)"),
@@ -192,6 +239,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
+        columns=rx.breakpoints(initial="1", sm="3"),
         spacing="3",
         width="100%",
     )
@@ -253,7 +301,7 @@ def policy_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Versie", size="2", weight="medium"),
                         rx.input(
@@ -264,6 +312,7 @@ def policy_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Status", size="2", weight="medium"),
@@ -281,8 +330,10 @@ def policy_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -308,7 +359,7 @@ def policy_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="600px",
+            max_width=rx.breakpoints(initial="95vw", md="600px"),
         ),
         open=PolicyState.show_form_dialog,
     )
@@ -367,6 +418,7 @@ def policies_content() -> rx.Component:
         ),
         stat_cards(),
         filter_bar(),
+        # Table (desktop)
         rx.box(
             rx.card(
                 policies_table(),
@@ -374,6 +426,26 @@ def policies_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    PolicyState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        PolicyState.policies.length() > 0,
+                        rx.foreach(PolicyState.policies, policy_mobile_card),
+                        rx.center(rx.text("Geen beleidsdocumenten gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
         
         # Dialogs

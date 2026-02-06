@@ -5,3 +5,14 @@ a[href*="reflex.dev"] {
     display: none !important;
     visibility: hidden !important;
 }
+
+/* Mobile touch targets */
+@media (max-width: 768px) {
+    button, [role="button"], a[href] {
+        min-height: 40px;
+    }
+    .rt-IconButton {
+        min-width: 36px;
+        min-height: 36px;
+    }
+}

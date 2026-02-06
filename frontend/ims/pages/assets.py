@@ -113,7 +113,7 @@ def asset_form_dialog() -> rx.Component:
                         width="100%",
                     ),
 
-                    rx.hstack(
+                    rx.flex(
                         rx.vstack(
                             rx.text("Eigenaar *", size="2", weight="medium"),
                             rx.input(
@@ -124,6 +124,7 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
                         rx.vstack(
                             rx.text("Onderdeel van", size="2", weight="medium"),
@@ -144,8 +145,10 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
-                        spacing="3",
+                        wrap="wrap",
+                        gap="3",
                         width="100%",
                     ),
 
@@ -154,7 +157,7 @@ def asset_form_dialog() -> rx.Component:
                     # Asset specific
                     rx.text("Asset Details", weight="bold", size="3"),
 
-                    rx.hstack(
+                    rx.flex(
                         rx.vstack(
                             rx.text("Asset Type *", size="2", weight="medium"),
                             rx.select.root(
@@ -173,6 +176,7 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
                         rx.vstack(
                             rx.text("Locatie", size="2", weight="medium"),
@@ -184,8 +188,10 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
-                        spacing="3",
+                        wrap="wrap",
+                        gap="3",
                         width="100%",
                     ),
 
@@ -194,7 +200,7 @@ def asset_form_dialog() -> rx.Component:
                     # Classification
                     rx.text("Classificatie (BIV)", weight="bold", size="3"),
 
-                    rx.hstack(
+                    rx.flex(
                         rx.vstack(
                             rx.text("Data Classificatie", size="2", weight="medium"),
                             rx.select.root(
@@ -210,6 +216,7 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
                         rx.vstack(
                             rx.text("Beschikbaarheid", size="2", weight="medium"),
@@ -226,12 +233,14 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
-                        spacing="3",
+                        wrap="wrap",
+                        gap="3",
                         width="100%",
                     ),
 
-                    rx.hstack(
+                    rx.flex(
                         rx.vstack(
                             rx.text("Integriteit", size="2", weight="medium"),
                             rx.select.root(
@@ -247,6 +256,7 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
                         rx.vstack(
                             rx.text("Vertrouwelijkheid", size="2", weight="medium"),
@@ -263,8 +273,10 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
-                        spacing="3",
+                        wrap="wrap",
+                        gap="3",
                         width="100%",
                     ),
 
@@ -273,7 +285,7 @@ def asset_form_dialog() -> rx.Component:
                     # Recovery objectives
                     rx.text("Recovery Doelen (BCM)", weight="bold", size="3"),
 
-                    rx.hstack(
+                    rx.flex(
                         rx.vstack(
                             rx.text("RTO (uren)", size="2", weight="medium"),
                             rx.input(
@@ -285,6 +297,7 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
                         rx.vstack(
                             rx.text("RPO (uren)", size="2", weight="medium"),
@@ -297,8 +310,10 @@ def asset_form_dialog() -> rx.Component:
                             ),
                             align_items="start",
                             flex="1",
+                            min_width="200px",
                         ),
-                        spacing="3",
+                        wrap="wrap",
+                        gap="3",
                         width="100%",
                     ),
 
@@ -328,7 +343,7 @@ def asset_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="600px",
+            max_width=rx.breakpoints(initial="95vw", md="600px"),
         ),
         open=AssetState.show_form_dialog,
     )
@@ -418,6 +433,53 @@ def asset_row(asset: dict) -> rx.Component:
     )
 
 
+def asset_mobile_card(asset: dict) -> rx.Component:
+    """Mobile card view for a single asset."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(asset["name"], weight="medium", size="2", flex="1"),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: AssetState.open_edit_dialog(asset["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: AssetState.open_delete_dialog(asset["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.cond(
+                asset.get("location"),
+                rx.text(asset["location"], size="1", color="gray"),
+                rx.text("Geen locatie", size="1", color="gray"),
+            ),
+            rx.hstack(
+                asset_type_badge(asset.get("asset_type", "")),
+                classification_badge(asset.get("data_classification", "")),
+                rx.cond(
+                    asset.get("owner"),
+                    rx.text(asset["owner"], size="1", color="gray"),
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def assets_table() -> rx.Component:
     """Assets data table."""
     return rx.table.root(
@@ -475,7 +537,7 @@ def assets_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for assets."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Asset Type"),
             rx.select.content(
@@ -490,6 +552,7 @@ def filter_bar() -> rx.Component:
             value=AssetState.filter_asset_type,
             on_change=AssetState.set_filter_asset_type,
             size="2",
+            class_name="w-full md:w-auto",
         ),
         rx.select.root(
             rx.select.trigger(placeholder="Classificatie"),
@@ -503,6 +566,7 @@ def filter_bar() -> rx.Component:
             value=AssetState.filter_classification,
             on_change=AssetState.set_filter_classification,
             size="2",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -510,16 +574,19 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=AssetState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Nieuw Asset",
             size="2",
             on_click=AssetState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
@@ -552,7 +619,7 @@ def assets_content() -> rx.Component:
             stat_card("Hardware", AssetState.hardware_count, "hard-drive", "indigo"),
             stat_card("Software", AssetState.software_count, "app-window", "purple"),
             stat_card("Data", AssetState.data_count, "database", "green"),
-            columns="4",
+            columns=rx.breakpoints(initial="1", sm="2", md="4"),
             spacing="4",
             width="100%",
         ),
@@ -564,11 +631,31 @@ def assets_content() -> rx.Component:
             margin_top="16px",
         ),
 
-        # Table
+        # Table (desktop)
         rx.box(
             rx.card(assets_table(), padding="0"),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    AssetState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        AssetState.filtered_assets.length() > 0,
+                        rx.foreach(AssetState.filtered_assets, asset_mobile_card),
+                        rx.center(rx.text("Geen assets gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Dialogs

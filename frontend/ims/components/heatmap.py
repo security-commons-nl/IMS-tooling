@@ -175,7 +175,7 @@ def risk_heatmap() -> rx.Component:
                         "shield-check",
                     ),
 
-                    columns="2",
+                    columns=rx.breakpoints(initial="1", md="2"),
                     spacing="3",
                     width="100%",
                 ),

@@ -123,7 +123,7 @@ def standard_selector() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for SoA entries."""
-    return rx.hstack(
+    return rx.flex(
         scope_selector(),
         standard_selector(),
         rx.vstack(
@@ -143,6 +143,7 @@ def filter_bar() -> rx.Component:
                 size="2",
             ),
             align_items="start",
+            class_name="w-full md:w-auto",
         ),
         rx.vstack(
             rx.text("Status", size="2", weight="medium"),
@@ -160,16 +161,19 @@ def filter_bar() -> rx.Component:
                 size="2",
             ),
             align_items="start",
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("plus", size=14),
             "Initialiseer SoA",
             variant="soft",
             size="2",
             on_click=ComplianceState.open_init_dialog,
+            class_name="w-full md:w-auto",
         ),
-        spacing="4",
+        wrap="wrap",
+        gap="4",
         width="100%",
         align_items="end",
     )
@@ -241,6 +245,40 @@ def soa_row(entry: dict) -> rx.Component:
             ),
         ),
         _hover={"background": "var(--gray-a3)"},
+    )
+
+
+def soa_mobile_card(entry: dict) -> rx.Component:
+    """Mobile card view for a single SoA entry."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(entry.get("requirement_id", ""), weight="medium", size="2", flex="1"),
+                rx.icon_button(
+                    rx.icon("pencil", size=14),
+                    variant="ghost",
+                    size="1",
+                    on_click=lambda: ComplianceState.open_edit_dialog(entry["id"]),
+                ),
+                width="100%",
+                align="center",
+            ),
+            rx.text(entry.get("justification", ""), size="1", color="gray", no_of_lines=2),
+            rx.hstack(
+                coverage_badge(entry.get("coverage_type", "")),
+                status_badge(entry.get("implementation_status", "")),
+                rx.cond(
+                    entry["is_applicable"],
+                    rx.badge("Toepasbaar", color_scheme="green", variant="soft", size="1"),
+                    rx.badge("N.v.t.", color_scheme="gray", variant="soft", size="1"),
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
     )
 
 
@@ -390,7 +428,7 @@ def edit_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="500px",
+            max_width=rx.breakpoints(initial="95vw", md="500px"),
         ),
         open=ComplianceState.show_edit_dialog,
     )
@@ -447,7 +485,7 @@ def init_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="500px",
+            max_width=rx.breakpoints(initial="95vw", md="500px"),
         ),
         open=ComplianceState.show_init_dialog,
     )
@@ -543,7 +581,7 @@ def compliance_content() -> rx.Component:
                     "triangle-alert",
                     "red",
                 ),
-                columns="4",
+                columns=rx.breakpoints(initial="1", sm="2", md="4"),
                 spacing="4",
                 width="100%",
             ),
@@ -565,7 +603,7 @@ def compliance_content() -> rx.Component:
             margin_top="16px",
         ),
 
-        # Main table
+        # Main table (desktop)
         rx.box(
             rx.card(
                 soa_table(),
@@ -573,6 +611,26 @@ def compliance_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    ComplianceState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        ComplianceState.filtered_entries.length() > 0,
+                        rx.foreach(ComplianceState.filtered_entries, soa_mobile_card),
+                        rx.center(rx.text("Geen SoA entries gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Gaps section

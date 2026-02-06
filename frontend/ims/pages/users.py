@@ -143,6 +143,79 @@ def user_row(user: dict) -> rx.Component:
     )
 
 
+def user_mobile_card(user: dict) -> rx.Component:
+    """Mobile card view for a single user."""
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.avatar(
+                    fallback=rx.cond(
+                        user["full_name"] != None,
+                        user["full_name"].to(str)[0],
+                        user["username"].to(str)[0],
+                    ),
+                    size="2",
+                ),
+                rx.vstack(
+                    rx.text(
+                        rx.cond(
+                            user["full_name"] != None,
+                            user["full_name"],
+                            user["username"],
+                        ),
+                        weight="medium",
+                        size="2",
+                    ),
+                    rx.text(user["email"], size="1", color="gray"),
+                    align_items="start",
+                    spacing="0",
+                    flex="1",
+                ),
+                rx.hstack(
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: UserState.open_edit_dialog(user["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("user-x", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: UserState.open_delete_dialog(user["id"]),
+                    ),
+                    spacing="1",
+                ),
+                width="100%",
+                align="center",
+                spacing="2",
+            ),
+            rx.hstack(
+                status_badge(user["is_active"]),
+                rx.cond(
+                    user["is_superuser"],
+                    rx.badge(
+                        rx.hstack(rx.icon("shield", size=10), rx.text("Super"), spacing="1"),
+                        color_scheme="red",
+                        variant="surface",
+                        size="1",
+                    ),
+                ),
+                rx.cond(
+                    user["department"] != None,
+                    rx.text(user["department"], size="1", color="gray"),
+                ),
+                spacing="2",
+                wrap="wrap",
+            ),
+            spacing="2",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
 def users_table() -> rx.Component:
     """Users data table."""
     return rx.table.root(
@@ -202,7 +275,7 @@ def users_table() -> rx.Component:
 
 def filter_bar() -> rx.Component:
     """Filter bar for users."""
-    return rx.hstack(
+    return rx.flex(
         rx.select.root(
             rx.select.trigger(placeholder="Filter op status"),
             rx.select.content(
@@ -214,6 +287,7 @@ def filter_bar() -> rx.Component:
             on_change=UserState.set_filter_active,
             size="2",
             default_value="ACTIEF",
+            class_name="w-full md:w-auto",
         ),
         rx.button(
             rx.icon("x", size=14),
@@ -221,22 +295,25 @@ def filter_bar() -> rx.Component:
             variant="ghost",
             size="2",
             on_click=UserState.clear_filters,
+            class_name="w-full md:w-auto",
         ),
-        rx.spacer(),
+        rx.spacer(class_name="hidden md:block"),
         rx.button(
             rx.icon("user-plus", size=14),
             "Nieuwe Gebruiker",
             size="2",
             on_click=UserState.open_create_dialog,
+            class_name="w-full md:w-auto",
         ),
+        wrap="wrap",
+        gap="2",
         width="100%",
-        spacing="2",
     )
 
 
 def stat_cards() -> rx.Component:
     """Statistics cards."""
-    return rx.hstack(
+    return rx.grid(
         rx.card(
             rx.hstack(
                 rx.icon("users", size=20, color="var(--blue-9)"),
@@ -276,6 +353,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
+        columns=rx.breakpoints(initial="1", sm="3"),
         spacing="3",
         width="100%",
     )
@@ -316,7 +394,7 @@ def user_form_dialog() -> rx.Component:
                 # Account info section
                 rx.text("Accountgegevens", weight="bold", size="3"),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Gebruikersnaam *", size="2", weight="medium"),
                         rx.input(
@@ -327,6 +405,7 @@ def user_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("E-mail *", size="2", weight="medium"),
@@ -339,8 +418,10 @@ def user_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -361,7 +442,7 @@ def user_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Afdeling", size="2", weight="medium"),
                         rx.input(
@@ -372,6 +453,7 @@ def user_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Functie", size="2", weight="medium"),
@@ -383,8 +465,10 @@ def user_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -406,7 +490,7 @@ def user_form_dialog() -> rx.Component:
                 # Preferences section
                 rx.text("Voorkeuren", weight="bold", size="3"),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Thema", size="2", weight="medium"),
                         rx.select.root(
@@ -421,6 +505,7 @@ def user_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Taal", size="2", weight="medium"),
@@ -435,8 +520,10 @@ def user_form_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                 ),
 
@@ -495,7 +582,7 @@ def user_form_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="600px",
+            max_width=rx.breakpoints(initial="95vw", md="600px"),
         ),
         open=UserState.show_form_dialog,
     )
@@ -592,7 +679,7 @@ def role_assignment_dialog() -> rx.Component:
                 # Add new role section
                 rx.text("Nieuwe Rol Toewijzen", weight="bold", size="3"),
 
-                rx.hstack(
+                rx.flex(
                     rx.vstack(
                         rx.text("Scope", size="2", weight="medium"),
                         rx.select.root(
@@ -611,6 +698,7 @@ def role_assignment_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.vstack(
                         rx.text("Rol", size="2", weight="medium"),
@@ -629,6 +717,7 @@ def role_assignment_dialog() -> rx.Component:
                         ),
                         align_items="start",
                         flex="1",
+                        min_width="200px",
                     ),
                     rx.button(
                         rx.icon("plus", size=14),
@@ -637,7 +726,8 @@ def role_assignment_dialog() -> rx.Component:
                         on_click=UserState.assign_role,
                         align_self="end",
                     ),
-                    spacing="3",
+                    wrap="wrap",
+                    gap="3",
                     width="100%",
                     align_items="end",
                 ),
@@ -660,7 +750,7 @@ def role_assignment_dialog() -> rx.Component:
                 margin_top="16px",
             ),
 
-            max_width="700px",
+            max_width=rx.breakpoints(initial="95vw", md="700px"),
         ),
         open=UserState.show_role_dialog,
     )
@@ -734,6 +824,7 @@ def users_content() -> rx.Component:
         stat_cards(),
         filter_bar(),
 
+        # Table (desktop)
         rx.box(
             rx.card(
                 users_table(),
@@ -741,6 +832,26 @@ def users_content() -> rx.Component:
             ),
             width="100%",
             margin_top="16px",
+            class_name="hidden md:block",
+        ),
+        # Mobile cards
+        rx.box(
+            rx.vstack(
+                rx.cond(
+                    UserState.is_loading,
+                    rx.center(rx.spinner(size="2"), padding="40px"),
+                    rx.cond(
+                        UserState.users.length() > 0,
+                        rx.foreach(UserState.users, user_mobile_card),
+                        rx.center(rx.text("Geen gebruikers gevonden", color="gray"), padding="40px"),
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            width="100%",
+            margin_top="16px",
+            class_name="block md:hidden",
         ),
 
         # Dialogs

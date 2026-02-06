@@ -217,7 +217,7 @@ def simulation_tab() -> rx.Component:
                     stat_card("VaR (95%)", SimulationState.var95_formatted, "shield-alert", "orange"),
                     stat_card("VaR (99%)", SimulationState.var99_formatted, "shield-alert", "red"),
                     stat_card("Iteraties", SimulationState.iterations.to_string(), "repeat", "gray"),
-                    columns="4",
+                    columns=rx.breakpoints(initial="1", sm="2", md="4"),
                     spacing="4",
                     width="100%",
                 ),
