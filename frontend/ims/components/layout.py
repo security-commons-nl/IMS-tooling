@@ -151,14 +151,26 @@ def top_bar() -> rx.Component:
 
 
 # ---------------------------------------------------------------------------
-# Drawer (slide-out) — default unpinned navigation
+# Slide-out sidebar panel (no swipe/drag — click only)
 # ---------------------------------------------------------------------------
 
 def nav_drawer() -> rx.Component:
-    """Slide-out navigation drawer with pin button."""
-    return rx.drawer.root(
-        rx.drawer.overlay(),
-        rx.drawer.content(
+    """Slide-out navigation panel. Opens via hamburger, closes via X or overlay click."""
+    return rx.fragment(
+        # Overlay — click to close
+        rx.box(
+            position="fixed",
+            top="0",
+            left="0",
+            width="100vw",
+            height="100vh",
+            background="rgba(0,0,0,0.4)",
+            z_index="19",
+            on_click=BaseState.close_sidebar,
+            display=rx.cond(BaseState.sidebar_open, "block", "none"),
+        ),
+        # Sidebar panel
+        rx.box(
             rx.vstack(
                 # Header
                 rx.hstack(
@@ -223,12 +235,26 @@ def nav_drawer() -> rx.Component:
                 width="100%",
                 align_items="stretch",
             ),
-            background="var(--color-background)",
+            position="fixed",
+            top="0",
+            left="0",
             width="280px",
             height="100vh",
+            background="var(--color-background)",
+            border_right="1px solid var(--gray-a5)",
+            z_index="20",
+            transform=rx.cond(
+                BaseState.sidebar_open,
+                "translateX(0)",
+                "translateX(-100%)",
+            ),
+            transition="transform 0.25s ease",
+            box_shadow=rx.cond(
+                BaseState.sidebar_open,
+                "4px 0 20px rgba(0,0,0,0.1)",
+                "none",
+            ),
         ),
-        open=BaseState.sidebar_open,
-        direction="left",
     )
 
 
