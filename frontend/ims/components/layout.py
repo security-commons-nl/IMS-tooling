@@ -151,26 +151,14 @@ def top_bar() -> rx.Component:
 
 
 # ---------------------------------------------------------------------------
-# Slide-out sidebar panel (no swipe/drag — click only)
+# Drawer (slide-out) — Radix-based, controlled by state
 # ---------------------------------------------------------------------------
 
 def nav_drawer() -> rx.Component:
-    """Slide-out navigation panel. Opens via hamburger, closes via X or overlay click."""
-    return rx.fragment(
-        # Overlay — click to close
-        rx.box(
-            position="fixed",
-            top="0",
-            left="0",
-            width="100vw",
-            height="100vh",
-            background="rgba(0,0,0,0.4)",
-            z_index="19",
-            on_click=BaseState.close_sidebar,
-            display=rx.cond(BaseState.sidebar_open, "block", "none"),
-        ),
-        # Sidebar panel
-        rx.box(
+    """Slide-out navigation drawer. No on_open_change = no swipe/outside-click close."""
+    return rx.drawer.root(
+        rx.drawer.overlay(),
+        rx.drawer.content(
             rx.vstack(
                 # Header
                 rx.hstack(
@@ -235,17 +223,12 @@ def nav_drawer() -> rx.Component:
                 width="100%",
                 align_items="stretch",
             ),
-            position="fixed",
-            top="0",
-            left="0",
+            background="var(--color-background)",
             width="280px",
             height="100vh",
-            background="var(--color-background)",
-            border_right="1px solid var(--gray-a5)",
-            box_shadow="4px 0 20px rgba(0,0,0,0.1)",
-            z_index="20",
-            display=rx.cond(BaseState.sidebar_open, "flex", "none"),
         ),
+        open=BaseState.sidebar_open,
+        direction="left",
     )
 
 
