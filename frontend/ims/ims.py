@@ -21,6 +21,10 @@ from ims.pages.backlog import backlog_page
 from ims.pages.frameworks import frameworks_page
 from ims.pages.users import users_page
 from ims.pages.simulation import simulation_page
+from ims.pages.decisions import decisions_page
+from ims.pages.risk_framework import risk_framework_page
+from ims.pages.in_control import in_control_page
+from ims.pages.policy_principles import policy_principles_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -38,6 +42,11 @@ from ims.state.backlog import BacklogState
 from ims.state.framework import FrameworkState
 from ims.state.user import UserState
 from ims.state.simulation import SimulationState
+from ims.state.decision import DecisionState
+from ims.state.risk_framework import RiskFrameworkState
+from ims.state.in_control import InControlState
+from ims.state.policy_principle import PolicyPrincipleState
+from ims.state.dashboard import DashboardState
 
 
 # Create app
@@ -72,3 +81,7 @@ app.add_page(backlog_page, route="/backlog", title="Backlog - IMS")
 app.add_page(frameworks_page, route="/frameworks", title="Frameworks - IMS")
 app.add_page(users_page, route="/users", title="Gebruikers - IMS")
 app.add_page(simulation_page, route="/simulation", title="Simulatie - IMS")
+app.add_page(decisions_page, route="/decisions", title="Besluiten - IMS")
+app.add_page(risk_framework_page, route="/risk-framework", title="Risicokader - IMS")
+app.add_page(in_control_page, route="/in-control", title="In-Control - IMS")
+app.add_page(policy_principles_page, route="/policy-principles", title="Beleidsuitgangspunten - IMS")

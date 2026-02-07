@@ -498,6 +498,77 @@ class BacklogStatus(str, Enum):
     REJECTED = "Afgewezen"
 
 
+# =============================================================================
+# HIAAT 1: BESLUITLOG (Decision Log)
+# =============================================================================
+
+class DecisionType(str, Enum):
+    """Types of management decisions"""
+    RISK_ACCEPTANCE = "Restrisico-acceptatie"
+    PRIORITIZATION = "Prioritering"
+    DEVIATION = "Afwijking"
+    SCOPE_CHANGE = "Scopewijziging"
+    POLICY_APPROVAL = "Beleidsgoedkeuring"
+
+class DecisionStatus(str, Enum):
+    """Status of a management decision"""
+    ACTIVE = "Actief"
+    EXPIRED = "Verlopen"
+    REVOKED = "Ingetrokken"
+    SUPERSEDED = "Vervangen"
+
+
+# =============================================================================
+# HIAAT 2: SCOPE GOVERNANCE
+# =============================================================================
+
+class ScopeGovernanceStatus(str, Enum):
+    """Governance status of a scope declaration"""
+    CONCEPT = "Concept"
+    ESTABLISHED = "Vastgesteld"
+    EXPIRED = "Verlopen"
+
+
+# =============================================================================
+# HIAAT 3: RISICOKADER (Risk Framework)
+# =============================================================================
+
+class RiskFrameworkStatus(str, Enum):
+    """Status of a risk framework"""
+    DRAFT = "Concept"
+    ACTIVE = "Actief"
+    ARCHIVED = "Gearchiveerd"
+
+
+# =============================================================================
+# HIAAT 4: BEHANDELSTRATEGIE (Treatment Strategy)
+# =============================================================================
+
+class TreatmentStrategy(str, Enum):
+    """Mandatory risk treatment strategy"""
+    AVOID = "Vermijden"
+    REDUCE = "Reduceren"
+    TRANSFER = "Overdragen"
+    ACCEPT = "Accepteren"
+
+
+# =============================================================================
+# HIAAT 5: IN-CONTROL STATUS
+# =============================================================================
+
+class InControlLevel(str, Enum):
+    """In-control assessment level"""
+    IN_CONTROL = "In control"
+    LIMITED_CONTROL = "Beperkt in control"
+    NOT_IN_CONTROL = "Niet in control"
+
+
+# =============================================================================
+# HIAAT 6: BELEID-TRACE
+# =============================================================================
+# (No new enums needed — uses existing PolicyState)
+
+
 class BacklogItem(SQLModel, table=True):
     """
     Backlog item for improvement requests and ideas.
@@ -1213,6 +1284,162 @@ class RiskThreatLink(SQLModel, table=True):
 
 
 # =============================================================================
+# HIAAT 1: BESLUITLOG (Decision Log)
+# =============================================================================
+
+class Decision(SQLModel, table=True):
+    """
+    Formal management decision (DT-besluit).
+    Every significant risk acceptance, prioritization, or deviation
+    must be recorded as an auditable decision.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+
+    # Core fields
+    decision_type: DecisionType
+    decision_text: str
+    decision_maker_id: int = Field(foreign_key="user.id")  # DT role only
+    decision_date: datetime = Field(default_factory=datetime.utcnow)
+
+    # Validity
+    valid_until: Optional[datetime] = None  # Herijkdatum
+    status: DecisionStatus = DecisionStatus.ACTIVE
+
+    # Links (optional — a decision can relate to one or more risks)
+    scope_id: Optional[int] = Field(default=None, foreign_key="scope.id")
+
+    # Audit trail
+    justification: Optional[str] = None
+    conditions: Optional[str] = None  # Voorwaarden bij het besluit
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    risk_links: List["DecisionRiskLink"] = Relationship(back_populates="decision")
+
+
+class DecisionRiskLink(SQLModel, table=True):
+    """Links a Decision to one or more Risks."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    decision_id: int = Field(foreign_key="decision.id")
+    risk_id: int = Field(foreign_key="risk.id")
+
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    decision: Optional["Decision"] = Relationship(back_populates="risk_links")
+
+
+# =============================================================================
+# HIAAT 3: RISICOKADER (Risk Framework)
+# =============================================================================
+
+class RiskFramework(SQLModel, table=True):
+    """
+    Risk framework that defines how risks are assessed.
+    Contains impact definitions, likelihood definitions,
+    risk tolerance, and decision rules.
+    One active framework per tenant/scope at a time.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+    scope_id: Optional[int] = Field(default=None, foreign_key="scope.id")
+
+    name: str  # e.g. "IMS Risicokader 2025"
+    version: int = 1
+    status: RiskFrameworkStatus = RiskFrameworkStatus.DRAFT
+
+    # Impact definitions (JSON)
+    # {"LOW": {"description": "...", "financial": "< 10k", "cia": "..."}, ...}
+    impact_definitions: str  # JSON
+
+    # Likelihood definitions (JSON)
+    # {"LOW": {"description": "...", "frequency": "< 1x per 5 jaar"}, ...}
+    likelihood_definitions: str  # JSON
+
+    # Risk tolerance / appetite per level
+    # {"threshold": "HIGH", "description": "Risks above HIGH require DT decision"}
+    risk_tolerance: str  # JSON
+
+    # Decision rules
+    # {"dt_decision_required_above": 9, "auto_accept_below": 2}
+    decision_rules: str  # JSON
+
+    # Ownership
+    established_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    established_date: Optional[datetime] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# =============================================================================
+# HIAAT 5: IN-CONTROL STATUS
+# =============================================================================
+
+class InControlAssessment(SQLModel, table=True):
+    """
+    In-control status per scope, assessed periodically.
+    Auto-calculated but must be formally established by DT.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+    scope_id: int = Field(foreign_key="scope.id")
+
+    # Assessment result
+    level: InControlLevel = InControlLevel.NOT_IN_CONTROL
+    domain: Optional[str] = None  # "ISMS", "PIMS", "BCMS" or None for integrated
+
+    # Supporting data (snapshot at time of assessment)
+    open_risks_count: int = 0
+    high_risks_count: int = 0
+    missing_controls_count: int = 0
+    open_findings_count: int = 0
+    overdue_actions_count: int = 0
+
+    # Formal assessment
+    justification: str  # Motivatie bij "in control"
+    assessed_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    established_by_id: Optional[int] = Field(default=None, foreign_key="user.id")  # DT
+    established_date: Optional[datetime] = None
+
+    # Period
+    assessment_date: datetime = Field(default_factory=datetime.utcnow)
+    valid_until: Optional[datetime] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# =============================================================================
+# HIAAT 6: BELEID-TRACE (Policy Principles)
+# =============================================================================
+
+class PolicyPrinciple(SQLModel, table=True):
+    """
+    A normative principle derived from a Policy.
+    Creates the traceability chain: Policy → Principle → Risk → Control.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+    policy_id: int = Field(foreign_key="policy.id")
+
+    code: Optional[str] = None  # e.g. "BP-001"
+    title: str
+    description: Optional[str] = None
+
+    # Ordering
+    order: int = 0
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    policy: Optional["Policy"] = Relationship(back_populates="principles")
+
+
+# =============================================================================
 # GOVERNANCE ENTITIES
 # =============================================================================
 
@@ -1315,6 +1542,14 @@ class Scope(SQLModel, table=True):
     rto_hours: Optional[int] = None  # Recovery Time Objective
     rpo_hours: Optional[int] = None  # Recovery Point Objective
     mtpd_hours: Optional[int] = None  # Maximum Tolerable Period of Disruption
+
+    # --- Governance (Hiaat 2: Bestuurlijke scope-objecten) ---
+    governance_status: Optional[ScopeGovernanceStatus] = None  # Concept / Vastgesteld / Verlopen
+    scope_motivation: Optional[str] = None  # Why in/out of scope
+    in_scope: bool = True  # True = in scope, False = explicitly out of scope
+    validity_year: Optional[int] = None  # e.g. 2025
+    established_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    established_date: Optional[datetime] = None
 
     # --- Shared Services Support ---
     is_shared: bool = False  # Can this scope be shared with consuming tenants?
@@ -1523,6 +1758,17 @@ class Risk(SQLModel, table=True):
 
     # Justification for the chosen approach
     treatment_justification: Optional[str] = None
+
+    # ==========================================================================
+    # HIAAT 4: BEHANDELSTRATEGIE (mandatory treatment strategy)
+    # ==========================================================================
+    treatment_strategy: Optional[TreatmentStrategy] = None  # Vermijden/Reduceren/Overdragen/Accepteren
+    transfer_party: Optional[str] = None  # Leverancier/verzekeraar (required if strategy=Transfer)
+
+    # ==========================================================================
+    # HIAAT 6: BELEID-TRACE (link to policy principle)
+    # ==========================================================================
+    policy_principle_id: Optional[int] = Field(default=None, foreign_key="policyprinciple.id")
 
     # ==========================================================================
     # RISK ACCEPTANCE
@@ -3060,6 +3306,9 @@ class Policy(SQLModel, table=True):
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Hiaat 6: Policy Principles relationship
+    principles: List["PolicyPrinciple"] = Relationship(back_populates="policy")
 
 
 class OrganizationContext(SQLModel, table=True):

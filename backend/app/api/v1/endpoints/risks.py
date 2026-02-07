@@ -19,6 +19,9 @@ from app.models.core_models import (
     Status,
     AttentionQuadrant,
     MitigationApproach,
+    Scope,
+    ScopeGovernanceStatus,
+    TreatmentStrategy,
 )
 from app.services.knowledge_service import knowledge_service
 import logging
@@ -64,6 +67,25 @@ async def create_risk(
     session: AsyncSession = Depends(get_session),
 ):
     """Create a new risk. Also indexes in knowledge base for AI RAG."""
+    # Hiaat 2: Block creation in expired scope
+    if risk.scope_id:
+        scope_result = await session.execute(
+            select(Scope).where(Scope.id == risk.scope_id)
+        )
+        scope = scope_result.scalars().first()
+        if scope and scope.governance_status == ScopeGovernanceStatus.EXPIRED:
+            raise HTTPException(
+                status_code=400,
+                detail="Kan geen risico aanmaken in een verlopen scope. Vernieuw de scope eerst."
+            )
+
+    # Hiaat 4: Validate treatment strategy constraints
+    if risk.treatment_strategy == TreatmentStrategy.TRANSFER and not risk.transfer_party:
+        raise HTTPException(
+            status_code=400,
+            detail="Bij overdragen is een leverancier/verzekeraar verplicht."
+        )
+
     # Calculate inherent risk score
     level_to_score = {RiskLevel.LOW: 1, RiskLevel.MEDIUM: 2, RiskLevel.HIGH: 3, RiskLevel.CRITICAL: 4}
     risk.inherent_risk_score = (

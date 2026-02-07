@@ -47,6 +47,7 @@ class RiskState(rx.State):
     form_inherent_impact: str = "MEDIUM"
     form_attention_quadrant: str = "NONE"
     form_treatment_justification: str = ""
+    form_treatment_strategy: str = ""
 
     # Control linkage
     linked_controls: List[Dict[str, Any]] = []
@@ -212,6 +213,7 @@ class RiskState(rx.State):
                 quadrant = risk.get("attention_quadrant")
                 self.form_attention_quadrant = quadrant_api_to_form.get(quadrant, "NONE") if quadrant else "NONE"
                 self.form_treatment_justification = risk.get("treatment_justification", "") or ""
+                self.form_treatment_strategy = risk.get("treatment_strategy", "") or ""
                 self.show_form_dialog = True
 
                 # Load linked and all controls
@@ -232,6 +234,7 @@ class RiskState(rx.State):
         self.form_inherent_impact = "MEDIUM"
         self.form_attention_quadrant = "NONE"
         self.form_treatment_justification = ""
+        self.form_treatment_strategy = ""
         self.error = ""
         self.success_message = ""
 
@@ -258,6 +261,9 @@ class RiskState(rx.State):
 
     def set_form_treatment_justification(self, value: str):
         self.form_treatment_justification = value
+
+    def set_form_treatment_strategy(self, value: str):
+        self.form_treatment_strategy = value
 
     # ==========================================================================
     # LINKING METHODS
@@ -347,6 +353,8 @@ class RiskState(rx.State):
             risk_data["attention_quadrant"] = quadrant_form_to_api.get(self.form_attention_quadrant, self.form_attention_quadrant)
         if self.form_treatment_justification:
             risk_data["treatment_justification"] = self.form_treatment_justification
+        if self.form_treatment_strategy and self.form_treatment_strategy != "NONE":
+            risk_data["treatment_strategy"] = self.form_treatment_strategy
 
         try:
             if self.is_editing and self.editing_risk_id:

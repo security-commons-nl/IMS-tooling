@@ -13,9 +13,11 @@ from app.models.core_models import (
     Scope,
     ScopeType,
     ScopeDependency,
+    ScopeGovernanceStatus,
     ClassificationLevel,
     AssetType,
 )
+from datetime import datetime
 
 router = APIRouter()
 crud_scope = CRUDBase(Scope)
@@ -264,3 +266,52 @@ async def get_scope_dependents(
         ).where(ScopeDependency.provider_id == scope_id)
     )
     return result.scalars().all()
+
+
+# =============================================================================
+# HIAAT 2: SCOPE GOVERNANCE (Establish / Expire)
+# =============================================================================
+
+@router.post("/{scope_id}/establish", response_model=Scope)
+async def establish_scope(
+    scope_id: int,
+    established_by_id: int,
+    validity_year: int,
+    motivation: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Formally establish a scope (DT action).
+    Sets governance_status to 'Vastgesteld'.
+    """
+    db_scope = await crud_scope.get_or_404(session, scope_id)
+
+    return await crud_scope.update(session, db_obj=db_scope, obj_in={
+        "governance_status": ScopeGovernanceStatus.ESTABLISHED,
+        "established_by_id": established_by_id,
+        "established_date": datetime.utcnow(),
+        "validity_year": validity_year,
+        "scope_motivation": motivation,
+    })
+
+
+@router.post("/{scope_id}/expire", response_model=Scope)
+async def expire_scope(
+    scope_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Mark a scope as expired.
+    No new risks can be created in an expired scope.
+    """
+    db_scope = await crud_scope.get_or_404(session, scope_id)
+
+    if db_scope.governance_status != ScopeGovernanceStatus.ESTABLISHED:
+        raise HTTPException(
+            status_code=400,
+            detail="Alleen vastgestelde scopes kunnen verlopen."
+        )
+
+    return await crud_scope.update(session, db_obj=db_scope, obj_in={
+        "governance_status": ScopeGovernanceStatus.EXPIRED,
+    })

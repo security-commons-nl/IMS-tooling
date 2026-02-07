@@ -4,6 +4,7 @@ Dashboard Page - Main landing page after login
 import reflex as rx
 from ims.state.auth import AuthState
 from ims.state.risk import RiskState
+from ims.state.dashboard import DashboardState
 from ims.components.layout import layout
 from ims.components.heatmap import risk_heatmap
 
@@ -56,6 +57,37 @@ def dashboard_content() -> rx.Component:
             ),
             width="100%",
             padding_bottom="24px",
+        ),
+
+        # ACT-feedbackloop warning (Hiaat 7)
+        rx.cond(
+            DashboardState.has_act_warnings,
+            rx.callout(
+                rx.vstack(
+                    rx.text("ACT-feedbackloop: openstaande acties vereist", weight="bold"),
+                    rx.hstack(
+                        rx.cond(
+                            DashboardState.blocked_count > 0,
+                            rx.badge(
+                                rx.fragment(DashboardState.blocked_count, " bevindingen wachten op afronding acties"),
+                                color_scheme="orange", variant="soft",
+                            ),
+                        ),
+                        rx.cond(
+                            DashboardState.no_action_count > 0,
+                            rx.badge(
+                                rx.fragment(DashboardState.no_action_count, " bevindingen zonder corrigerende maatregel"),
+                                color_scheme="red", variant="soft",
+                            ),
+                        ),
+                        spacing="2", wrap="wrap",
+                    ),
+                    spacing="2",
+                ),
+                icon="alert-triangle",
+                color_scheme="orange",
+                margin_bottom="16px",
+            ),
         ),
 
         # Stats row
@@ -115,7 +147,7 @@ def dashboard_content() -> rx.Component:
 
         width="100%",
         spacing="0",
-        on_mount=RiskState.load_heatmap,
+        on_mount=[RiskState.load_heatmap, DashboardState.load_dashboard_data],
     )
 
 

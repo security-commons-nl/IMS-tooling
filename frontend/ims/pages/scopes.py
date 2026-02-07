@@ -493,10 +493,16 @@ def scope_row(scope: dict) -> rx.Component:
             rx.text(scope["owner"], size="2"),
         ),
         rx.table.cell(
-            rx.cond(
-                scope["is_active"],
-                rx.badge("Actief", color_scheme="green", variant="soft"),
-                rx.badge("Inactief", color_scheme="gray", variant="soft"),
+            rx.match(
+                scope["governance_status"],
+                ("Vastgesteld", rx.badge("Vastgesteld", color_scheme="green", variant="soft")),
+                ("Concept", rx.badge("Concept", color_scheme="yellow", variant="soft")),
+                ("Verlopen", rx.badge("Verlopen", color_scheme="red", variant="soft")),
+                rx.cond(
+                    scope["is_active"],
+                    rx.badge("Actief", color_scheme="green", variant="soft"),
+                    rx.badge("Inactief", color_scheme="gray", variant="soft"),
+                ),
             ),
         ),
         rx.table.cell(
@@ -550,10 +556,16 @@ def scope_mobile_card(scope: dict) -> rx.Component:
             rx.hstack(
                 type_badge(scope["type"]),
                 rx.text(scope["owner"], size="1", color="gray"),
-                rx.cond(
-                    scope["is_active"],
-                    rx.badge("Actief", color_scheme="green", variant="soft", size="1"),
-                    rx.badge("Inactief", color_scheme="gray", variant="soft", size="1"),
+                rx.match(
+                    scope["governance_status"],
+                    ("Vastgesteld", rx.badge("Vastgesteld", color_scheme="green", variant="soft", size="1")),
+                    ("Concept", rx.badge("Concept", color_scheme="yellow", variant="soft", size="1")),
+                    ("Verlopen", rx.badge("Verlopen", color_scheme="red", variant="soft", size="1")),
+                    rx.cond(
+                        scope["is_active"],
+                        rx.badge("Actief", color_scheme="green", variant="soft", size="1"),
+                        rx.badge("Inactief", color_scheme="gray", variant="soft", size="1"),
+                    ),
                 ),
                 spacing="2",
                 wrap="wrap",
@@ -574,7 +586,7 @@ def scopes_table() -> rx.Component:
                 rx.table.column_header_cell("Scope"),
                 rx.table.column_header_cell("Type", width="140px"),
                 rx.table.column_header_cell("Eigenaar", width="150px"),
-                rx.table.column_header_cell("Status", width="100px"),
+                rx.table.column_header_cell("Bestuurlijk", width="120px"),
                 rx.table.column_header_cell("Acties", width="100px"),
             ),
         ),

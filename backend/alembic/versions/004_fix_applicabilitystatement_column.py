@@ -1,7 +1,7 @@
 """Fix applicabilitystatement column name
 
 Revision ID: 004_fix_applicabilitystatement_column
-Revises: 003_add_backlog_user_story_fields
+Revises: 003_backlog_user_story
 Create Date: 2026-02-04
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '004_fix_applicabilitystatement_column'
-down_revision: Union[str, None] = '003_add_backlog_user_story_fields'
+down_revision: Union[str, None] = '003_backlog_user_story'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

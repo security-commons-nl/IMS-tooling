@@ -66,6 +66,68 @@ async def create_assessment(
     return await crud_assessment.create(session, obj_in=assessment)
 
 
+# =============================================================================
+# ACT-FEEDBACKLOOP DASHBOARD (Hiaat 7) — placed before /{assessment_id} routes
+# =============================================================================
+
+@router.get("/act-overdue", response_model=dict)
+async def get_act_overdue_summary(
+    tenant_id: Optional[int] = Query(None),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Hiaat 7: Dashboard signal for overdue ACT items.
+    Returns open findings that have incomplete corrective actions
+    or no corrective actions at all.
+    """
+    # Get all open findings
+    stmt = select(Finding).where(Finding.status != Status.CLOSED)
+    if tenant_id:
+        stmt = stmt.where(Finding.tenant_id == tenant_id)
+    result = await session.execute(stmt)
+    open_findings = result.scalars().all()
+
+    blocked_findings = []
+    no_action_findings = []
+
+    for finding in open_findings:
+        actions_result = await session.execute(
+            select(CorrectiveAction).where(CorrectiveAction.finding_id == finding.id)
+        )
+        actions = actions_result.scalars().all()
+
+        if not actions:
+            no_action_findings.append({
+                "finding_id": finding.id,
+                "title": finding.title,
+                "severity": finding.severity.value if finding.severity else None,
+            })
+        else:
+            completed = [a for a in actions if a.status == Status.CLOSED]
+            if not completed:
+                overdue_actions = []
+                for a in actions:
+                    overdue_actions.append({
+                        "action_id": a.id,
+                        "description": a.description,
+                        "due_date": str(a.due_date) if a.due_date else None,
+                    })
+                blocked_findings.append({
+                    "finding_id": finding.id,
+                    "title": finding.title,
+                    "severity": finding.severity.value if finding.severity else None,
+                    "pending_actions": overdue_actions,
+                })
+
+    return {
+        "open_findings_count": len(open_findings),
+        "blocked_count": len(blocked_findings),
+        "no_action_count": len(no_action_findings),
+        "blocked_findings": blocked_findings,
+        "no_action_findings": no_action_findings,
+    }
+
+
 @router.get("/{assessment_id}", response_model=Assessment)
 async def get_assessment(
     assessment_id: int,
@@ -237,8 +299,32 @@ async def close_finding(
     finding_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """Close a finding."""
+    """
+    Close a finding.
+    Hiaat 7 (ACT-feedbackloop): A finding cannot be closed without
+    at least one completed corrective action.
+    """
     db_finding = await crud_finding.get_or_404(session, finding_id)
+
+    # ACT-feedbackloop: check for completed corrective actions
+    actions = await crud_corrective_action.get_multi_by_field(
+        session, "finding_id", finding_id
+    )
+    if not actions:
+        raise HTTPException(
+            status_code=400,
+            detail="Bevinding kan niet worden afgesloten zonder corrigerende maatregel. "
+                   "Maak eerst een actie aan."
+        )
+
+    completed_actions = [a for a in actions if a.completed]
+    if not completed_actions:
+        raise HTTPException(
+            status_code=400,
+            detail="Bevinding kan niet worden afgesloten: er zijn nog geen afgeronde acties. "
+                   "Rond eerst minimaal één actie af."
+        )
+
     return await crud_finding.update(session, db_obj=db_finding, obj_in={"status": Status.CLOSED})
 
 

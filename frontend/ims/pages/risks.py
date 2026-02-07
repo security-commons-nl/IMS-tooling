@@ -306,6 +306,33 @@ def risk_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
+                # Treatment strategy (Hiaat 4)
+                rx.vstack(
+                    rx.hstack(
+                        rx.text("Behandelstrategie *", size="2", weight="medium"),
+                        rx.tooltip(
+                            rx.icon("info", size=14, color="gray"),
+                            content="Verplicht: kies hoe dit risico behandeld wordt (Vermijden, Reduceren, Overdragen, Accepteren).",
+                        ),
+                        spacing="1",
+                        align="center",
+                    ),
+                    rx.select.root(
+                        rx.select.trigger(placeholder="Selecteer strategie"),
+                        rx.select.content(
+                            rx.select.item("Geen", value="NONE"),
+                            rx.select.item("Vermijden", value="Vermijden"),
+                            rx.select.item("Reduceren", value="Reduceren"),
+                            rx.select.item("Overdragen", value="Overdragen"),
+                            rx.select.item("Accepteren", value="Accepteren"),
+                        ),
+                        value=RiskState.form_treatment_strategy,
+                        on_change=RiskState.set_form_treatment_strategy,
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
                 # Treatment justification
                 rx.vstack(
                     rx.hstack(
@@ -531,10 +558,13 @@ def risk_row(risk: dict) -> rx.Component:
             rx.text(risk["inherent_risk_score"], size="2"),
         ),
         rx.table.cell(
-            rx.cond(
-                risk["risk_accepted"],
-                rx.badge("Geaccepteerd", color_scheme="green", variant="soft"),
-                rx.badge("Open", color_scheme="gray", variant="outline"),
+            rx.match(
+                risk["treatment_strategy"],
+                ("Vermijden", rx.badge("Vermijden", color_scheme="purple", variant="soft")),
+                ("Reduceren", rx.badge("Reduceren", color_scheme="blue", variant="soft")),
+                ("Overdragen", rx.badge("Overdragen", color_scheme="orange", variant="soft")),
+                ("Accepteren", rx.badge("Accepteren", color_scheme="green", variant="soft")),
+                rx.badge("Niet ingesteld", color_scheme="gray", variant="outline"),
             ),
         ),
         rx.table.cell(
@@ -627,7 +657,7 @@ def risks_table() -> rx.Component:
                 rx.table.column_header_cell("Behandeling", width="140px"),
                 rx.table.column_header_cell("Impact", width="100px"),
                 rx.table.column_header_cell("Score", width="80px"),
-                rx.table.column_header_cell("Status", width="120px"),
+                rx.table.column_header_cell("Strategie", width="120px"),
                 rx.table.column_header_cell("Acties", width="100px"),
             ),
         ),

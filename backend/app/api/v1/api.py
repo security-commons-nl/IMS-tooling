@@ -23,6 +23,10 @@ from app.api.v1.endpoints import (
     sync,
     knowledge,
     dashboard,
+    decisions,
+    risk_framework,
+    in_control,
+    policy_principles,
 )
 
 api_router = APIRouter()
@@ -194,4 +198,32 @@ api_router.include_router(
     simulation.router,
     prefix="/simulation",
     tags=["Simulation"]
+)
+
+# Hiaat 1: Besluitlog (Decision Log)
+api_router.include_router(
+    decisions.router,
+    prefix="/decisions",
+    tags=["Besluitlog: Decisions"]
+)
+
+# Hiaat 3: Risicokader (Risk Framework)
+api_router.include_router(
+    risk_framework.router,
+    prefix="/risk-framework",
+    tags=["Risk Framework"]
+)
+
+# Hiaat 5: In-Control Status
+api_router.include_router(
+    in_control.router,
+    prefix="/in-control",
+    tags=["In-Control Status"]
+)
+
+# Hiaat 6: Beleid-trace (Policy Principles)
+api_router.include_router(
+    policy_principles.router,
+    prefix="/policy-principles",
+    tags=["Policy Principles"]
 )

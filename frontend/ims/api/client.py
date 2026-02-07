@@ -849,5 +849,224 @@ class APIClient:
             return response.json()
 
 
+    # =========================================================================
+    # HIAAT 1: DECISIONS (Besluitlog)
+    # =========================================================================
+
+    async def get_decisions(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        tenant_id: Optional[int] = None,
+        decision_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get list of decisions."""
+        async with self._get_client() as client:
+            params = {"skip": skip, "limit": limit}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            if decision_type:
+                params["decision_type"] = decision_type
+            if status:
+                params["status"] = status
+            response = await client.get("/decisions/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_decision(self, decision_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.get(f"/decisions/{decision_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_decision(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.post("/decisions/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_decision(self, decision_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.patch(f"/decisions/{decision_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_decision(self, decision_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.delete(f"/decisions/{decision_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def link_decision_risk(self, decision_id: int, risk_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.post(f"/decisions/{decision_id}/risks/{risk_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def unlink_decision_risk(self, decision_id: int, risk_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.delete(f"/decisions/{decision_id}/risks/{risk_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_decision_risks(self, decision_id: int) -> List[Dict[str, Any]]:
+        async with self._get_client() as client:
+            response = await client.get(f"/decisions/{decision_id}/risks")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_expired_decisions(self, tenant_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        async with self._get_client() as client:
+            params = {}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            response = await client.get("/decisions/expired", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # HIAAT 3: RISK FRAMEWORK (Risicokader)
+    # =========================================================================
+
+    async def get_risk_frameworks(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        tenant_id: Optional[int] = None,
+        status: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        async with self._get_client() as client:
+            params = {"skip": skip, "limit": limit}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            if status:
+                params["status"] = status
+            response = await client.get("/risk-framework/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_active_risk_framework(
+        self,
+        tenant_id: int,
+        scope_id: Optional[int] = None,
+    ) -> Optional[Dict[str, Any]]:
+        async with self._get_client() as client:
+            params = {"tenant_id": tenant_id}
+            if scope_id:
+                params["scope_id"] = scope_id
+            response = await client.get("/risk-framework/active", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def create_risk_framework(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.post("/risk-framework/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_risk_framework(self, framework_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.patch(f"/risk-framework/{framework_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def activate_risk_framework(self, framework_id: int, established_by_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            params = {"established_by_id": established_by_id}
+            response = await client.post(f"/risk-framework/{framework_id}/activate", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # HIAAT 5: IN-CONTROL STATUS
+    # =========================================================================
+
+    async def get_in_control_dashboard(self, tenant_id: int) -> List[Dict[str, Any]]:
+        async with self._get_client() as client:
+            params = {"tenant_id": tenant_id}
+            response = await client.get("/in-control/dashboard", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def calculate_in_control(self, scope_id: int, tenant_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            params = {"tenant_id": tenant_id}
+            response = await client.get(f"/in-control/calculate/{scope_id}", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def create_in_control_assessment(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.post("/in-control/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # HIAAT 6: POLICY PRINCIPLES
+    # =========================================================================
+
+    async def get_policy_principles(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        tenant_id: Optional[int] = None,
+        policy_id: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        async with self._get_client() as client:
+            params = {"skip": skip, "limit": limit}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            if policy_id:
+                params["policy_id"] = policy_id
+            response = await client.get("/policy-principles/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def create_policy_principle(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.post("/policy-principles/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_control_trace(self, control_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.get(f"/policy-principles/trace/{control_id}")
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # HIAAT 2: SCOPE GOVERNANCE
+    # =========================================================================
+
+    # =========================================================================
+    # HIAAT 7: ACT-FEEDBACKLOOP
+    # =========================================================================
+
+    async def get_act_overdue_summary(self, tenant_id: Optional[int] = None) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            params = {}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            response = await client.get("/assessments/act-overdue", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def establish_scope(self, scope_id: int, established_by_id: int, validity_year: int, motivation: Optional[str] = None) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            params = {"established_by_id": established_by_id, "validity_year": validity_year}
+            if motivation:
+                params["motivation"] = motivation
+            response = await client.post(f"/scopes/{scope_id}/establish", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def expire_scope(self, scope_id: int) -> Dict[str, Any]:
+        async with self._get_client() as client:
+            response = await client.post(f"/scopes/{scope_id}/expire")
+            response.raise_for_status()
+            return response.json()
+
+
 # Singleton instance
 api_client = APIClient()
