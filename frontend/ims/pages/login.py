@@ -7,7 +7,12 @@ from ims.state.auth import AuthState
 
 def login_page() -> rx.Component:
     """Login page component."""
-    return rx.center(
+    return rx.fragment(
+        # If already logged in, bounce back to dashboard (client-side check)
+        rx.script(
+            "if(localStorage.getItem('ims_user'))window.location.href='/';"
+        ),
+        rx.center(
         rx.card(
             rx.vstack(
                 # Logo
@@ -91,4 +96,5 @@ def login_page() -> rx.Component:
         ),
         height="100vh",
         background="var(--gray-a2)",
+    ),
     )
