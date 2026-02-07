@@ -242,18 +242,9 @@ def nav_drawer() -> rx.Component:
             height="100vh",
             background="var(--color-background)",
             border_right="1px solid var(--gray-a5)",
+            box_shadow="4px 0 20px rgba(0,0,0,0.1)",
             z_index="20",
-            transform=rx.cond(
-                BaseState.sidebar_open,
-                "translateX(0)",
-                "translateX(-100%)",
-            ),
-            transition="transform 0.25s ease",
-            box_shadow=rx.cond(
-                BaseState.sidebar_open,
-                "4px 0 20px rgba(0,0,0,0.1)",
-                "none",
-            ),
+            display=rx.cond(BaseState.sidebar_open, "flex", "none"),
         ),
     )
 
