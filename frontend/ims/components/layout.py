@@ -228,6 +228,7 @@ def nav_drawer() -> rx.Component:
             height="100vh",
         ),
         open=BaseState.sidebar_open,
+        on_open_change=BaseState.set_sidebar_open,
         direction="left",
     )
 

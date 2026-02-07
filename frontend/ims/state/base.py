@@ -27,6 +27,10 @@ class BaseState(rx.State):
         """Toggle sidebar drawer."""
         self.sidebar_open = not self.sidebar_open
 
+    def set_sidebar_open(self, value: bool):
+        """Sync drawer state (required by rx.drawer on_open_change)."""
+        self.sidebar_open = value
+
     def close_sidebar(self):
         """Close sidebar drawer."""
         self.sidebar_open = False
