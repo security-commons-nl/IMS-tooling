@@ -4,7 +4,9 @@ Controls Page - Context-specific control implementations
 import reflex as rx
 from ims.state.control import ControlState
 from ims.state.auth import AuthState
+from ims.state.journey import JourneyState
 from ims.components.layout import layout
+from ims.components.guidance import next_step_hint
 
 
 def status_badge(status: str) -> rx.Component:
@@ -554,6 +556,8 @@ def controls_content() -> rx.Component:
                 margin_bottom="16px",
             ),
         ),
+        # Journey hint
+        next_step_hint("controls"),
         stat_cards(),
         filter_bar(),
         # Table (desktop)
@@ -592,7 +596,7 @@ def controls_content() -> rx.Component:
 
         width="100%",
         spacing="4",
-        on_mount=ControlState.load_controls,
+        on_mount=[ControlState.load_controls, JourneyState.load_journey_data],
     )
 
 

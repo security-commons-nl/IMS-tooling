@@ -4,7 +4,9 @@ Scopes Page - Organization hierarchy management with CRUD
 import reflex as rx
 from ims.state.scope import ScopeState
 from ims.state.auth import AuthState
+from ims.state.journey import JourneyState
 from ims.components.layout import layout
+from ims.components.guidance import next_step_hint
 
 
 def scope_form_dialog() -> rx.Component:
@@ -777,6 +779,8 @@ def scopes_content() -> rx.Component:
             ),
         ),
 
+        # Journey hint
+        next_step_hint("scopes"),
         stat_cards(),
         filter_bar(),
 
@@ -816,7 +820,7 @@ def scopes_content() -> rx.Component:
 
         width="100%",
         spacing="4",
-        on_mount=ScopeState.load_scopes,
+        on_mount=[ScopeState.load_scopes, JourneyState.load_journey_data],
     )
 
 

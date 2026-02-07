@@ -1,10 +1,14 @@
 """
 MS Hub — PDCA overview page
 Shows Context + Plan/Do/Check/Act phase cards with metrics and quick links.
+Includes a 7-step journey stepper for onboarding guidance.
 """
 import reflex as rx
 from ims.state.ms_hub import MsHubState
+from ims.state.base import BaseState
+from ims.state.journey import JourneyState
 from ims.components.layout import layout
+from ims.components.guidance import journey_stepper
 
 
 # ---------------------------------------------------------------------------
@@ -261,9 +265,75 @@ def act_card() -> rx.Component:
 # Main page
 # ---------------------------------------------------------------------------
 
+def journey_section() -> rx.Component:
+    """Collapsible journey stepper with progress header."""
+    return rx.card(
+        rx.vstack(
+            # Header with toggle
+            rx.hstack(
+                rx.icon("compass", size=20, color="var(--accent-9)"),
+                rx.text("Inrichtingspad", size="3", weight="bold"),
+                rx.spacer(),
+                rx.text(
+                    rx.fragment(JourneyState.overall_progress_pct, "%"),
+                    size="3",
+                    weight="bold",
+                    color="var(--accent-9)",
+                ),
+                rx.icon_button(
+                    rx.cond(
+                        BaseState.journey_expanded,
+                        rx.icon("chevron-up", size=16),
+                        rx.icon("chevron-down", size=16),
+                    ),
+                    variant="ghost",
+                    size="1",
+                    on_click=BaseState.toggle_journey_expanded,
+                ),
+                width="100%",
+                align="center",
+            ),
+            # Progress bar (always visible)
+            rx.box(
+                rx.box(
+                    width=rx.cond(
+                        JourneyState.overall_progress_pct > 0,
+                        rx.fragment(JourneyState.overall_progress_pct, "%"),
+                        "0%",
+                    ),
+                    height="100%",
+                    background="var(--accent-9)",
+                    border_radius="4px",
+                    transition="width 0.5s ease",
+                ),
+                width="100%",
+                height="8px",
+                background="var(--gray-a4)",
+                border_radius="4px",
+                overflow="hidden",
+            ),
+            # Stepper (collapsible)
+            rx.cond(
+                BaseState.journey_expanded,
+                rx.box(
+                    journey_stepper(),
+                    width="100%",
+                    padding_top="8px",
+                ),
+            ),
+            spacing="3",
+            width="100%",
+        ),
+        padding="20px",
+        width="100%",
+    )
+
+
 def ms_hub_content() -> rx.Component:
     """MS Hub content."""
     return rx.vstack(
+        # Journey stepper
+        journey_section(),
         # Intro callout
         rx.callout(
             rx.text(
@@ -316,13 +386,13 @@ def ms_hub_content() -> rx.Component:
                 "Vernieuwen",
                 variant="soft",
                 size="2",
-                on_click=MsHubState.load_all,
+                on_click=[MsHubState.load_all, JourneyState.load_journey_data],
             ),
             spacing="3",
         ),
         spacing="4",
         width="100%",
-        on_mount=MsHubState.load_all,
+        on_mount=[MsHubState.load_all, JourneyState.load_journey_data],
     )
 
 

@@ -783,6 +783,9 @@ def risks_content() -> rx.Component:
             ),
         ),
 
+        # Journey hint
+        next_step_hint("risks"),
+
         # Filter bar
         filter_bar(),
 
@@ -821,7 +824,7 @@ def risks_content() -> rx.Component:
         delete_confirm_dialog(),
 
         width="100%",
-        on_mount=RiskState.load_risks,
+        on_mount=[RiskState.load_risks, JourneyState.load_journey_data],
     )
 
 

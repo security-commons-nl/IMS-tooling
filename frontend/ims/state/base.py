@@ -23,6 +23,9 @@ class BaseState(rx.State):
     sidebar_open: bool = False
     sidebar_pinned: bool = False
 
+    # Journey stepper (collapsible on MS Hub)
+    journey_expanded: bool = True
+
     # Collapsible menu sections
     menu_doen_open: bool = True
     menu_ontdekken_open: bool = False
@@ -49,6 +52,10 @@ class BaseState(rx.State):
     def unpin_sidebar(self):
         """Unpin sidebar — return to hamburger mode."""
         self.sidebar_pinned = False
+
+    def toggle_journey_expanded(self):
+        """Toggle journey stepper visibility."""
+        self.journey_expanded = not self.journey_expanded
 
     def toggle_menu_doen(self):
         self.menu_doen_open = not self.menu_doen_open

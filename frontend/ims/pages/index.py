@@ -5,8 +5,10 @@ import reflex as rx
 from ims.state.auth import AuthState
 from ims.state.risk import RiskState
 from ims.state.dashboard import DashboardState
+from ims.state.journey import JourneyState
 from ims.components.layout import layout
 from ims.components.heatmap import risk_heatmap
+from ims.components.guidance import pdca_ring_widget
 
 
 def stat_card(title: str, value: rx.Var, icon: str, color: str) -> rx.Component:
@@ -58,6 +60,9 @@ def dashboard_content() -> rx.Component:
             width="100%",
             padding_bottom="24px",
         ),
+
+        # PDCA Journey progress widget
+        pdca_ring_widget(),
 
         # ACT-feedbackloop warning (Hiaat 7)
         rx.cond(
@@ -236,7 +241,7 @@ def dashboard_content() -> rx.Component:
 
         width="100%",
         spacing="0",
-        on_mount=[RiskState.load_heatmap, DashboardState.load_dashboard_data],
+        on_mount=[RiskState.load_heatmap, DashboardState.load_dashboard_data, JourneyState.load_journey_data],
     )
 
 

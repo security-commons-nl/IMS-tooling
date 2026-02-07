@@ -4,7 +4,9 @@ Policies Page - Policy management with workflow states
 import reflex as rx
 from ims.state.policy import PolicyState
 from ims.state.auth import AuthState
+from ims.state.journey import JourneyState
 from ims.components.layout import layout
+from ims.components.guidance import next_step_hint
 
 
 def state_badge(state: str) -> rx.Component:
@@ -417,6 +419,8 @@ def policies_content() -> rx.Component:
                 margin_bottom="16px",
             ),
         ),
+        # Journey hint
+        next_step_hint("policies"),
         stat_cards(),
         filter_bar(),
         # Table (desktop)
@@ -455,7 +459,7 @@ def policies_content() -> rx.Component:
 
         width="100%",
         spacing="4",
-        on_mount=PolicyState.load_policies,
+        on_mount=[PolicyState.load_policies, JourneyState.load_journey_data],
     )
 
 
