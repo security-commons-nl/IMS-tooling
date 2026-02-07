@@ -11,7 +11,7 @@ def scope_status_card(item: dict) -> rx.Component:
         rx.hstack(
             rx.vstack(
                 rx.text(item["scope_name"], weight="bold", size="3"),
-                rx.text(item["scope_type"], size="1", color="gray") if item.get("scope_type") else rx.fragment(),
+                rx.cond(item["scope_type"], rx.text(item["scope_type"], size="1", color="gray"), rx.fragment()),
                 spacing="0", align_items="start",
             ),
             rx.spacer(),
