@@ -70,6 +70,7 @@ def _build_nav_links(link_fn, label_pad: str = "8px 12px 2px"):
         link_fn("Uitgangspunten", "/policy-principles", "link-2"),
         link_fn("Risicokader", "/risk-framework", "ruler"),
         link_fn("Analyses", "/simulation", "chart-bar"),
+        link_fn("Backlog", "/backlog", "list-todo"),
         rx.divider(margin_y="4px"),
         # BEHEER
         rx.text("BEHEER", size="1", weight="bold", color="gray", padding=label_pad),
@@ -77,7 +78,6 @@ def _build_nav_links(link_fn, label_pad: str = "8px 12px 2px"):
         link_fn("Scopes", "/scopes", "git-branch"),
         link_fn("Assets", "/assets", "server"),
         link_fn("Leveranciers", "/suppliers", "building-2"),
-        link_fn("Backlog", "/backlog", "list-todo"),
         link_fn("Gebruikers", "/users", "users"),
         rx.cond(
             AuthState.is_admin,
