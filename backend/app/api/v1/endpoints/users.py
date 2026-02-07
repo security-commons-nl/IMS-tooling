@@ -16,7 +16,6 @@ from app.models.core_models import (
     UserScopeRole,
     TenantUser,
     Role,
-    TenantRole,
     Scope,
 )
 
@@ -152,13 +151,12 @@ async def assign_scope_role(
     """
     Assign a role to a user for a specific scope.
 
-    Roles:
-    - ADMIN: Full access to scope
-    - PROCESS_OWNER: Owns the process, can approve risks
-    - SYSTEM_OWNER: Technical owner of assets
-    - RISK_OWNER: Can accept risks
-    - EDITOR: Can modify data
-    - VIEWER: Read-only access
+    Roles (Three Lines model):
+    - BEHEERDER: Platform admin, full access
+    - COORDINATOR: 2nd line, cross-tenant user management
+    - EIGENAAR: 1st line, scope owner, risk acceptance
+    - MEDEWERKER: 1st line, controls & tasks within scope
+    - TOEZICHTHOUDER: 3rd line, read all + write findings
     """
     # Verify user and scope exist
     await crud_user.get_or_404(session, user_id)
@@ -267,13 +265,16 @@ async def check_user_permissions(
     )
     roles = [usr.role for usr in result.scalars().all()]
 
-    # Derive permissions from roles
+    # Derive permissions from roles (Three Lines model)
     permissions = {
         "can_view": len(roles) > 0,
-        "can_edit": any(r in [Role.ADMIN, Role.PROCESS_OWNER, Role.SYSTEM_OWNER, Role.EDITOR] for r in roles),
-        "can_accept_risks": any(r in [Role.ADMIN, Role.PROCESS_OWNER, Role.RISK_OWNER] for r in roles),
-        "can_manage_users": Role.ADMIN in roles,
-        "is_owner": any(r in [Role.PROCESS_OWNER, Role.SYSTEM_OWNER] for r in roles),
+        "can_edit": any(r in [Role.BEHEERDER, Role.COORDINATOR, Role.EIGENAAR, Role.MEDEWERKER] for r in roles),
+        "can_accept_risks": Role.EIGENAAR in roles,
+        "can_manage_users": any(r in [Role.BEHEERDER, Role.COORDINATOR] for r in roles),
+        "can_add_medewerkers": Role.EIGENAAR in roles,
+        "can_write_findings": any(r in [Role.BEHEERDER, Role.COORDINATOR, Role.TOEZICHTHOUDER] for r in roles),
+        "is_owner": Role.EIGENAAR in roles,
+        "is_cross_tenant": any(r in [Role.BEHEERDER, Role.COORDINATOR, Role.TOEZICHTHOUDER] for r in roles),
     }
 
     return {
@@ -304,7 +305,6 @@ async def get_user_tenants(
     return [
         {
             "tenant_id": m.tenant_id,
-            "role": m.role,
             "is_default": m.is_default,
             "joined_at": m.joined_at,
         }
@@ -316,7 +316,6 @@ async def get_user_tenants(
 async def add_user_to_tenant(
     user_id: int,
     tenant_id: int,
-    role: TenantRole = TenantRole.MEMBER,
     is_default: bool = False,
     session: AsyncSession = Depends(get_session),
 ):
@@ -348,7 +347,6 @@ async def add_user_to_tenant(
     tenant_user = TenantUser(
         user_id=user_id,
         tenant_id=tenant_id,
-        role=role,
         is_default=is_default,
     )
     session.add(tenant_user)

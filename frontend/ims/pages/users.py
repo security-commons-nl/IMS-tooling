@@ -6,36 +6,33 @@ from ims.state.user import UserState
 from ims.components.layout import layout
 
 
-# Role translations
+# Role translations (Three Lines model)
 ROLE_LABELS = {
-    "Admin": "Beheerder",
-    "ProcessOwner": "Proceseigenaar",
-    "SystemOwner": "Systeemeigenaar",
-    "RiskOwner": "Risico-eigenaar",
-    "Editor": "Bewerker",
-    "Viewer": "Alleen lezen",
+    "Beheerder": "Beheerder",
+    "Coordinator": "Coördinator",
+    "Eigenaar": "Eigenaar",
+    "Medewerker": "Medewerker",
+    "Toezichthouder": "Toezichthouder",
 }
 
 ROLE_COLORS = {
-    "Admin": "red",
-    "ProcessOwner": "blue",
-    "SystemOwner": "purple",
-    "RiskOwner": "orange",
-    "Editor": "green",
-    "Viewer": "gray",
+    "Beheerder": "red",
+    "Coordinator": "blue",
+    "Eigenaar": "purple",
+    "Medewerker": "green",
+    "Toezichthouder": "orange",
 }
 
 
 def role_badge(role: str) -> rx.Component:
-    """Badge for user role."""
+    """Badge for user role (Three Lines model)."""
     return rx.match(
         role,
-        ("Admin", rx.badge("Beheerder", color_scheme="red", variant="soft")),
-        ("ProcessOwner", rx.badge("Proceseigenaar", color_scheme="blue", variant="soft")),
-        ("SystemOwner", rx.badge("Systeemeigenaar", color_scheme="purple", variant="soft")),
-        ("RiskOwner", rx.badge("Risico-eigenaar", color_scheme="orange", variant="soft")),
-        ("Editor", rx.badge("Bewerker", color_scheme="green", variant="soft")),
-        ("Viewer", rx.badge("Alleen lezen", color_scheme="gray", variant="soft")),
+        ("Beheerder", rx.badge("Beheerder", color_scheme="red", variant="soft")),
+        ("Coordinator", rx.badge("Coördinator", color_scheme="blue", variant="soft")),
+        ("Eigenaar", rx.badge("Eigenaar", color_scheme="purple", variant="soft")),
+        ("Medewerker", rx.badge("Medewerker", color_scheme="green", variant="soft")),
+        ("Toezichthouder", rx.badge("Toezichthouder", color_scheme="orange", variant="soft")),
         rx.badge(role, color_scheme="gray", variant="outline"),
     )
 
@@ -705,12 +702,11 @@ def role_assignment_dialog() -> rx.Component:
                         rx.select.root(
                             rx.select.trigger(placeholder="Selecteer rol"),
                             rx.select.content(
-                                rx.select.item("Beheerder", value="Admin"),
-                                rx.select.item("Proceseigenaar", value="ProcessOwner"),
-                                rx.select.item("Systeemeigenaar", value="SystemOwner"),
-                                rx.select.item("Risico-eigenaar", value="RiskOwner"),
-                                rx.select.item("Bewerker", value="Editor"),
-                                rx.select.item("Alleen lezen", value="Viewer"),
+                                rx.select.item("Beheerder", value="Beheerder"),
+                                rx.select.item("Coördinator", value="Coordinator"),
+                                rx.select.item("Eigenaar", value="Eigenaar"),
+                                rx.select.item("Medewerker", value="Medewerker"),
+                                rx.select.item("Toezichthouder", value="Toezichthouder"),
                             ),
                             value=UserState.form_role,
                             on_change=UserState.set_form_role,

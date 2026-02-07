@@ -482,12 +482,11 @@ class APIClient:
         self,
         user_id: int,
         tenant_id: int,
-        role: str = "Member",
         is_default: bool = False,
     ) -> Dict[str, Any]:
-        """Add a user to a tenant."""
+        """Add a user to a tenant (membership-only, roles via UserScopeRole)."""
         async with self._get_client() as client:
-            params = {"role": role, "is_default": is_default}
+            params = {"is_default": is_default}
             response = await client.post(
                 f"/users/{user_id}/tenants/{tenant_id}",
                 params=params,
@@ -1032,6 +1031,43 @@ class APIClient:
     async def get_control_trace(self, control_id: int) -> Dict[str, Any]:
         async with self._get_client() as client:
             response = await client.get(f"/policy-principles/trace/{control_id}")
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # ADMIN PANEL
+    # =========================================================================
+
+    async def change_password(self, user_id: int, new_password: str, caller_id: int = 0) -> Dict[str, Any]:
+        """Admin changes another user's password."""
+        async with self._get_client() as client:
+            params = {"caller_id": caller_id} if caller_id else {}
+            response = await client.post(
+                "/auth/change-password",
+                json={"user_id": user_id, "new_password": new_password},
+                params=params,
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def get_system_health(self) -> Dict[str, Any]:
+        """Get system health status."""
+        async with self._get_client() as client:
+            response = await client.get("/system/health")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_system_stats(self) -> Dict[str, Any]:
+        """Get system statistics."""
+        async with self._get_client() as client:
+            response = await client.get("/system/stats")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_audit_log(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get audit log (recent logins)."""
+        async with self._get_client() as client:
+            response = await client.get("/system/audit-log", params={"limit": limit})
             response.raise_for_status()
             return response.json()
 

@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.core_models import (
     # Base
-    Tenant, User, TenantUser, TenantRole,
+    Tenant, User, TenantUser,
     # Governance
     Standard, Requirement, Policy, PolicyState, FrameworkType,
     # Scope
@@ -94,7 +94,6 @@ async def seed_database():
             tenant_user = TenantUser(
                 tenant_id=tenant.id,
                 user_id=user.id,
-                role=TenantRole.ADMIN if user_data["is_superuser"] else TenantRole.MEMBER,
                 is_default=True,
             )
             session.add(tenant_user)
@@ -503,41 +502,50 @@ async def seed_database():
         # =========================================================================
         # USER SCOPE ROLES
         # =========================================================================
-        # Admin has admin role on everything
+        # Admin → Beheerder on org scope
         admin_role = UserScopeRole(
             tenant_id=tenant.id,
             user_id=users[0].id,
             scope_id=org_scope.id,
-            role=Role.ADMIN,
+            role=Role.BEHEERDER,
         )
         session.add(admin_role)
 
-        # CISO has process owner role
+        # CISO → Toezichthouder on org scope
         ciso_role = UserScopeRole(
             tenant_id=tenant.id,
             user_id=users[1].id,
             scope_id=org_scope.id,
-            role=Role.PROCESS_OWNER,
+            role=Role.TOEZICHTHOUDER,
         )
         session.add(ciso_role)
 
-        # FG has viewer role
+        # FG → Toezichthouder on org scope
         fg_role = UserScopeRole(
             tenant_id=tenant.id,
             user_id=users[2].id,
             scope_id=org_scope.id,
-            role=Role.VIEWER,
+            role=Role.TOEZICHTHOUDER,
         )
         session.add(fg_role)
 
-        # Process owner owns specific process
+        # Process owner → Eigenaar on process scope
         pe_role = UserScopeRole(
             tenant_id=tenant.id,
             user_id=users[3].id,
             scope_id=processes[0].id,
-            role=Role.PROCESS_OWNER,
+            role=Role.EIGENAAR,
         )
         session.add(pe_role)
+
+        # Editor → Medewerker on process scope
+        editor_role = UserScopeRole(
+            tenant_id=tenant.id,
+            user_id=users[4].id,
+            scope_id=processes[0].id,
+            role=Role.MEDEWERKER,
+        )
+        session.add(editor_role)
 
         await session.commit()
         print("Created user scope roles")
@@ -593,7 +601,7 @@ async def seed_database():
                 from_state_id=states[from_idx].id,
                 to_state_id=states[to_idx].id,
                 name=name,
-                required_role=Role.ADMIN.value if "Approve" in name else None,
+                required_role=Role.BEHEERDER.value if "Approve" in name else None,
             )
             session.add(transition)
         await session.commit()

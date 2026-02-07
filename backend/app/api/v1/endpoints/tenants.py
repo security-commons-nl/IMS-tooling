@@ -15,7 +15,6 @@ from app.models.core_models import (
     TenantUser,
     TenantRelationship,
     TenantRelationshipType,
-    TenantRole,
 )
 
 router = APIRouter()
@@ -125,10 +124,9 @@ async def get_tenant_users(
 async def add_user_to_tenant(
     tenant_id: int,
     user_id: int,
-    role: TenantRole = TenantRole.MEMBER,
     session: AsyncSession = Depends(get_session),
 ):
-    """Add a user to a tenant."""
+    """Add a user to a tenant (membership-only, roles via UserScopeRole)."""
     await crud_tenant.get_or_404(session, tenant_id)
 
     # Check if already member
@@ -144,37 +142,11 @@ async def add_user_to_tenant(
     tenant_user = TenantUser(
         tenant_id=tenant_id,
         user_id=user_id,
-        role=role,
     )
     session.add(tenant_user)
     await session.commit()
 
     return {"message": "User added to tenant"}
-
-
-@router.patch("/{tenant_id}/users/{user_id}")
-async def update_tenant_user_role(
-    tenant_id: int,
-    user_id: int,
-    role: TenantRole,
-    session: AsyncSession = Depends(get_session),
-):
-    """Update a user's role in a tenant."""
-    result = await session.execute(
-        select(TenantUser).where(
-            TenantUser.tenant_id == tenant_id,
-            TenantUser.user_id == user_id,
-        )
-    )
-    tenant_user = result.scalars().first()
-    if not tenant_user:
-        raise HTTPException(status_code=404, detail="User not member of tenant")
-
-    tenant_user.role = role
-    session.add(tenant_user)
-    await session.commit()
-
-    return {"message": "User role updated"}
 
 
 @router.delete("/{tenant_id}/users/{user_id}")

@@ -52,11 +52,11 @@ class AuthState(rx.State):
 
     @rx.var
     def is_admin(self) -> bool:
-        """Check if user is admin."""
+        """Check if user is admin (superuser)."""
         user = self.user
         if not user:
             return False
-        return (user.get("id") == 1) or (str(user.get("username", "")).lower() == "admin")
+        return user.get("is_superuser", False)
 
     async def login(self):
         """Authenticate against the backend API."""

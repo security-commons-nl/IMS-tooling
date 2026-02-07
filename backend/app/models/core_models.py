@@ -73,18 +73,12 @@ class AssetType(str, Enum):
     NETWORK = "Network"
 
 class Role(str, Enum):
-    ADMIN = "Admin"
-    PROCESS_OWNER = "ProcessOwner"
-    SYSTEM_OWNER = "SystemOwner"  # Technical owner of assets/systems
-    RISK_OWNER = "RiskOwner"  # Can accept risks, usually same as process/system owner
-    EDITOR = "Editor"
-    VIEWER = "Viewer"
-
-class TenantRole(str, Enum):
-    """Role at tenant level (not scope level)"""
-    OWNER = "Owner"  # Can manage tenant settings, billing
-    ADMIN = "Admin"  # Can manage users, all data
-    MEMBER = "Member"  # Regular user
+    """Unified role model based on Three Lines model."""
+    BEHEERDER = "Beheerder"          # Platform admin, cross-tenant
+    COORDINATOR = "Coordinator"      # 2nd line, cross-tenant, user management
+    EIGENAAR = "Eigenaar"            # 1st line, scope-bound, risk acceptance
+    MEDEWERKER = "Medewerker"        # 1st line, scope-bound, controls & tasks
+    TOEZICHTHOUDER = "Toezichthouder"  # 3rd line, read all + write findings
 
 class TenantRelationshipType(str, Enum):
     """Types of relationships between tenants"""
@@ -659,8 +653,6 @@ class TenantUser(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_id: int = Field(foreign_key="tenant.id")
     user_id: int = Field(foreign_key="user.id")
-
-    role: TenantRole = TenantRole.MEMBER
 
     # Invitation tracking
     invited_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
