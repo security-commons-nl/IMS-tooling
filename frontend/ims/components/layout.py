@@ -50,46 +50,84 @@ def drawer_nav_link(label: str, href: str, icon: str) -> rx.Component:
     )
 
 
+def _section_header(label: str, is_open_var, toggle_handler):
+    """Clickable section header with chevron."""
+    return rx.hstack(
+        rx.text(label, size="1", weight="bold", color="gray"),
+        rx.spacer(),
+        rx.cond(
+            is_open_var,
+            rx.icon("chevron-down", size=14, color="gray"),
+            rx.icon("chevron-right", size=14, color="gray"),
+        ),
+        on_click=toggle_handler,
+        cursor="pointer",
+        padding="8px 12px 4px",
+        width="100%",
+        align="center",
+        _hover={"background": "var(--gray-a2)"},
+        border_radius="md",
+    )
+
+
 def _build_nav_links(link_fn, label_pad: str = "8px 12px 2px"):
     """Build the full list of navigation items for a given link function.
 
-    Sections:
-    - DOEN: always visible (all authenticated users)
-    - ONTDEKKEN: always visible
-    - INRICHTEN: only visible for users who can_configure
-    - BEHEER: only visible for users who can_manage_users
+    Sections are collapsible. MS Hub is always visible at the top.
+    - DOEN: default open
+    - ONTDEKKEN: default closed
+    - INRICHTEN: default closed, only for configurers
+    - BEHEER: default closed, only for user managers
     """
     return [
-        # DOEN — always visible
-        rx.text("DOEN", size="1", weight="bold", color="gray", padding=label_pad),
+        # MS Hub — always visible at top
+        link_fn("MS Hub", "/ms-hub", "layout-grid"),
         link_fn("Dashboard", "/", "layout-dashboard"),
-        link_fn("Risico's", "/risks", "triangle-alert"),
-        link_fn("Controls", "/controls", "shield-check"),
-        link_fn("Compliance", "/compliance", "clipboard-list"),
-        link_fn("Assessments", "/assessments", "clipboard-check"),
-        link_fn("Incidenten", "/incidents", "circle-alert"),
-        link_fn("Besluiten", "/decisions", "stamp"),
-        link_fn("In-Control", "/in-control", "gauge"),
         rx.divider(margin_y="4px"),
-        # ONTDEKKEN — always visible
-        rx.text("ONTDEKKEN", size="1", weight="bold", color="gray", padding=label_pad),
-        link_fn("Frameworks", "/frameworks", "library"),
-        link_fn("Maatregelen", "/measures", "book-open"),
-        link_fn("Uitgangspunten", "/policy-principles", "link-2"),
-        link_fn("Risicokader", "/risk-framework", "ruler"),
-        link_fn("Analyses", "/simulation", "chart-bar"),
-        link_fn("Rapportage", "/reports", "file-chart-column"),
-        link_fn("Backlog", "/backlog", "list-todo"),
+        # DOEN — collapsible, default open
+        _section_header("DOEN", BaseState.menu_doen_open, BaseState.toggle_menu_doen),
+        rx.cond(
+            BaseState.menu_doen_open,
+            rx.fragment(
+                link_fn("Risico's", "/risks", "triangle-alert"),
+                link_fn("Controls", "/controls", "shield-check"),
+                link_fn("Compliance", "/compliance", "clipboard-list"),
+                link_fn("Assessments", "/assessments", "clipboard-check"),
+                link_fn("Incidenten", "/incidents", "circle-alert"),
+                link_fn("Besluiten", "/decisions", "stamp"),
+                link_fn("In-Control", "/in-control", "gauge"),
+            ),
+        ),
+        rx.divider(margin_y="4px"),
+        # ONTDEKKEN — collapsible, default closed
+        _section_header("ONTDEKKEN", BaseState.menu_ontdekken_open, BaseState.toggle_menu_ontdekken),
+        rx.cond(
+            BaseState.menu_ontdekken_open,
+            rx.fragment(
+                link_fn("Frameworks", "/frameworks", "library"),
+                link_fn("Maatregelen", "/measures", "book-open"),
+                link_fn("Uitgangspunten", "/policy-principles", "link-2"),
+                link_fn("Risicokader", "/risk-framework", "ruler"),
+                link_fn("Analyses", "/simulation", "chart-bar"),
+                link_fn("Rapportage", "/reports", "file-chart-column"),
+                link_fn("Backlog", "/backlog", "list-todo"),
+            ),
+        ),
         # INRICHTEN — only for configurers (Beheerder, Coordinator, Eigenaar)
         rx.cond(
             AuthState.can_configure,
             rx.fragment(
                 rx.divider(margin_y="4px"),
-                rx.text("INRICHTEN", size="1", weight="bold", color="gray", padding=label_pad),
-                link_fn("Beleid", "/policies", "file-text"),
-                link_fn("Scopes", "/scopes", "git-branch"),
-                link_fn("Assets", "/assets", "server"),
-                link_fn("Leveranciers", "/suppliers", "building-2"),
+                _section_header("INRICHTEN", BaseState.menu_inrichten_open, BaseState.toggle_menu_inrichten),
+                rx.cond(
+                    BaseState.menu_inrichten_open,
+                    rx.fragment(
+                        link_fn("Beleid", "/policies", "file-text"),
+                        link_fn("Scopes", "/scopes", "git-branch"),
+                        link_fn("Assets", "/assets", "server"),
+                        link_fn("Leveranciers", "/suppliers", "building-2"),
+                    ),
+                ),
             ),
         ),
         # BEHEER — only for user managers (Beheerder, Coordinator)
@@ -97,11 +135,16 @@ def _build_nav_links(link_fn, label_pad: str = "8px 12px 2px"):
             AuthState.can_manage_users,
             rx.fragment(
                 rx.divider(margin_y="4px"),
-                rx.text("BEHEER", size="1", weight="bold", color="gray", padding=label_pad),
-                link_fn("Gebruikers", "/users", "users"),
+                _section_header("BEHEER", BaseState.menu_beheer_open, BaseState.toggle_menu_beheer),
                 rx.cond(
-                    AuthState.is_admin,
-                    link_fn("Beheer", "/admin", "settings"),
+                    BaseState.menu_beheer_open,
+                    rx.fragment(
+                        link_fn("Gebruikers", "/users", "users"),
+                        rx.cond(
+                            AuthState.is_admin,
+                            link_fn("Beheer", "/admin", "settings"),
+                        ),
+                    ),
                 ),
             ),
         ),

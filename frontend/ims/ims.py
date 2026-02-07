@@ -27,6 +27,7 @@ from ims.pages.in_control import in_control_page
 from ims.pages.policy_principles import policy_principles_page
 from ims.pages.admin import admin_page
 from ims.pages.reports import reports_page
+from ims.pages.ms_hub import ms_hub_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -51,6 +52,7 @@ from ims.state.policy_principle import PolicyPrincipleState
 from ims.state.dashboard import DashboardState
 from ims.state.admin import AdminState
 from ims.state.report import ReportState
+from ims.state.ms_hub import MsHubState
 
 
 # Create app
@@ -91,3 +93,4 @@ app.add_page(in_control_page, route="/in-control", title="In-Control - IMS")
 app.add_page(policy_principles_page, route="/policy-principles", title="Beleidsuitgangspunten - IMS")
 app.add_page(admin_page, route="/admin", title="Beheer - IMS")
 app.add_page(reports_page, route="/reports", title="Rapportage - IMS")
+app.add_page(ms_hub_page, route="/ms-hub", title="MS Hub - IMS")

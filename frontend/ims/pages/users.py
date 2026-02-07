@@ -3,6 +3,7 @@ Users Page - User management with RBAC role assignment
 """
 import reflex as rx
 from ims.state.user import UserState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -864,7 +865,16 @@ def users_content() -> rx.Component:
 def users_page() -> rx.Component:
     """Users page with layout."""
     return layout(
-        users_content(),
+        rx.cond(
+            AuthState.can_manage_users,
+            users_content(),
+            rx.callout(
+                "Je hebt onvoldoende rechten om deze pagina te bekijken.",
+                icon="shield-alert",
+                color_scheme="red",
+                size="3",
+            ),
+        ),
         title="Gebruikers",
         subtitle="Beheer gebruikers en roltoewijzingen (RBAC)",
     )

@@ -58,6 +58,7 @@ class AgentOrchestrator:
         "planning": "planning",
         "report": "report",
         "dashboard": "report",
+        "ms-hub": "report",
         "objective": "objectives",
         "kpi": "objectives",
         "maturity": "maturity",

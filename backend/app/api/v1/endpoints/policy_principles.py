@@ -10,12 +10,14 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_configurer
 from app.models.core_models import (
     PolicyPrinciple,
     Policy,
     Risk,
     Control,
     ControlRiskLink,
+    User,
 )
 
 router = APIRouter()
@@ -50,6 +52,7 @@ async def list_principles(
 async def create_principle(
     principle: PolicyPrinciple,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Create a new policy principle."""
     # Verify policy exists
@@ -139,6 +142,7 @@ async def update_principle(
     principle_id: int,
     principle_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Update a principle."""
     db_principle = await crud_principle.get_or_404(session, principle_id)
@@ -150,6 +154,7 @@ async def update_principle(
 async def delete_principle(
     principle_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Delete a principle."""
     deleted = await crud_principle.delete(session, id=principle_id)

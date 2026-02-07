@@ -4,11 +4,13 @@ from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.core.rbac import require_editor
 from app.models.core_models import (
-    BacklogItem, 
-    BacklogStatus, 
-    BacklogType, 
-    BacklogPriority
+    BacklogItem,
+    BacklogStatus,
+    BacklogType,
+    BacklogPriority,
+    User,
 )
 
 router = APIRouter()
@@ -53,6 +55,7 @@ async def create_backlog_item(
     *,
     session: AsyncSession = Depends(get_session),
     item_in: BacklogItem,
+    current_user: User = Depends(require_editor),
 ) -> Any:
     """
     Create new backlog item.
@@ -84,6 +87,7 @@ async def update_backlog_item(
     session: AsyncSession = Depends(get_session),
     id: int,
     item_in: dict,
+    current_user: User = Depends(require_editor),
 ) -> Any:
     """
     Update backlog item.
@@ -106,6 +110,7 @@ async def delete_backlog_item(
     *,
     session: AsyncSession = Depends(get_session),
     id: int,
+    current_user: User = Depends(require_editor),
 ) -> Any:
     """
     Delete backlog item.

@@ -3,6 +3,7 @@ Policies Page - Policy management with workflow states
 """
 import reflex as rx
 from ims.state.policy import PolicyState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -461,7 +462,16 @@ def policies_content() -> rx.Component:
 def policies_page() -> rx.Component:
     """Policies page with layout."""
     return layout(
-        policies_content(),
+        rx.cond(
+            AuthState.can_configure,
+            policies_content(),
+            rx.callout(
+                "Je hebt onvoldoende rechten om deze pagina te bekijken.",
+                icon="shield-alert",
+                color_scheme="red",
+                size="3",
+            ),
+        ),
         title="Beleid",
         subtitle="Beheer beleidsdocumenten en workflows",
     )

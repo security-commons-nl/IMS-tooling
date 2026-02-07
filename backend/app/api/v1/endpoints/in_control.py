@@ -11,20 +11,101 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_configurer
 from app.models.core_models import (
     InControlAssessment,
     InControlLevel,
+    RiskLevel,
     Risk,
     Control,
     Finding,
     CorrectiveAction,
     Status,
     Scope,
+    User,
 )
 
 router = APIRouter()
 crud_assessment = CRUDBase(InControlAssessment)
 crud_scope = CRUDBase(Scope)
+
+
+# =============================================================================
+# SHARED CALCULATION LOGIC
+# =============================================================================
+
+async def _calculate_scope_level(
+    session: AsyncSession, scope_id: int, tenant_id: int
+) -> dict:
+    """Calculate in-control level for a single scope based on live data."""
+    # Count open risks
+    result = await session.execute(
+        select(func.count()).select_from(Risk).where(
+            Risk.scope_id == scope_id,
+            Risk.tenant_id == tenant_id,
+            Risk.status == Status.ACTIVE,
+        )
+    )
+    open_risks = result.scalar() or 0
+
+    # Count high/critical risks
+    result = await session.execute(
+        select(func.count()).select_from(Risk).where(
+            Risk.scope_id == scope_id,
+            Risk.tenant_id == tenant_id,
+            Risk.status == Status.ACTIVE,
+            Risk.inherent_impact.in_([RiskLevel.HIGH, RiskLevel.CRITICAL]),
+        )
+    )
+    high_risks = result.scalar() or 0
+
+    # Count open findings
+    result = await session.execute(
+        select(func.count()).select_from(Finding).where(
+            Finding.tenant_id == tenant_id,
+            Finding.status == Status.ACTIVE,
+        )
+    )
+    open_findings = result.scalar() or 0
+
+    # Count overdue corrective actions
+    result = await session.execute(
+        select(func.count()).select_from(CorrectiveAction).where(
+            CorrectiveAction.tenant_id == tenant_id,
+            CorrectiveAction.completed == False,
+            CorrectiveAction.due_date != None,
+            CorrectiveAction.due_date < datetime.utcnow(),
+        )
+    )
+    overdue_actions = result.scalar() or 0
+
+    # Count controls without test results
+    result = await session.execute(
+        select(func.count()).select_from(Control).where(
+            Control.scope_id == scope_id,
+            Control.tenant_id == tenant_id,
+            Control.status == Status.ACTIVE,
+            Control.last_tested == None,
+        )
+    )
+    missing_controls = result.scalar() or 0
+
+    # Determine level
+    if high_risks > 0 or overdue_actions > 3 or open_findings > 5:
+        level = InControlLevel.NOT_IN_CONTROL
+    elif open_risks > 3 or overdue_actions > 0 or open_findings > 2:
+        level = InControlLevel.LIMITED_CONTROL
+    else:
+        level = InControlLevel.IN_CONTROL
+
+    return {
+        "level": level,
+        "open_risks_count": open_risks,
+        "high_risks_count": high_risks,
+        "missing_controls_count": missing_controls,
+        "open_findings_count": open_findings,
+        "overdue_actions_count": overdue_actions,
+    }
 
 
 # =============================================================================
@@ -56,6 +137,7 @@ async def list_in_control_assessments(
 async def create_in_control_assessment(
     assessment: InControlAssessment,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Create a new in-control assessment."""
     return await crud_assessment.create(session, obj_in=assessment)
@@ -77,76 +159,16 @@ async def calculate_in_control_status(
     Does NOT save — use POST /in-control/ to formally record.
     """
     await crud_scope.get_or_404(session, scope_id)
-
-    # Count open risks
-    result = await session.execute(
-        select(func.count()).select_from(Risk).where(
-            Risk.scope_id == scope_id,
-            Risk.tenant_id == tenant_id,
-            Risk.status == Status.ACTIVE,
-        )
-    )
-    open_risks = result.scalar() or 0
-
-    # Count high/critical risks
-    from app.models.core_models import RiskLevel
-    result = await session.execute(
-        select(func.count()).select_from(Risk).where(
-            Risk.scope_id == scope_id,
-            Risk.tenant_id == tenant_id,
-            Risk.status == Status.ACTIVE,
-            Risk.inherent_impact.in_([RiskLevel.HIGH, RiskLevel.CRITICAL]),
-        )
-    )
-    high_risks = result.scalar() or 0
-
-    # Count open findings
-    result = await session.execute(
-        select(func.count()).select_from(Finding).where(
-            Finding.tenant_id == tenant_id,
-            Finding.status == Status.ACTIVE,
-        )
-    )
-    open_findings = result.scalar() or 0
-
-    # Count overdue corrective actions
-    result = await session.execute(
-        select(func.count()).select_from(CorrectiveAction).where(
-            CorrectiveAction.tenant_id == tenant_id,
-            CorrectiveAction.completed == False,
-            CorrectiveAction.due_date != None,
-            CorrectiveAction.due_date < datetime.utcnow(),
-        )
-    )
-    overdue_actions = result.scalar() or 0
-
-    # Count controls without test results (missing controls)
-    result = await session.execute(
-        select(func.count()).select_from(Control).where(
-            Control.scope_id == scope_id,
-            Control.tenant_id == tenant_id,
-            Control.status == Status.ACTIVE,
-            Control.last_tested == None,
-        )
-    )
-    missing_controls = result.scalar() or 0
-
-    # Calculate level
-    if high_risks > 0 or overdue_actions > 3 or open_findings > 5:
-        level = InControlLevel.NOT_IN_CONTROL
-    elif open_risks > 3 or overdue_actions > 0 or open_findings > 2:
-        level = InControlLevel.LIMITED_CONTROL
-    else:
-        level = InControlLevel.IN_CONTROL
+    metrics = await _calculate_scope_level(session, scope_id, tenant_id)
 
     return {
         "scope_id": scope_id,
-        "calculated_level": level.value,
-        "open_risks_count": open_risks,
-        "high_risks_count": high_risks,
-        "missing_controls_count": missing_controls,
-        "open_findings_count": open_findings,
-        "overdue_actions_count": overdue_actions,
+        "calculated_level": metrics["level"].value,
+        "open_risks_count": metrics["open_risks_count"],
+        "high_risks_count": metrics["high_risks_count"],
+        "missing_controls_count": metrics["missing_controls_count"],
+        "open_findings_count": metrics["open_findings_count"],
+        "overdue_actions_count": metrics["overdue_actions_count"],
     }
 
 
@@ -160,7 +182,8 @@ async def get_in_control_dashboard(
     session: AsyncSession = Depends(get_session),
 ):
     """
-    Get in-control overview for all scopes (latest assessment per scope).
+    Get in-control overview for all scopes with live-calculated status.
+    Falls back to stored assessment if calculation data is unavailable.
     For the DT dashboard.
     """
     # Get all active scopes for this tenant
@@ -174,7 +197,10 @@ async def get_in_control_dashboard(
 
     dashboard = []
     for scope in scopes:
-        # Get latest assessment for this scope
+        # Live-calculate the in-control level from current data
+        metrics = await _calculate_scope_level(session, scope.id, tenant_id)
+
+        # Get latest formal assessment for context (date, established status)
         result = await session.execute(
             select(InControlAssessment).where(
                 InControlAssessment.scope_id == scope.id,
@@ -187,7 +213,12 @@ async def get_in_control_dashboard(
             "scope_id": scope.id,
             "scope_name": scope.name,
             "scope_type": scope.type.value if scope.type else None,
-            "level": latest.level.value if latest else "Niet beoordeeld",
+            "level": metrics["level"].value,
+            "open_risks_count": metrics["open_risks_count"],
+            "high_risks_count": metrics["high_risks_count"],
+            "open_findings_count": metrics["open_findings_count"],
+            "overdue_actions_count": metrics["overdue_actions_count"],
+            "missing_controls_count": metrics["missing_controls_count"],
             "assessment_date": latest.assessment_date.isoformat() if latest else None,
             "established": latest.established_date is not None if latest else False,
         })
@@ -213,6 +244,7 @@ async def establish_in_control(
     assessment_id: int,
     established_by_id: int = Query(..., description="DT user who establishes"),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Formally establish an in-control status (DT-only)."""
     db_assessment = await crud_assessment.get_or_404(session, assessment_id)

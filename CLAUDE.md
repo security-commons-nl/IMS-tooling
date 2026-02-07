@@ -25,6 +25,18 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+## Workflow
+
+After every code change: **always commit, push to origin, and deploy to VPS** unless told otherwise.
+
+```bash
+git add <files> && git commit -m "..." && git push origin main && git push server main
+```
+
+- `origin` = GitHub
+- `server` = VPS (Hetzner) — auto-deploys via post-receive hook (docker-compose rebuild)
+- Local dev: `cd frontend && python -m reflex run` on http://localhost:3000
+
 ## Architecture
 
 ### 4-Layer Strict Separation
@@ -66,7 +78,7 @@ Environment variables via `.env` file or defaults in `backend/app/core/config.py
 
 ## Skills
 
-Claude Code skills are stored externally at `~/.claude/skills/` (174 skills), not in this repo. Key sources:
+Claude Code skills are stored externally at `~/.claude/skills/` (178 skills), not in this repo. Key sources:
 
 - **claude-skills** (secondsky): `https://github.com/secondsky/claude-skills` — 169 plugins covering API, security, testing, database, frontend, and more
 - **skill-seekers** (yusufkaraaslan): `https://github.com/yusufkaraaslan/Skill_Seekers` — generates LLM skills from docs, codebases, and GitHub repos
@@ -87,7 +99,6 @@ Claude Code skills are stored externally at `~/.claude/skills/` (174 skills), no
 | `sql-query-optimization` | Query performance for pgvector + multi-tenant filtering |
 | `skill-seekers` | Generate new skills from documentation or codebases |
 | `mcp-builder` | 4-phase guide for building MCP servers (Python FastMCP / Node TypeScript) |
-| `rube-mcp-integrations` | Composio RUBE MCP — connect Claude to 500+ apps (Gmail, Slack, GitHub, etc.) |
 | `webapp-testing` | Playwright-based web app testing — screenshots, DOM inspection, server lifecycle |
 | `claude-code-showcase` | Reference patterns for skills, agents, hooks, commands, and CI/CD workflows |
 | `prowler-mcp` | Cloud security posture — 1000+ checks, 70+ compliance frameworks, remediation |
@@ -105,6 +116,39 @@ skill-seekers package output/example/ --target claude
 # Skills location
 ls ~/.claude/skills/
 ```
+
+## Agent Sync Rule
+
+**After every frontend or functionality change**, check if the corresponding domain agent in `backend/app/agents/domains/` is up to date:
+
+1. Identify which domain agent(s) the change affects (e.g. risks page → `risk_agent.py`, policy wizard → `policy_agent.py`)
+2. Read the agent's `get_system_prompt()` — does it mention the new/changed capability?
+3. Check `get_tools()` — does the agent have the tools needed to support the user with this feature?
+4. If not → update the system prompt and/or tools so the AI assistant can guide users on the new functionality
+
+**Domain agents** (`backend/app/agents/domains/`):
+
+| Agent | Domain | Covers |
+|-------|--------|--------|
+| `risk_agent` | Risk management | Risks, In Control, MAPGOOD, decisions |
+| `policy_agent` | Governance | Policies, principles, traceability |
+| `bcm_agent` | Business continuity | BIA, continuity plans |
+| `compliance_agent` | Compliance | Frameworks, requirements, mappings |
+| `incident_agent` | Incidents | Incident management, response |
+| `privacy_agent` | Privacy | AVG/GDPR, DPIA |
+| `scope_agent` | Scope management | Scopes, dependencies, hierarchy |
+| `assessment_agent` | Verification | Assessments, audits, evidence |
+| `measure_agent` | Controls | Measures, control implementation |
+| `supplier_agent` | Suppliers | Third-party management |
+| `improvement_agent` | Improvement | Corrective actions, exceptions |
+| `maturity_agent` | Maturity | Maturity assessments |
+| `planning_agent` | Planning | Planning & roadmaps |
+| `report_agent` | Reporting | Reports & dashboards |
+| `workflow_agent` | Workflow | Status transitions, approvals |
+| `objectives_agent` | Objectives | Goals & KPIs |
+| `admin_agent` | Administration | Users, roles, configuration |
+
+> The user must always get accurate, up-to-date guidance from the AI assistant — never let the agents fall behind the actual application.
 
 ## Design Principles
 

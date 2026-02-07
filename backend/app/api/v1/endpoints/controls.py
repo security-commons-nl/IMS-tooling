@@ -13,6 +13,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_editor
 from app.models.core_models import (
     Control,
     ControlRiskLink,
@@ -22,6 +23,7 @@ from app.models.core_models import (
     Risk,
     Requirement,
     Status,
+    User,
 )
 from app.services.knowledge_service import knowledge_service
 
@@ -62,6 +64,7 @@ async def list_controls(
 async def create_control(
     control: Control,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Create a new control (context-specific implementation).
@@ -101,6 +104,7 @@ async def update_control(
     control_id: int,
     control_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Update a control."""
     db_control = await crud_control.get_or_404(session, control_id)
@@ -112,6 +116,7 @@ async def update_control(
 async def delete_control(
     control_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Delete a control."""
     deleted = await crud_control.delete(session, id=control_id)
@@ -128,6 +133,7 @@ async def delete_control(
 async def activate_control(
     control_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Activate a draft control."""
     db_control = await crud_control.get_or_404(session, control_id)
@@ -149,6 +155,7 @@ async def deactivate_control(
     control_id: int,
     reason: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Deactivate an active control."""
     db_control = await crud_control.get_or_404(session, control_id)
@@ -175,6 +182,7 @@ async def update_effectiveness(
     effectiveness_percentage: int = Query(..., ge=0, le=100, description="Effectiveness percentage (0-100)"),
     last_tested: Optional[datetime] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Update the effectiveness score of a control.
@@ -222,6 +230,7 @@ async def link_to_risk(
     risk_id: int,
     mitigation_percent: int = Query(50, ge=0, le=100),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Link this control to a risk."""
     await crud_control.get_or_404(session, control_id)
@@ -252,6 +261,7 @@ async def unlink_from_risk(
     control_id: int,
     risk_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Remove link between this control and a risk."""
     result = await session.execute(
@@ -296,6 +306,7 @@ async def link_to_requirement(
     requirement_id: int,
     coverage_percentage: int = Query(100, ge=0, le=100),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Link this control to a requirement (from a standard).
@@ -330,6 +341,7 @@ async def unlink_from_requirement(
     control_id: int,
     requirement_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Remove link between this control and a requirement."""
     result = await session.execute(
@@ -375,6 +387,7 @@ async def link_to_measure(
     coverage_percentage: int = Query(100, ge=0, le=100),
     notes: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Link this control to a measure from the catalog.
@@ -411,6 +424,7 @@ async def unlink_from_measure(
     control_id: int,
     measure_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Remove link between this control and a measure."""
     result = await session.execute(

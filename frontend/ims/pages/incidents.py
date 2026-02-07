@@ -3,6 +3,7 @@ Incidents Page - Incident and data breach management
 """
 import reflex as rx
 from ims.state.incident import IncidentState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -66,18 +67,24 @@ def incident_row(incident: dict) -> rx.Component:
         rx.table.cell(status_badge(incident["status"])),
         rx.table.cell(
             rx.hstack(
-                rx.icon_button(
-                    rx.icon("pencil", size=14),
-                    variant="ghost",
-                    size="1",
-                    on_click=lambda: IncidentState.open_edit_dialog(incident["id"]),
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: IncidentState.open_edit_dialog(incident["id"]),
+                    ),
                 ),
-                rx.icon_button(
-                    rx.icon("trash-2", size=14),
-                    variant="ghost",
-                    size="1",
-                    color_scheme="red",
-                    on_click=lambda: IncidentState.open_delete_dialog(incident["id"]),
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: IncidentState.open_delete_dialog(incident["id"]),
+                    ),
                 ),
                 spacing="1",
             ),
@@ -222,13 +229,16 @@ def filter_bar() -> rx.Component:
             class_name="w-full md:w-auto",
         ),
         rx.spacer(class_name="hidden md:block"),
-        rx.button(
-            rx.icon("plus", size=14),
-            "Meld Incident",
-            size="2",
-            color_scheme="red",
-            on_click=IncidentState.open_create_dialog,
-            class_name="w-full md:w-auto",
+        rx.cond(
+            AuthState.can_edit,
+            rx.button(
+                rx.icon("plus", size=14),
+                "Meld Incident",
+                size="2",
+                color_scheme="red",
+                on_click=IncidentState.open_create_dialog,
+                class_name="w-full md:w-auto",
+            ),
         ),
         wrap="wrap",
         gap="2",

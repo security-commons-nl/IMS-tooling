@@ -11,12 +11,14 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_configurer
 from app.models.core_models import (
     Decision,
     DecisionType,
     DecisionStatus,
     DecisionRiskLink,
     Risk,
+    User,
 )
 
 router = APIRouter()
@@ -53,6 +55,7 @@ async def list_decisions(
 async def create_decision(
     decision: Decision,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Create a new management decision (DT-only in production)."""
     return await crud_decision.create(session, obj_in=decision)
@@ -135,6 +138,7 @@ async def update_decision(
     decision_id: int,
     decision_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Update a decision."""
     db_decision = await crud_decision.get_or_404(session, decision_id)
@@ -146,6 +150,7 @@ async def update_decision(
 async def delete_decision(
     decision_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Delete a decision (only Draft/Active)."""
     deleted = await crud_decision.delete(session, id=decision_id)
@@ -162,6 +167,7 @@ async def delete_decision(
 async def expire_decision(
     decision_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Mark a decision as expired.
@@ -186,6 +192,7 @@ async def revoke_decision(
     decision_id: int,
     reason: str = Query(..., description="Reason for revoking"),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Revoke a decision."""
     db_decision = await crud_decision.get_or_404(session, decision_id)
@@ -213,6 +220,7 @@ async def link_risk_to_decision(
     risk_id: int,
     notes: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Link a risk to a decision."""
     await crud_decision.get_or_404(session, decision_id)
@@ -243,6 +251,7 @@ async def unlink_risk_from_decision(
     decision_id: int,
     risk_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Unlink a risk from a decision."""
     result = await session.execute(

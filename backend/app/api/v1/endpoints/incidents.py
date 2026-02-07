@@ -13,12 +13,14 @@ from app.models import core_models
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_editor
 from app.models.core_models import (
     Incident,
     CorrectiveAction,
     Status,
     RiskLevel,
     FindingSeverity,
+    User,
 )
 
 router = APIRouter()
@@ -62,6 +64,7 @@ async def list_incidents(
 async def create_incident(
     incident: Incident,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Create a new incident."""
     # Set detection date if not provided
@@ -89,6 +92,7 @@ async def update_incident(
     incident_id: int,
     incident_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Update an incident."""
     db_incident = await crud_incident.get_or_404(session, incident_id)
@@ -99,6 +103,7 @@ async def update_incident(
 async def delete_incident(
     incident_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Delete an incident."""
     deleted = await crud_incident.delete(session, id=incident_id)
@@ -117,6 +122,7 @@ async def resolve_incident(
     root_cause: Optional[str] = None,
     resolution_notes: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Resolve an incident."""
     db_incident = await crud_incident.get_or_404(session, incident_id)
@@ -132,6 +138,7 @@ async def resolve_incident(
 async def reopen_incident(
     incident_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Reopen a closed incident."""
     db_incident = await crud_incident.get_or_404(session, incident_id)
@@ -156,6 +163,7 @@ async def mark_as_data_breach(
     personal_data_categories: Optional[str] = None,
     special_categories_involved: bool = False,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Mark an incident as a data breach (AVG).
@@ -180,6 +188,7 @@ async def notify_authority(
     incident_id: int,
     authority_reference: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Record that the authority (AP) has been notified about a data breach."""
     db_incident = await crud_incident.get_or_404(session, incident_id)
@@ -199,6 +208,7 @@ async def notify_data_subjects(
     incident_id: int,
     notification_method: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Record that data subjects have been notified about a data breach."""
     db_incident = await crud_incident.get_or_404(session, incident_id)
@@ -250,6 +260,7 @@ async def create_incident_corrective_action(
     incident_id: int,
     corrective_action: CorrectiveAction,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Create a corrective action for an incident."""
     await crud_incident.get_or_404(session, incident_id)
@@ -293,6 +304,7 @@ async def list_exceptions(
 async def create_exception(
     exception: core_models.Exception,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Create a new exception (waiver) request."""
     return await crud_exception.create(session, obj_in=exception)
@@ -312,6 +324,7 @@ async def update_exception(
     exception_id: int,
     exception_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Update an exception."""
     db_exception = await crud_exception.get_or_404(session, exception_id)
@@ -323,6 +336,7 @@ async def approve_exception(
     exception_id: int,
     approved_by_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Approve an exception request."""
     db_exception = await crud_exception.get_or_404(session, exception_id)
@@ -342,6 +356,7 @@ async def reject_exception(
     exception_id: int,
     rejection_reason: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Reject an exception request."""
     db_exception = await crud_exception.get_or_404(session, exception_id)
@@ -361,6 +376,7 @@ async def extend_exception(
     extension_justification: str,
     approved_by_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Extend an exception's expiration date."""
     db_exception = await crud_exception.get_or_404(session, exception_id)

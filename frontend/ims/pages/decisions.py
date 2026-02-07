@@ -3,6 +3,7 @@ Besluitlog (Decision Log) Page — Hiaat 1
 """
 import reflex as rx
 from ims.state.decision import DecisionState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -129,10 +130,16 @@ def decision_row(decision: dict) -> rx.Component:
         ),
         rx.table.cell(
             rx.hstack(
-                rx.icon_button(rx.icon("pencil", size=14), variant="ghost", size="1",
-                    on_click=lambda: DecisionState.open_edit_dialog(decision["id"])),
-                rx.icon_button(rx.icon("trash-2", size=14), variant="ghost", size="1", color_scheme="red",
-                    on_click=lambda: DecisionState.open_delete_dialog(decision["id"])),
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.icon_button(rx.icon("pencil", size=14), variant="ghost", size="1",
+                        on_click=lambda: DecisionState.open_edit_dialog(decision["id"])),
+                ),
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.icon_button(rx.icon("trash-2", size=14), variant="ghost", size="1", color_scheme="red",
+                        on_click=lambda: DecisionState.open_delete_dialog(decision["id"])),
+                ),
                 spacing="1",
             ),
         ),
@@ -183,10 +190,13 @@ def decisions_content() -> rx.Component:
         # Action bar
         rx.flex(
             rx.spacer(class_name="hidden md:block"),
-            rx.button(
-                rx.icon("plus", size=14), "Nieuw Besluit", size="2",
-                on_click=DecisionState.open_create_dialog,
-                class_name="w-full md:w-auto",
+            rx.cond(
+                AuthState.can_edit,
+                rx.button(
+                    rx.icon("plus", size=14), "Nieuw Besluit", size="2",
+                    on_click=DecisionState.open_create_dialog,
+                    class_name="w-full md:w-auto",
+                ),
             ),
             wrap="wrap", gap="2", width="100%",
         ),

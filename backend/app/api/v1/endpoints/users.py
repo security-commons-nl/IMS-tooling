@@ -10,6 +10,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_coordinator_or_admin
 from app.models.core_models import (
     User,
     UserRead,
@@ -44,6 +45,7 @@ async def list_users(
 async def create_user(
     user: User,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Create a new user."""
     # Check if username or email already exists
@@ -96,6 +98,7 @@ async def update_user(
     user_id: int,
     user_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Update a user."""
     db_user = await crud_user.get_or_404(session, user_id)
@@ -118,6 +121,7 @@ async def update_user(
 async def deactivate_user(
     user_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Deactivate a user (soft delete)."""
     db_user = await crud_user.get_or_404(session, user_id)
@@ -129,6 +133,7 @@ async def deactivate_user(
 async def record_login(
     user_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Record a user login (updates last_login timestamp)."""
     db_user = await crud_user.get_or_404(session, user_id)
@@ -147,6 +152,7 @@ async def assign_scope_role(
     role: Role,
     tenant_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """
     Assign a role to a user for a specific scope.
@@ -194,6 +200,7 @@ async def remove_scope_role(
     scope_id: int,
     role: Role,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Remove a role from a user for a specific scope."""
     result = await session.execute(
@@ -318,6 +325,7 @@ async def add_user_to_tenant(
     tenant_id: int,
     is_default: bool = False,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Add a user to a tenant."""
     await crud_user.get_or_404(session, user_id)
@@ -360,6 +368,7 @@ async def remove_user_from_tenant(
     user_id: int,
     tenant_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
     """Remove a user from a tenant."""
     result = await session.execute(

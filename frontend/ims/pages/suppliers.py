@@ -4,6 +4,7 @@ Displays and manages Scopes of type SUPPLIER
 """
 import reflex as rx
 from ims.state.supplier import SupplierState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -483,7 +484,16 @@ def suppliers_content() -> rx.Component:
 def suppliers_page() -> rx.Component:
     """Suppliers page with layout."""
     return layout(
-        suppliers_content(),
+        rx.cond(
+            AuthState.can_configure,
+            suppliers_content(),
+            rx.callout(
+                "Je hebt onvoldoende rechten om deze pagina te bekijken.",
+                icon="shield-alert",
+                color_scheme="red",
+                size="3",
+            ),
+        ),
         title="Leveranciers",
         subtitle="Beheer leveranciers en externe partijen",
     )

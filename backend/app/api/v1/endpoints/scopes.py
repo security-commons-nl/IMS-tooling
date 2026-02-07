@@ -9,6 +9,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_configurer
 from app.models.core_models import (
     Scope,
     ScopeType,
@@ -16,6 +17,7 @@ from app.models.core_models import (
     ScopeGovernanceStatus,
     ClassificationLevel,
     AssetType,
+    User,
 )
 from datetime import datetime
 
@@ -51,6 +53,7 @@ async def list_scopes(
 async def create_scope(
     scope: Scope,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Create a new scope."""
     # Validate parent exists if specified
@@ -85,6 +88,7 @@ async def update_scope(
     scope_id: int,
     scope_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Update a scope."""
     db_scope = await crud_scope.get_or_404(session, scope_id)
@@ -95,6 +99,7 @@ async def update_scope(
 async def delete_scope(
     scope_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Delete a scope (soft delete - sets is_active=False)."""
     db_scope = await crud_scope.get_or_404(session, scope_id)
@@ -148,6 +153,7 @@ async def update_scope_bia(
     rpo_hours: Optional[int] = None,
     mtpd_hours: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Update BIA (Business Impact Analysis) ratings for a scope."""
     db_scope = await crud_scope.get_or_404(session, scope_id)
@@ -178,6 +184,7 @@ async def add_scope_dependency(
     dependency_type: str = "operational",
     criticality: str = "medium",
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Add a dependency between scopes.
@@ -218,6 +225,7 @@ async def remove_scope_dependency(
     scope_id: int,
     provider_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Remove a dependency between scopes."""
     result = await session.execute(
@@ -279,6 +287,7 @@ async def establish_scope(
     validity_year: int,
     motivation: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Formally establish a scope (DT action).
@@ -299,6 +308,7 @@ async def establish_scope(
 async def expire_scope(
     scope_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Mark a scope as expired.

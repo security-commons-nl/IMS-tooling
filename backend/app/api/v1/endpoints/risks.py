@@ -11,6 +11,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_editor
 from app.models.core_models import (
     Risk,
     Control,
@@ -22,6 +23,7 @@ from app.models.core_models import (
     Scope,
     ScopeGovernanceStatus,
     TreatmentStrategy,
+    User,
 )
 from app.services.knowledge_service import knowledge_service
 import logging
@@ -65,6 +67,7 @@ async def list_risks(
 async def create_risk(
     risk: Risk,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Create a new risk. Also indexes in knowledge base for AI RAG."""
     # Hiaat 2: Block creation in expired scope
@@ -201,6 +204,7 @@ async def update_risk(
     risk_id: int,
     risk_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Update a risk."""
     db_risk = await crud_risk.get_or_404(session, risk_id)
@@ -226,6 +230,7 @@ async def update_risk(
 async def delete_risk(
     risk_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Delete a risk."""
     deleted = await crud_risk.delete(session, id=risk_id)
@@ -244,6 +249,7 @@ async def accept_risk(
     accepted_by_id: int,
     justification: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Accept a risk (formal risk acceptance)."""
     db_risk = await crud_risk.get_or_404(session, risk_id)
@@ -260,6 +266,7 @@ async def accept_risk(
 async def revoke_risk_acceptance(
     risk_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Revoke risk acceptance."""
     db_risk = await crud_risk.get_or_404(session, risk_id)
@@ -283,6 +290,7 @@ async def set_risk_quadrant(
     mitigation_approach: Optional[MitigationApproach] = None,
     justification: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Set the attention quadrant for a risk.
@@ -319,6 +327,7 @@ async def link_control_to_risk(
     control_id: int,
     mitigation_percent: int = Query(50, ge=0, le=100, description="How much this control contributes to risk reduction"),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Link a control to a risk."""
     # Verify both exist
@@ -354,6 +363,7 @@ async def unlink_control_from_risk(
     risk_id: int,
     control_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Remove link between control and risk."""
     result = await session.execute(

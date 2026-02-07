@@ -118,6 +118,23 @@ def framework_form_dialog() -> rx.Component:
     )
 
 
+def delete_confirm_dialog() -> rx.Component:
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title("Risicokader verwijderen"),
+            rx.text("Weet je zeker dat je dit risicokader wilt verwijderen? Dit kan niet ongedaan worden gemaakt.", size="2"),
+            rx.hstack(
+                rx.dialog.close(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=RiskFrameworkState.close_delete_dialog),
+                ),
+                rx.button("Verwijderen", color_scheme="red", on_click=RiskFrameworkState.confirm_delete),
+                spacing="3", justify="end", margin_top="16px",
+            ),
+        ),
+        open=RiskFrameworkState.show_delete_dialog,
+    )
+
+
 def risk_framework_content() -> rx.Component:
     return rx.vstack(
         rx.cond(
@@ -157,6 +174,7 @@ def risk_framework_content() -> rx.Component:
             ),
         ),
         framework_form_dialog(),
+        delete_confirm_dialog(),
         width="100%",
         on_mount=RiskFrameworkState.load_frameworks,
     )

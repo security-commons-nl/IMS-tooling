@@ -3,6 +3,7 @@ Risks List Page with CRUD functionality
 """
 import reflex as rx
 from ims.state.risk import RiskState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -569,18 +570,24 @@ def risk_row(risk: dict) -> rx.Component:
         ),
         rx.table.cell(
             rx.hstack(
-                rx.icon_button(
-                    rx.icon("pencil", size=14),
-                    variant="ghost",
-                    size="1",
-                    on_click=lambda: RiskState.open_edit_dialog(risk["id"]),
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.icon_button(
+                        rx.icon("pencil", size=14),
+                        variant="ghost",
+                        size="1",
+                        on_click=lambda: RiskState.open_edit_dialog(risk["id"]),
+                    ),
                 ),
-                rx.icon_button(
-                    rx.icon("trash-2", size=14),
-                    variant="ghost",
-                    size="1",
-                    color_scheme="red",
-                    on_click=lambda: RiskState.open_delete_dialog(risk["id"]),
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: RiskState.open_delete_dialog(risk["id"]),
+                    ),
                 ),
                 spacing="1",
             ),
@@ -733,12 +740,15 @@ def filter_bar() -> rx.Component:
             class_name="w-full md:w-auto",
         ),
         rx.spacer(class_name="hidden md:block"),
-        rx.button(
-            rx.icon("plus", size=14),
-            "Nieuw Risico",
-            size="2",
-            on_click=RiskState.open_create_dialog,
-            class_name="w-full md:w-auto",
+        rx.cond(
+            AuthState.can_edit,
+            rx.button(
+                rx.icon("plus", size=14),
+                "Nieuw Risico",
+                size="2",
+                on_click=RiskState.open_create_dialog,
+                class_name="w-full md:w-auto",
+            ),
         ),
         wrap="wrap",
         gap="2",

@@ -14,10 +14,12 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_editor
 from app.models.core_models import (
     Measure,
     ControlMeasureLink,
     Control,
+    User,
 )
 from app.services.knowledge_service import knowledge_service
 
@@ -82,6 +84,7 @@ async def list_global_measures(
 async def create_measure(
     measure: Measure,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Create a new measure in the catalog.
@@ -120,6 +123,7 @@ async def update_measure(
     measure_id: int,
     measure_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """Update a measure in the catalog."""
     db_measure = await crud_measure.get_or_404(session, measure_id)
@@ -130,6 +134,7 @@ async def update_measure(
 async def delete_measure(
     measure_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_editor),
 ):
     """
     Soft-delete a measure from the catalog.

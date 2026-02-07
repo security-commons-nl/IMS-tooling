@@ -11,6 +11,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_oversight
 from app.models.core_models import (
     Assessment,
     AssessmentType,
@@ -20,6 +21,7 @@ from app.models.core_models import (
     CorrectiveAction,
     Status,
     AuditResult,
+    User,
 )
 
 router = APIRouter()
@@ -61,6 +63,7 @@ async def list_assessments(
 async def create_assessment(
     assessment: Assessment,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Create a new assessment."""
     return await crud_assessment.create(session, obj_in=assessment)
@@ -142,6 +145,7 @@ async def update_assessment(
     assessment_id: int,
     assessment_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Update an assessment."""
     db_assessment = await crud_assessment.get_or_404(session, assessment_id)
@@ -152,6 +156,7 @@ async def update_assessment(
 async def delete_assessment(
     assessment_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Delete an assessment."""
     deleted = await crud_assessment.delete(session, id=assessment_id)
@@ -168,6 +173,7 @@ async def delete_assessment(
 async def start_assessment(
     assessment_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Start an assessment (set status to Active)."""
     db_assessment = await crud_assessment.get_or_404(session, assessment_id)
@@ -187,6 +193,7 @@ async def complete_assessment(
     overall_result: AuditResult,
     executive_summary: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Complete an assessment with results."""
     db_assessment = await crud_assessment.get_or_404(session, assessment_id)
@@ -266,6 +273,7 @@ async def create_finding(
     assessment_id: int,
     finding: Finding,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Create a finding for an assessment."""
     await crud_assessment.get_or_404(session, assessment_id)
@@ -288,6 +296,7 @@ async def update_finding(
     finding_id: int,
     finding_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Update a finding."""
     db_finding = await crud_finding.get_or_404(session, finding_id)
@@ -298,6 +307,7 @@ async def update_finding(
 async def close_finding(
     finding_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """
     Close a finding.
@@ -354,6 +364,7 @@ async def list_evidence(
 async def create_evidence(
     evidence: Evidence,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Create new evidence."""
     return await crud_evidence.create(session, obj_in=evidence)
@@ -372,6 +383,7 @@ async def get_evidence(
 async def delete_evidence(
     evidence_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Delete evidence."""
     deleted = await crud_evidence.delete(session, id=evidence_id)
@@ -399,6 +411,7 @@ async def create_corrective_action(
     finding_id: int,
     corrective_action: CorrectiveAction,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Create a corrective action for a finding."""
     await crud_finding.get_or_404(session, finding_id)
@@ -421,6 +434,7 @@ async def update_corrective_action(
     action_id: int,
     action_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Update a corrective action."""
     db_action = await crud_corrective_action.get_or_404(session, action_id)
@@ -433,6 +447,7 @@ async def complete_corrective_action(
     completed_by_id: int,
     completion_notes: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_oversight),
 ):
     """Mark a corrective action as completed."""
     db_action = await crud_corrective_action.get_or_404(session, action_id)

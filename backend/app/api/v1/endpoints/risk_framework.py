@@ -10,9 +10,11 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_admin
 from app.models.core_models import (
     RiskFramework,
     RiskFrameworkStatus,
+    User,
 )
 
 router = APIRouter()
@@ -45,6 +47,7 @@ async def list_risk_frameworks(
 async def create_risk_framework(
     framework: RiskFramework,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     """Create a new risk framework."""
     return await crud_framework.create(session, obj_in=framework)
@@ -98,6 +101,7 @@ async def update_risk_framework(
     framework_id: int,
     framework_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     """Update a risk framework (only in Draft status)."""
     db_framework = await crud_framework.get_or_404(session, framework_id)
@@ -120,6 +124,7 @@ async def update_risk_framework(
 async def delete_risk_framework(
     framework_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     """Delete a risk framework (only Draft)."""
     db_framework = await crud_framework.get_or_404(session, framework_id)
@@ -143,6 +148,7 @@ async def activate_risk_framework(
     framework_id: int,
     established_by_id: int = Query(..., description="User ID (DT) who establishes the framework"),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     """
     Activate a risk framework.
@@ -183,6 +189,7 @@ async def activate_risk_framework(
 async def archive_risk_framework(
     framework_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     """Archive a risk framework."""
     db_framework = await crud_framework.get_or_404(session, framework_id)
@@ -203,6 +210,7 @@ async def archive_risk_framework(
 async def create_new_version(
     framework_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
     """Create a new draft version of an active or archived framework."""
     db_framework = await crud_framework.get_or_404(session, framework_id)

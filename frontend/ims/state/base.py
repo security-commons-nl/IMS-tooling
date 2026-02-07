@@ -23,6 +23,12 @@ class BaseState(rx.State):
     sidebar_open: bool = False
     sidebar_pinned: bool = False
 
+    # Collapsible menu sections
+    menu_doen_open: bool = True
+    menu_ontdekken_open: bool = False
+    menu_inrichten_open: bool = False
+    menu_beheer_open: bool = False
+
     def toggle_sidebar(self):
         """Toggle sidebar drawer."""
         self.sidebar_open = not self.sidebar_open
@@ -43,6 +49,18 @@ class BaseState(rx.State):
     def unpin_sidebar(self):
         """Unpin sidebar — return to hamburger mode."""
         self.sidebar_pinned = False
+
+    def toggle_menu_doen(self):
+        self.menu_doen_open = not self.menu_doen_open
+
+    def toggle_menu_ontdekken(self):
+        self.menu_ontdekken_open = not self.menu_ontdekken_open
+
+    def toggle_menu_inrichten(self):
+        self.menu_inrichten_open = not self.menu_inrichten_open
+
+    def toggle_menu_beheer(self):
+        self.menu_beheer_open = not self.menu_beheer_open
 
     def set_loading(self, loading: bool):
         """Set loading state."""

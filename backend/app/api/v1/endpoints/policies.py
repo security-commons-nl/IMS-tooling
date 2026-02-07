@@ -10,9 +10,11 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_configurer
 from app.models.core_models import (
     Policy,
     PolicyState,
+    User,
 )
 from app.services.knowledge_service import knowledge_service
 
@@ -49,6 +51,7 @@ async def list_policies(
 async def create_policy(
     policy: Policy,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Create a new policy (starts in Draft state)."""
     policy.state = PolicyState.DRAFT
@@ -70,6 +73,7 @@ async def update_policy(
     policy_id: int,
     policy_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Update a policy.
@@ -96,6 +100,7 @@ async def update_policy(
 async def delete_policy(
     policy_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Delete a policy (only allowed for Draft policies)."""
     db_policy = await crud_policy.get_or_404(session, policy_id)
@@ -120,6 +125,7 @@ async def delete_policy(
 async def submit_for_review(
     policy_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Submit a draft policy for review."""
     db_policy = await crud_policy.get_or_404(session, policy_id)
@@ -141,6 +147,7 @@ async def approve_policy(
     policy_id: int,
     approved_by_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Approve a policy that is in review."""
     db_policy = await crud_policy.get_or_404(session, policy_id)
@@ -163,6 +170,7 @@ async def reject_policy(
     policy_id: int,
     rejection_reason: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Reject a policy that is in review, returns it to draft state."""
     db_policy = await crud_policy.get_or_404(session, policy_id)
@@ -184,6 +192,7 @@ async def publish_policy(
     policy_id: int,
     effective_date: Optional[datetime] = None,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Publish an approved policy.
@@ -227,6 +236,7 @@ async def publish_policy(
 async def archive_policy(
     policy_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Archive a published policy."""
     db_policy = await crud_policy.get_or_404(session, policy_id)
@@ -252,6 +262,7 @@ async def archive_policy(
 async def create_new_version(
     policy_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """
     Create a new version of a published policy.
@@ -330,6 +341,7 @@ async def set_review_date(
     policy_id: int,
     review_date: datetime,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_configurer),
 ):
     """Set or update the review date for a policy."""
     db_policy = await crud_policy.get_or_404(session, policy_id)

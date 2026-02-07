@@ -3,6 +3,7 @@ Scopes Page - Organization hierarchy management with CRUD
 """
 import reflex as rx
 from ims.state.scope import ScopeState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -822,7 +823,16 @@ def scopes_content() -> rx.Component:
 def scopes_page() -> rx.Component:
     """Scopes page with layout."""
     return layout(
-        scopes_content(),
+        rx.cond(
+            AuthState.can_configure,
+            scopes_content(),
+            rx.callout(
+                "Je hebt onvoldoende rechten om deze pagina te bekijken.",
+                icon="shield-alert",
+                color_scheme="red",
+                size="3",
+            ),
+        ),
         title="Scopes",
         subtitle="Organisatie, processen en assets beheren",
     )

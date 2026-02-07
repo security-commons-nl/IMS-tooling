@@ -244,6 +244,4 @@ def dashboard_page() -> rx.Component:
     """Dashboard page with layout."""
     return layout(
         dashboard_content(),
-        title="Dashboard",
-        subtitle="Governance, Risk & Compliance overzicht",
     )

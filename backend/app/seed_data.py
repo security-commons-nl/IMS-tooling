@@ -70,6 +70,7 @@ async def seed_database():
             {"username": "fg", "email": "fg@demo.local", "full_name": "Functionaris Gegevensbescherming", "is_superuser": False},
             {"username": "proceseigenaar", "email": "pe@demo.local", "full_name": "Proces Eigenaar", "is_superuser": False},
             {"username": "editor", "email": "editor@demo.local", "full_name": "Content Editor", "is_superuser": False},
+            {"username": "coordinator", "email": "coordinator@demo.local", "full_name": "ISMS Coordinator", "is_superuser": False},
         ]
 
         users = []
@@ -315,7 +316,6 @@ async def seed_database():
                 attention_quadrant=risk_data["quadrant"],
                 mitigation_approach=risk_data.get("mitigation"),
                 risk_accepted=risk_data.get("accepted", False),
-                owner_id=users[3].id,  # Process owner
                 status=Status.ACTIVE,
             )
             session.add(risk)
@@ -511,7 +511,7 @@ async def seed_database():
         )
         session.add(admin_role)
 
-        # CISO → Toezichthouder on org scope
+        # CISO → Toezichthouder + Coordinator on org scope (dual role)
         ciso_role = UserScopeRole(
             tenant_id=tenant.id,
             user_id=users[1].id,
@@ -519,6 +519,14 @@ async def seed_database():
             role=Role.TOEZICHTHOUDER,
         )
         session.add(ciso_role)
+
+        ciso_coordinator_role = UserScopeRole(
+            tenant_id=tenant.id,
+            user_id=users[1].id,
+            scope_id=org_scope.id,
+            role=Role.COORDINATOR,
+        )
+        session.add(ciso_coordinator_role)
 
         # FG → Toezichthouder on org scope
         fg_role = UserScopeRole(
@@ -546,6 +554,15 @@ async def seed_database():
             role=Role.MEDEWERKER,
         )
         session.add(editor_role)
+
+        # Coordinator → Coordinator on org scope
+        coordinator_role = UserScopeRole(
+            tenant_id=tenant.id,
+            user_id=users[5].id,
+            scope_id=org_scope.id,
+            role=Role.COORDINATOR,
+        )
+        session.add(coordinator_role)
 
         await session.commit()
         print("Created user scope roles")

@@ -335,11 +335,14 @@ def backlog_page() -> rx.Component:
                     size="2",
                     class_name="w-full md:w-auto",
                 ),
-                rx.button(
-                    rx.icon("plus", size=16),
-                    "Nieuw Verzoek",
-                    on_click=BacklogState.open_create_dialog,
-                    class_name="w-full md:w-auto",
+                rx.cond(
+                    AuthState.can_edit,
+                    rx.button(
+                        rx.icon("plus", size=16),
+                        "Nieuw Verzoek",
+                        on_click=BacklogState.open_create_dialog,
+                        class_name="w-full md:w-auto",
+                    ),
                 ),
                 wrap="wrap",
                 gap="3",

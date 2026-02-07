@@ -4,6 +4,7 @@ Displays and manages Scopes of type ASSET
 """
 import reflex as rx
 from ims.state.asset import AssetState
+from ims.state.auth import AuthState
 from ims.components.layout import layout
 
 
@@ -670,7 +671,16 @@ def assets_content() -> rx.Component:
 def assets_page() -> rx.Component:
     """Assets page with layout."""
     return layout(
-        assets_content(),
+        rx.cond(
+            AuthState.can_configure,
+            assets_content(),
+            rx.callout(
+                "Je hebt onvoldoende rechten om deze pagina te bekijken.",
+                icon="shield-alert",
+                color_scheme="red",
+                size="3",
+            ),
+        ),
         title="Asset Register",
         subtitle="Beheer hardware, software en andere bedrijfsmiddelen",
     )
