@@ -30,10 +30,10 @@ def overview_tab() -> rx.Component:
     """Overzicht tab — user statistics."""
     return rx.vstack(
         rx.grid(
-            stat_card("Totaal gebruikers", AdminState.stats["total_users"].to(str), "users", "blue"),
-            stat_card("Actief", AdminState.stats["active_users"].to(str), "user-check", "green"),
-            stat_card("Beheerders", AdminState.stats["admin_users"].to(str), "shield", "red"),
-            stat_card("Inactief", AdminState.stats["inactive_users"].to(str), "user-x", "gray"),
+            stat_card("Totaal gebruikers", AdminState.total_users.to(str), "users", "blue"),
+            stat_card("Actief", AdminState.active_users.to(str), "user-check", "green"),
+            stat_card("Beheerders", AdminState.admin_users.to(str), "shield", "red"),
+            stat_card("Inactief", AdminState.inactive_users.to(str), "user-x", "gray"),
             columns=rx.breakpoints(initial="1", sm="2", md="4"),
             spacing="4",
             width="100%",
@@ -225,14 +225,14 @@ def health_tab() -> rx.Component:
         rx.grid(
             health_status_card(
                 "Database",
-                AdminState.health_data["database"]["status"].to(str),
-                AdminState.health_data["database"]["status"].to(str),
+                AdminState.db_status,
+                AdminState.db_status,
                 "database",
             ),
             health_status_card(
                 "Ollama (AI)",
-                AdminState.health_data["ollama"]["status"].to(str),
-                AdminState.health_data["ollama"]["url"].to(str),
+                AdminState.ollama_status,
+                AdminState.ollama_url,
                 "brain",
             ),
             columns=rx.breakpoints(initial="1", md="2"),
@@ -244,14 +244,14 @@ def health_tab() -> rx.Component:
                 rx.icon("info", size=20, color="var(--blue-9)"),
                 rx.vstack(
                     rx.text("API Versie", size="1", color="gray"),
-                    rx.text(AdminState.health_data["version"].to(str), size="3", weight="bold"),
+                    rx.text(AdminState.api_version, size="3", weight="bold"),
                     spacing="0",
                     align_items="start",
                 ),
                 rx.spacer(),
                 rx.vstack(
                     rx.text("Laatste check", size="1", color="gray"),
-                    rx.text(AdminState.health_data["timestamp"].to(str), size="2"),
+                    rx.text(AdminState.health_timestamp, size="2"),
                     spacing="0",
                     align_items="start",
                 ),

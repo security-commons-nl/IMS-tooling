@@ -13,10 +13,17 @@ class AdminState(rx.State):
     active_tab: str = "overzicht"
 
     # Overview stats
-    stats: Dict[str, Any] = {}
+    total_users: int = 0
+    active_users: int = 0
+    admin_users: int = 0
+    inactive_users: int = 0
 
-    # System health
-    health_data: Dict[str, Any] = {}
+    # System health (flattened for Reflex compatibility)
+    db_status: str = "unknown"
+    ollama_status: str = "unknown"
+    ollama_url: str = ""
+    api_version: str = ""
+    health_timestamp: str = ""
 
     # Audit log
     audit_entries: List[Dict[str, Any]] = []
@@ -39,25 +46,40 @@ class AdminState(rx.State):
         """Load all admin panel data."""
         self.is_loading = True
         try:
-            self.stats = await api_client.get_system_stats()
-            self.health_data = await api_client.get_system_health()
+            await self._load_stats()
+            await self._load_health()
             self.audit_entries = await api_client.get_audit_log(limit=100)
             self.users_for_pw = await api_client.get_users(is_active=True, limit=200)
         except Exception:
             pass
         self.is_loading = False
 
+    async def _load_stats(self):
+        stats = await api_client.get_system_stats()
+        self.total_users = stats.get("total_users", 0)
+        self.active_users = stats.get("active_users", 0)
+        self.admin_users = stats.get("admin_users", 0)
+        self.inactive_users = stats.get("inactive_users", 0)
+
+    async def _load_health(self):
+        h = await api_client.get_system_health()
+        self.db_status = h.get("database", {}).get("status", "unknown")
+        self.ollama_status = h.get("ollama", {}).get("status", "unknown")
+        self.ollama_url = h.get("ollama", {}).get("url", "")
+        self.api_version = h.get("version", "")
+        self.health_timestamp = h.get("timestamp", "")
+
     async def load_overview(self):
         """Load overview stats."""
         try:
-            self.stats = await api_client.get_system_stats()
+            await self._load_stats()
         except Exception:
             pass
 
     async def load_health(self):
         """Load system health."""
         try:
-            self.health_data = await api_client.get_system_health()
+            await self._load_health()
         except Exception:
             pass
 
