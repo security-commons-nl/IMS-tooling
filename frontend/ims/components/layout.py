@@ -5,6 +5,7 @@ Single menu: drawer (default) or pinned sidebar (user toggle)
 import reflex as rx
 from ims.state.auth import AuthState
 from ims.state.base import BaseState
+from ims.state.chat import ChatState
 from ims.components.chat_island import chat_island
 
 
@@ -362,6 +363,7 @@ def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Com
                         overflow="hidden",
                         display="flex",
                         flex_direction="column",
+                        on_mount=ChatState.sync_page_context,
                     ),
                     width="100%",
                     spacing="0",
@@ -385,6 +387,7 @@ def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Com
                         overflow="hidden",
                         display="flex",
                         flex_direction="column",
+                        on_mount=ChatState.sync_page_context,
                     ),
                 ),
             ),

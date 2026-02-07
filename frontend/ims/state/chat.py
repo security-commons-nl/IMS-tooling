@@ -32,6 +32,9 @@ class ChatState(rx.State):
     entity_type: str = ""
     entity_id: Optional[int] = None
 
+    # Auto-routing: tracks whether user manually picked an agent
+    _manual_override: bool = False
+
     @rx.var
     def has_messages(self) -> bool:
         """Check if there are any messages."""
@@ -99,14 +102,33 @@ class ChatState(rx.State):
         self.current_input = value
 
     def set_agent(self, agent_name: str):
-        """Change the current agent."""
+        """Manually select an agent (overrides auto-detection)."""
         self.current_agent = agent_name
+        self._manual_override = True
 
     def set_context(self, page: str = "", entity_type: str = "", entity_id: int = None):
         """Set the page context for agent selection."""
         self.page_context = page
         self.entity_type = entity_type
         self.entity_id = entity_id
+
+    async def sync_page_context(self):
+        """Auto-detect agent from current page route.
+
+        Called on_mount by layout — reads the router path and triggers
+        detect_agent() unless the user manually picked an agent.
+        Manual override resets on page navigation.
+        """
+        page = self.router.page.path.strip("/").split("/")[0] or "dashboard"
+
+        # Only act when the page actually changed
+        if page == self.page_context:
+            return
+
+        self.page_context = page
+        self._manual_override = False  # reset on navigation
+
+        await self.detect_agent()
 
     def clear_chat(self):
         """Clear all messages."""

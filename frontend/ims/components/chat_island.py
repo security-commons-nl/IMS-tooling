@@ -76,24 +76,37 @@ def chat_input() -> rx.Component:
 
 
 def agent_selector() -> rx.Component:
-    """Dropdown to select current agent."""
-    return rx.select.root(
-        rx.select.trigger(placeholder="Selecteer agent"),
-        rx.select.content(
-            rx.select.item("Risico Expert", value="risk"),
-            rx.select.item("Maatregelen Expert", value="measure"),
-            rx.select.item("Beleid Expert", value="policy"),
-            rx.select.item("Compliance Expert", value="compliance"),
-            rx.select.item("Assessment Expert", value="assessment"),
-            rx.select.item("Incident Expert", value="incident"),
-            rx.select.item("Privacy Expert", value="privacy"),
-            rx.select.item("Continuïteit Expert", value="bcm"),
-            rx.select.item("Leverancier Expert", value="supplier"),
-            rx.select.item("Rapportage Expert", value="report"),
+    """Dropdown to select current agent with auto-detect indicator."""
+    return rx.vstack(
+        # Auto-detected indicator
+        rx.hstack(
+            rx.icon("sparkles", size=14, color="var(--accent-9)"),
+            rx.text(ChatState.agent_display_name, size="1", color="gray"),
+            spacing="1",
+            align="center",
         ),
-        value=ChatState.current_agent,
-        on_change=ChatState.set_agent,
-        size="1",
+        # Dropdown for manual override
+        rx.select.root(
+            rx.select.trigger(placeholder="Selecteer agent"),
+            rx.select.content(
+                rx.select.item("Risico Expert", value="risk"),
+                rx.select.item("Maatregelen Expert", value="measure"),
+                rx.select.item("Beleid Expert", value="policy"),
+                rx.select.item("Compliance Expert", value="compliance"),
+                rx.select.item("Assessment Expert", value="assessment"),
+                rx.select.item("Incident Expert", value="incident"),
+                rx.select.item("Privacy Expert", value="privacy"),
+                rx.select.item("Continuïteit Expert", value="bcm"),
+                rx.select.item("Leverancier Expert", value="supplier"),
+                rx.select.item("Rapportage Expert", value="report"),
+            ),
+            value=ChatState.current_agent,
+            on_change=ChatState.set_agent,
+            size="1",
+            width="100%",
+        ),
+        spacing="1",
+        width="100%",
     )
 
 

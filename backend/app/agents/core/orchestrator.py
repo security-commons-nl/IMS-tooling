@@ -64,6 +64,12 @@ class AgentOrchestrator:
         "admin": "admin",
         "compliance": "compliance",
         "soa": "compliance",
+        "backlog": "planning",
+        "simulation": "risk",
+        "frameworks": "compliance",
+        "reports": "report",
+        "controls": "compliance",
+        "users": "admin",
     }
 
     def __init__(self):
