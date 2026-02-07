@@ -153,5 +153,6 @@ class AuthState(rx.State):
         self.password = value
 
     def redirect_to_login(self):
-        """Redirect to login page (used by layout when not authenticated)."""
-        return rx.redirect("/login")
+        """Redirect to login page — only if still unauthenticated after hydration."""
+        if not self.user_json:
+            return rx.redirect("/login")

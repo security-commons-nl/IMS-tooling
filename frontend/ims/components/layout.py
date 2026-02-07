@@ -437,14 +437,23 @@ def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Com
             ),
             chat_island(),
         ),
-        # Not authenticated — redirect to login
-        rx.center(
-            rx.vstack(
-                rx.spinner(size="3"),
-                rx.text("Redirecting to login...", color="gray"),
-                spacing="3",
+        # Not (yet) authenticated — wait for hydration before redirecting
+        rx.cond(
+            AuthState.is_hydrated,
+            # Hydrated + still no user → redirect to login
+            rx.center(
+                rx.vstack(
+                    rx.spinner(size="3"),
+                    rx.text("Redirecting to login...", color="gray"),
+                    spacing="3",
+                ),
+                height="100vh",
+                on_mount=AuthState.redirect_to_login,
             ),
-            height="100vh",
-            on_mount=AuthState.redirect_to_login,
+            # Not yet hydrated — show loading spinner (don't redirect yet)
+            rx.center(
+                rx.spinner(size="3"),
+                height="100vh",
+            ),
         ),
     )
