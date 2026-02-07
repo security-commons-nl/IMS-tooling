@@ -87,19 +87,26 @@ class AIGateway:
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Scaleway: {e}")
 
-        # 3. Local Ollama (Fallback)
-        # Always initialize Ollama as fallback
+        # 3. Local Ollama (Fallback only — not required if Mistral/Scaleway is available)
         try:
             self.providers["ollama"] = ChatOllama(
                 base_url=settings.OLLAMA_BASE_URL,
                 model=settings.OLLAMA_MODEL,
                 temperature=0.2,
-                timeout=settings.AI_TIMEOUT, # Note: ChatOllama uses request_timeout in older versions, timeout in newer
+                timeout=settings.AI_TIMEOUT,
                 callbacks=callbacks,
             )
-            logger.info("✅ Local Ollama provider initialized")
+            logger.info(f"✅ Local Ollama provider registered (backup at {settings.OLLAMA_BASE_URL})")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Ollama: {e}")
+            logger.warning(f"⚠️ Ollama backup not available: {e}")
+
+        # Summary
+        if self.providers:
+            primary = settings.AI_PROVIDER_PRIORITY.split(",")[0].strip()
+            active = primary if primary in self.providers else list(self.providers.keys())[0]
+            logger.info(f"🤖 AI Gateway ready — active provider: {active} (available: {list(self.providers.keys())})")
+        else:
+            logger.error("❌ No AI providers available — chat will not work")
             
     def get_llm(self, preferred_provider: Optional[str] = None) -> BaseChatModel:
         """

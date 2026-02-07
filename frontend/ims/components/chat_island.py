@@ -55,10 +55,9 @@ def chat_input() -> rx.Component:
             placeholder="Stel een vraag...",
             value=ChatState.current_input,
             on_change=ChatState.set_input,
-            on_key_up=lambda key: rx.cond(
+            on_key_down=lambda key: rx.cond(
                 key == "Enter",
                 ChatState.send_message(),
-                rx.noop(),
             ),
             flex="1",
             size="2",
@@ -163,10 +162,30 @@ def chat_panel() -> rx.Component:
                 ),
                 rx.cond(
                     ChatState.is_loading,
-                    rx.hstack(
-                        rx.spinner(size="2"),
-                        rx.text("Bezig met denken...", size="2", color="gray"),
-                        padding="12px",
+                    rx.box(
+                        rx.hstack(
+                            rx.box(
+                                rx.hstack(
+                                    rx.spinner(size="1"),
+                                    rx.el.span(
+                                        "Bezig met denken",
+                                        class_name="typing-dots",
+                                        font_size="var(--font-size-2)",
+                                        color="var(--gray-11)",
+                                    ),
+                                    spacing="2",
+                                    align="center",
+                                ),
+                                padding="12px 16px",
+                                border_radius="lg",
+                                max_width="80%",
+                                background="var(--gray-3)",
+                            ),
+                            rx.spacer(),
+                            width="100%",
+                        ),
+                        width="100%",
+                        padding_y="4px",
                     ),
                     rx.fragment(),
                 ),

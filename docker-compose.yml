@@ -45,10 +45,15 @@ services:
       POSTGRES_PORT: 5432
       AI_API_BASE: ${AI_API_BASE}
       AI_MODEL: ${AI_MODEL}
-      # Multi-Provider AI Keys
+      # Multi-Provider AI Gateway
       MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      MISTRAL_MODEL: ${MISTRAL_MODEL:-mistral-small-latest}
       SCALEWAY_API_KEY: ${SCALEWAY_API_KEY}
-      AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY}
+      SCALEWAY_MODEL: ${SCALEWAY_MODEL:-mistral-nemo-instruct-2407}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
+      AI_PROVIDER_PRIORITY: ${AI_PROVIDER_PRIORITY:-mistral,scaleway,ollama}
+      AI_TIMEOUT: ${AI_TIMEOUT:-120}
       DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-changeme}
     ports:
       - "127.0.0.1:8001:8000"
@@ -56,7 +61,7 @@ services:
       db:
         condition: service_healthy
       ollama:
-        condition: service_healthy
+        condition: service_started
 
   frontend:
     build:

@@ -4,12 +4,14 @@ AI Agent Endpoints
 Provides chat interface to all IMS AI agents.
 Supports context-based agent selection and streaming responses.
 """
+import logging
 from typing import Any, Dict, Optional, List
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from app.agents.core.orchestrator import orchestrator
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -112,10 +114,19 @@ async def chat_with_agent(request: ChatRequest):
             agent_used=agent_name,
         )
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Agent chat error: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return a friendly error as a chat response instead of a 500
+        error_type = type(e).__name__
+        if "connect" in str(e).lower() or "refused" in str(e).lower() or "timeout" in str(e).lower():
+            friendly = "De AI-assistent is momenteel niet bereikbaar. Controleer of de LLM-service (Ollama/Mistral) draait."
+        elif "No AI providers available" in str(e):
+            friendly = "Er zijn geen AI-providers geconfigureerd. Configureer Mistral, Scaleway of Ollama in de .env file."
+        else:
+            friendly = f"Er is een fout opgetreden bij de AI-assistent: {error_type}"
+        return ChatResponse(
+            response=friendly,
+            agent_used=agent_name,
+        )
 
 
 @router.get("/health")
