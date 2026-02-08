@@ -435,7 +435,7 @@ def edit_dialog() -> rx.Component:
 
 
 def init_dialog() -> rx.Component:
-    """Dialog for initializing SoA from standard."""
+    """Self-contained wizard for initializing SoA from standard."""
     return rx.dialog.root(
         rx.dialog.content(
             rx.dialog.title("SoA Initialiseren"),
@@ -446,16 +446,100 @@ def init_dialog() -> rx.Component:
             ),
 
             rx.vstack(
+                # Info callout
                 rx.callout(
-                    "Dit maakt voor elke requirement in de geselecteerde standaard een SoA entry aan voor de gekozen scope.",
+                    "Dit maakt voor elke requirement in de geselecteerde standaard een SoA entry aan voor de gekozen scope. Bestaande entries worden overgeslagen.",
                     icon="info",
-                    color="blue",
+                    color_scheme="blue",
                 ),
 
-                rx.text(
-                    "Selecteer eerst een scope en standaard in de filterbalk hierboven.",
-                    size="2",
-                    color="gray",
+                # Error callout
+                rx.cond(
+                    ComplianceState.init_error != "",
+                    rx.callout(
+                        ComplianceState.init_error,
+                        icon="circle-alert",
+                        color_scheme="red",
+                    ),
+                ),
+
+                # Success callout
+                rx.cond(
+                    ComplianceState.init_success != "",
+                    rx.callout(
+                        ComplianceState.init_success,
+                        icon="circle-check",
+                        color_scheme="green",
+                    ),
+                ),
+
+                # Scope dropdown
+                rx.vstack(
+                    rx.text("Scope ", rx.text("*", color="red", as_="span"), size="2", weight="medium"),
+                    rx.select.root(
+                        rx.select.trigger(placeholder="Selecteer scope..."),
+                        rx.select.content(
+                            rx.foreach(
+                                ComplianceState.scopes,
+                                lambda scope: rx.select.item(
+                                    scope["name"],
+                                    value=scope["id"].to_string(),
+                                ),
+                            ),
+                        ),
+                        on_change=ComplianceState.set_init_scope,
+                        size="2",
+                        width="100%",
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
+                # Standard dropdown
+                rx.vstack(
+                    rx.text("Standaard ", rx.text("*", color="red", as_="span"), size="2", weight="medium"),
+                    rx.select.root(
+                        rx.select.trigger(placeholder="Selecteer standaard..."),
+                        rx.select.content(
+                            rx.foreach(
+                                ComplianceState.standards,
+                                lambda std: rx.select.item(
+                                    rx.fragment(std["name"], " ", std["version"]),
+                                    value=std["id"].to_string(),
+                                ),
+                            ),
+                        ),
+                        on_change=ComplianceState.set_init_standard,
+                        size="2",
+                        width="100%",
+                    ),
+                    align_items="start",
+                    width="100%",
+                ),
+
+                # Requirement count preview
+                rx.cond(
+                    ComplianceState.init_requirement_count > 0,
+                    rx.box(
+                        rx.hstack(
+                            rx.icon("arrow-right", size=14, color="var(--blue-11)"),
+                            rx.text(
+                                rx.fragment(
+                                    ComplianceState.init_requirement_count,
+                                    " requirements worden aangemaakt",
+                                ),
+                                size="2",
+                                weight="medium",
+                                color="var(--blue-11)",
+                            ),
+                            spacing="2",
+                            align="center",
+                        ),
+                        padding="8px 12px",
+                        background="var(--blue-a3)",
+                        border_radius="var(--radius-2)",
+                        width="100%",
+                    ),
                 ),
 
                 spacing="4",
@@ -472,13 +556,14 @@ def init_dialog() -> rx.Component:
                     ),
                 ),
                 rx.button(
-                    "Initialiseren",
-                    color_scheme="blue",
-                    disabled=~(ComplianceState.selected_scope_id.bool() & ComplianceState.selected_standard_id.bool()),
-                    on_click=lambda: ComplianceState.initialize_soa(
-                        ComplianceState.selected_scope_id,
-                        ComplianceState.selected_standard_id,
+                    rx.cond(
+                        ComplianceState.init_is_loading,
+                        rx.spinner(size="1"),
+                        rx.text("Initialiseren"),
                     ),
+                    color_scheme="blue",
+                    disabled=~ComplianceState.init_can_submit | ComplianceState.init_is_loading,
+                    on_click=ComplianceState.initialize_soa_from_wizard,
                 ),
                 spacing="3",
                 justify="end",

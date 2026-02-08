@@ -34,6 +34,14 @@ class ComplianceState(rx.State):
     # Initialize dialog
     show_init_dialog: bool = False
 
+    # Wizard state (separate from page filters)
+    init_scope_id: Optional[int] = None
+    init_standard_id: Optional[int] = None
+    init_requirement_count: int = 0
+    init_is_loading: bool = False
+    init_error: str = ""
+    init_success: str = ""
+
     @rx.var
     def compliance_percentage(self) -> int:
         """Calculate compliance percentage from summary (as int for progress bar)."""
@@ -74,6 +82,11 @@ class ComplianceState(rx.State):
     def gaps_count(self) -> int:
         """Get gaps count."""
         return len(self.gaps)
+
+    @rx.var
+    def init_can_submit(self) -> bool:
+        """Whether the wizard has both scope and standard selected."""
+        return bool(self.init_scope_id) and bool(self.init_standard_id)
 
     @rx.var
     def filtered_entries(self) -> List[Dict[str, Any]]:
@@ -220,32 +233,77 @@ class ComplianceState(rx.State):
         except Exception as e:
             self.error = f"Fout bij opslaan: {str(e)}"
 
-    # Initialize dialog
+    # Initialize wizard
     def open_init_dialog(self):
-        """Open initialize SoA dialog."""
+        """Open initialize SoA wizard with clean state."""
+        self.init_scope_id = None
+        self.init_standard_id = None
+        self.init_requirement_count = 0
+        self.init_is_loading = False
+        self.init_error = ""
+        self.init_success = ""
         self.show_init_dialog = True
 
     def close_init_dialog(self):
-        """Close initialize dialog."""
+        """Close initialize wizard and reset state."""
         self.show_init_dialog = False
+        self.init_scope_id = None
+        self.init_standard_id = None
+        self.init_requirement_count = 0
+        self.init_is_loading = False
+        self.init_error = ""
+        self.init_success = ""
 
-    async def initialize_soa(self, scope_id: int, standard_id: int, tenant_id: int = 1):
-        """Initialize SoA from a standard."""
+    def set_init_scope(self, scope_id: str):
+        """Set wizard scope selection."""
+        if scope_id and scope_id != "NONE":
+            self.init_scope_id = int(scope_id)
+        else:
+            self.init_scope_id = None
+
+    async def set_init_standard(self, standard_id: str):
+        """Set wizard standard selection and fetch requirement count."""
+        if standard_id and standard_id != "NONE":
+            self.init_standard_id = int(standard_id)
+            await self._fetch_requirement_count(int(standard_id))
+        else:
+            self.init_standard_id = None
+            self.init_requirement_count = 0
+
+    async def _fetch_requirement_count(self, standard_id: int):
+        """Fetch requirement count for preview."""
         try:
-            self.is_loading = True
+            requirements = await api_client.get_requirements_for_standard(standard_id)
+            self.init_requirement_count = len(requirements)
+        except Exception as e:
+            self.init_requirement_count = 0
+            print(f"Error fetching requirement count: {e}")
+
+    async def initialize_soa_from_wizard(self):
+        """Initialize SoA from wizard state."""
+        if not self.init_scope_id or not self.init_standard_id:
+            self.init_error = "Selecteer een scope en standaard"
+            return
+
+        self.init_is_loading = True
+        self.init_error = ""
+        self.init_success = ""
+
+        try:
             result = await api_client.initialize_soa_from_standard(
-                scope_id=scope_id,
-                standard_id=standard_id,
-                tenant_id=tenant_id,
+                scope_id=self.init_scope_id,
+                standard_id=self.init_standard_id,
+                tenant_id=1,
             )
-            self.success_message = f"SoA geinitialiseerd: {result.get('created', 0)} items aangemaakt"
-            self.show_init_dialog = False
-            self.selected_scope_id = scope_id
+            created = result.get("created", 0)
+            self.init_success = f"SoA geinitialiseerd: {created} entries aangemaakt"
+            # Set page filter to show the new entries
+            self.selected_scope_id = self.init_scope_id
             await self.load_data()
         except Exception as e:
-            self.error = f"Fout bij initialiseren: {str(e)}"
+            self.init_error = f"Fout bij initialiseren: {str(e)}"
         finally:
-            self.is_loading = False
+            self.init_is_loading = False
 
     def clear_messages(self):
         """Clear success/error messages."""

@@ -550,6 +550,26 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    async def create_incident(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new incident."""
+        async with self._get_client() as client:
+            response = await client.post("/incidents/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_incident(self, incident_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update an existing incident."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/incidents/{incident_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_incident(self, incident_id: int) -> None:
+        """Delete an incident."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/incidents/{incident_id}")
+            response.raise_for_status()
+
     # =========================================================================
     # POLICIES
     # =========================================================================
@@ -572,6 +592,26 @@ class APIClient:
             response = await client.get("/policies/", params=params)
             response.raise_for_status()
             return response.json()
+
+    async def create_policy(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new policy."""
+        async with self._get_client() as client:
+            response = await client.post("/policies/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_policy(self, policy_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update an existing policy."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/policies/{policy_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_policy(self, policy_id: int) -> None:
+        """Delete a policy."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/policies/{policy_id}")
+            response.raise_for_status()
 
     # =========================================================================
     # USERS
@@ -806,6 +846,13 @@ class APIClient:
         async with self._get_client() as client:
             params = {"skip": skip, "limit": limit}
             response = await client.get("/standards/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_requirements_for_standard(self, standard_id: int) -> List[Dict[str, Any]]:
+        """Get requirements for a specific standard."""
+        async with self._get_client() as client:
+            response = await client.get(f"/standards/{standard_id}/requirements/")
             response.raise_for_status()
             return response.json()
 
