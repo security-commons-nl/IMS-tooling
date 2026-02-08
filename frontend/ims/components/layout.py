@@ -1,6 +1,7 @@
 """
-Layout Components - Hamburger navigation with optional pin-to-sidebar
-Single menu: drawer (default) or pinned sidebar (user toggle)
+Layout Components - Hamburger navigation with push sidebar
+Single sidebar: temporarily open (hamburger) or pinned (user toggle).
+Content pushes right when sidebar is visible — no overlay/drawer.
 """
 import reflex as rx
 from ims.state.auth import AuthState
@@ -10,11 +11,11 @@ from ims.components.chat_island import chat_island
 
 
 # ---------------------------------------------------------------------------
-# Navigation link helpers
+# Navigation link helper
 # ---------------------------------------------------------------------------
 
-def nav_link(label: str, href: str, icon: str) -> rx.Component:
-    """Navigation link in pinned sidebar."""
+def sidebar_nav_link(label: str, href: str, icon: str) -> rx.Component:
+    """Navigation link — closes sidebar on click when not pinned."""
     return rx.link(
         rx.hstack(
             rx.icon(icon, size=20),
@@ -28,25 +29,7 @@ def nav_link(label: str, href: str, icon: str) -> rx.Component:
         width="100%",
         text_decoration="none",
         color="inherit",
-    )
-
-
-def drawer_nav_link(label: str, href: str, icon: str) -> rx.Component:
-    """Navigation link in drawer — closes drawer on click."""
-    return rx.link(
-        rx.hstack(
-            rx.icon(icon, size=20),
-            rx.text(label, size="3"),
-            width="100%",
-            padding="14px 16px",
-            border_radius="md",
-            _hover={"background": "var(--gray-a3)"},
-        ),
-        href=href,
-        width="100%",
-        text_decoration="none",
-        color="inherit",
-        on_click=BaseState.close_sidebar,
+        on_click=BaseState.nav_link_close,
     )
 
 
@@ -70,7 +53,7 @@ def _section_header(label: str, is_open_var, toggle_handler):
     )
 
 
-def _build_nav_links(link_fn, label_pad: str = "8px 12px 2px"):
+def _build_nav_links(link_fn):
     """Build the full list of navigation items for a given link function.
 
     Sections are collapsible. MS Hub is always visible at the top.
@@ -152,7 +135,7 @@ def _build_nav_links(link_fn, label_pad: str = "8px 12px 2px"):
 
 
 # ---------------------------------------------------------------------------
-# Top bar (hamburger) — shown in unpinned mode
+# Top bar (hamburger) — shown when sidebar is hidden
 # ---------------------------------------------------------------------------
 
 def top_bar() -> rx.Component:
@@ -194,116 +177,50 @@ def top_bar() -> rx.Component:
 
 
 # ---------------------------------------------------------------------------
-# Drawer (slide-out) — Radix-based, controlled by state
+# Push sidebar — replaces both drawer and pinned sidebar
 # ---------------------------------------------------------------------------
 
-def nav_drawer() -> rx.Component:
-    """Slide-out navigation drawer. No on_open_change = no swipe/outside-click close."""
-    return rx.drawer.root(
-        rx.drawer.overlay(),
-        rx.drawer.content(
-            rx.vstack(
-                # Header
-                rx.hstack(
-                    rx.icon("shield-check", size=28, color="var(--accent-9)"),
-                    rx.text("IMS", size="5", weight="bold"),
-                    rx.spacer(),
-                    rx.icon_button(
-                        rx.icon("pin", size=18),
-                        variant="solid",
-                        color_scheme="indigo",
-                        size="2",
-                        on_click=BaseState.pin_sidebar,
-                    ),
-                    rx.icon_button(
-                        rx.icon("x", size=20),
-                        variant="ghost",
-                        size="2",
-                        on_click=BaseState.close_sidebar,
-                    ),
-                    width="100%",
-                    padding="16px",
-                    align="center",
-                ),
-                rx.divider(),
-
-                # Navigation links
-                rx.vstack(
-                    *_build_nav_links(drawer_nav_link, label_pad="8px 16px 2px"),
-                    spacing="0",
-                    width="100%",
-                    padding="8px",
-                    overflow_y="auto",
-                    flex="1",
-                ),
-
-                rx.divider(),
-
-                # User section
-                rx.hstack(
-                    rx.avatar(
-                        fallback=AuthState.user_display_name[0],
-                        size="2",
-                    ),
-                    rx.vstack(
-                        rx.text(AuthState.user_display_name, size="2", weight="medium"),
-                        rx.text(AuthState.user_email, size="1", color="gray"),
-                        spacing="0",
-                        align_items="start",
-                    ),
-                    rx.spacer(),
-                    rx.icon_button(
-                        rx.icon("log-out", size=16),
-                        variant="ghost",
-                        size="1",
-                        on_click=AuthState.logout,
-                    ),
-                    width="100%",
-                    padding="12px",
-                ),
-
-                height="100%",
-                width="100%",
-                align_items="stretch",
-            ),
-            background="var(--color-background)",
-            width="280px",
-            height="100vh",
-        ),
-        open=BaseState.sidebar_open,
-        on_open_change=BaseState.set_sidebar_open,
-        direction="left",
-    )
-
-
-# ---------------------------------------------------------------------------
-# Pinned sidebar — permanent left sidebar when user pins navigation
-# ---------------------------------------------------------------------------
-
-def pinned_sidebar() -> rx.Component:
-    """Permanent pinned sidebar navigation."""
+def sidebar() -> rx.Component:
+    """Push sidebar — visible when open or pinned, pushes content right."""
     return rx.box(
         rx.vstack(
-            # Header with unpin button
+            # Header with pin toggle and close button
             rx.hstack(
                 rx.icon("shield-check", size=28, color="var(--accent-9)"),
                 rx.text("IMS", size="5", weight="bold"),
                 rx.spacer(),
+                # Pin toggle
                 rx.icon_button(
-                    rx.icon("pin-off", size=18),
-                    variant="outline",
+                    rx.cond(
+                        BaseState.sidebar_pinned,
+                        rx.icon("pin-off", size=18),
+                        rx.icon("pin", size=18),
+                    ),
+                    variant=rx.cond(
+                        BaseState.sidebar_pinned,
+                        "solid",
+                        "outline",
+                    ),
+                    color_scheme="indigo",
                     size="2",
-                    on_click=BaseState.unpin_sidebar,
+                    on_click=BaseState.toggle_pin,
                 ),
-                padding="16px",
+                # Close (X)
+                rx.icon_button(
+                    rx.icon("x", size=20),
+                    variant="ghost",
+                    size="2",
+                    on_click=BaseState.close_sidebar,
+                ),
                 width="100%",
+                padding="16px",
                 align="center",
             ),
             rx.divider(),
 
             # Navigation
             rx.vstack(
-                *_build_nav_links(nav_link),
+                *_build_nav_links(sidebar_nav_link),
                 spacing="1",
                 width="100%",
                 padding="8px",
@@ -349,8 +266,8 @@ def pinned_sidebar() -> rx.Component:
             width="100%",
             align_items="stretch",
         ),
-        width="240px",
-        min_width="240px",
+        width="260px",
+        min_width="260px",
         background="var(--gray-a2)",
         border_right="1px solid var(--gray-a5)",
     )
@@ -382,29 +299,25 @@ def page_header(title: str, subtitle: str = "") -> rx.Component:
 
 
 def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Component:
-    """Main layout wrapper with hamburger navigation and optional pinned sidebar.
+    """Main layout wrapper with push sidebar and optional pin.
 
-    The drawer is always in the DOM (invisible when sidebar_open=False).
-    The outer structure stays stable — only the pinned sidebar and top bar
-    toggle via rx.cond, preventing DOM reconciliation glitches.
+    The sidebar pushes content right when visible — no overlay/drawer.
     """
     return rx.cond(
         AuthState.is_authenticated,
         rx.fragment(
-            # Drawer always in DOM — controlled by sidebar_open
-            nav_drawer(),
             rx.hstack(
-                # Pinned sidebar: shown when pinned, gone when not
+                # Sidebar: visible when open or pinned, pushes content
                 rx.cond(
-                    BaseState.sidebar_pinned,
-                    pinned_sidebar(),
+                    BaseState.sidebar_visible,
+                    sidebar(),
                     rx.fragment(),
                 ),
-                # Main content area (always the same structure)
+                # Main content area
                 rx.box(
-                    # Top bar: only shown when NOT pinned
+                    # Top bar: only when sidebar is hidden
                     rx.cond(
-                        BaseState.sidebar_pinned,
+                        BaseState.sidebar_visible,
                         rx.fragment(),
                         top_bar(),
                     ),
