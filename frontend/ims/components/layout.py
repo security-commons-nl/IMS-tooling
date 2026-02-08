@@ -382,58 +382,52 @@ def page_header(title: str, subtitle: str = "") -> rx.Component:
 
 
 def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Component:
-    """Main layout wrapper with hamburger navigation and optional pinned sidebar."""
+    """Main layout wrapper with hamburger navigation and optional pinned sidebar.
+
+    The drawer is always in the DOM (invisible when sidebar_open=False).
+    The outer structure stays stable — only the pinned sidebar and top bar
+    toggle via rx.cond, preventing DOM reconciliation glitches.
+    """
     return rx.cond(
         AuthState.is_authenticated,
         rx.fragment(
-            rx.cond(
-                BaseState.sidebar_pinned,
-                # Pinned mode: permanent sidebar + content
-                rx.hstack(
+            # Drawer always in DOM — controlled by sidebar_open
+            nav_drawer(),
+            rx.hstack(
+                # Pinned sidebar: shown when pinned, gone when not
+                rx.cond(
+                    BaseState.sidebar_pinned,
                     pinned_sidebar(),
-                    rx.box(
-                        rx.cond(
-                            title != "",
-                            page_header(title, subtitle),
-                        ),
-                        rx.box(
-                            content,
-                            padding=rx.breakpoints(initial="12px", md="24px"),
-                            overflow_y="auto",
-                            flex="1",
-                        ),
-                        flex="1",
-                        height="100vh",
-                        overflow="hidden",
-                        display="flex",
-                        flex_direction="column",
-                        on_mount=ChatState.sync_page_context,
-                    ),
-                    width="100%",
-                    spacing="0",
+                    rx.fragment(),
                 ),
-                # Unpinned mode: top bar + drawer overlay + content
-                rx.fragment(
-                    nav_drawer(),
-                    rx.box(
+                # Main content area (always the same structure)
+                rx.box(
+                    # Top bar: only shown when NOT pinned
+                    rx.cond(
+                        BaseState.sidebar_pinned,
+                        rx.fragment(),
                         top_bar(),
-                        rx.cond(
-                            title != "",
-                            page_header(title, subtitle),
-                        ),
-                        rx.box(
-                            content,
-                            padding=rx.breakpoints(initial="12px", md="24px"),
-                            overflow_y="auto",
-                            flex="1",
-                        ),
-                        height="100vh",
-                        overflow="hidden",
-                        display="flex",
-                        flex_direction="column",
-                        on_mount=ChatState.sync_page_context,
                     ),
+                    rx.cond(
+                        title != "",
+                        page_header(title, subtitle),
+                        rx.fragment(),
+                    ),
+                    rx.box(
+                        content,
+                        padding=rx.breakpoints(initial="12px", md="24px"),
+                        overflow_y="auto",
+                        flex="1",
+                    ),
+                    flex="1",
+                    height="100vh",
+                    overflow="hidden",
+                    display="flex",
+                    flex_direction="column",
+                    on_mount=ChatState.sync_page_context,
                 ),
+                width="100%",
+                spacing="0",
             ),
             chat_island(),
         ),

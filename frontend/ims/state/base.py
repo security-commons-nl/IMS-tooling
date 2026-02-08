@@ -50,9 +50,9 @@ class BaseState(rx.State):
         self.sidebar_open = False
 
     def unpin_sidebar(self):
-        """Unpin sidebar — return to hamburger (drawer) mode, keeping menu visible."""
+        """Unpin sidebar — return to hamburger (drawer) mode."""
         self.sidebar_pinned = False
-        self.sidebar_open = True
+        self.sidebar_open = False
 
     def toggle_journey_expanded(self):
         """Toggle journey stepper visibility."""
