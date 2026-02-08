@@ -51,6 +51,12 @@ class AuthState(rx.State):
         return user.get("email", "") if user else ""
 
     @rx.var
+    def tenant_name(self) -> str:
+        """Get tenant/organization name."""
+        user = self.user
+        return user.get("tenant_name", "") if user else ""
+
+    @rx.var
     def global_roles(self) -> list:
         """Get user's global roles from login response."""
         user = self.user

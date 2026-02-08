@@ -11,7 +11,7 @@ from app.core.db import get_session
 from app.core.security import verify_password, get_password_hash
 from app.core.crud import CRUDBase
 from app.core.rbac import require_admin, get_user_roles
-from app.models.core_models import User, UserRead, UserScopeRole, Role
+from app.models.core_models import User, UserRead, UserScopeRole, Role, Tenant, TenantUser
 
 router = APIRouter()
 crud_user = CRUDBase(User)
@@ -82,10 +82,26 @@ async def login(
         })),
     }
 
+    # Fetch tenant name from first membership
+    tenant_name = ""
+    tu_result = await session.execute(
+        select(TenantUser).where(
+            TenantUser.user_id == user.id,
+            TenantUser.is_active == True,
+        ).limit(1)
+    )
+    tu = tu_result.scalars().first()
+    if tu:
+        t_result = await session.execute(select(Tenant).where(Tenant.id == tu.tenant_id))
+        tenant = t_result.scalars().first()
+        if tenant:
+            tenant_name = tenant.display_name or tenant.name
+
     # Return user data + RBAC info (no response_model restriction)
     user_data = UserRead.model_validate(user).model_dump()
     user_data["global_roles"] = role_names
     user_data["permissions"] = permissions
+    user_data["tenant_name"] = tenant_name
 
     return user_data
 

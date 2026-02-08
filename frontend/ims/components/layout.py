@@ -142,7 +142,15 @@ def _sidebar_inner() -> rx.Component:
         # Header
         rx.hstack(
             rx.icon("shield-check", size=28, color="var(--accent-9)"),
-            rx.text("IMS", size="5", weight="bold"),
+            rx.vstack(
+                rx.text("IMS", size="5", weight="bold", line_height="1"),
+                rx.cond(
+                    AuthState.tenant_name != "",
+                    rx.text(AuthState.tenant_name, size="1", color="gray", trim="both"),
+                ),
+                spacing="0",
+                align_items="start",
+            ),
             rx.spacer(),
             # X button — only visible on mobile
             rx.icon_button(
