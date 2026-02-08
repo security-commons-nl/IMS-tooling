@@ -14,6 +14,7 @@ class OrganizationProfileState(rx.State):
     profile_loaded: bool = False
     is_saving: bool = False
     error: str = ""
+    success_message: str = ""
 
     # --- Wizard meta ---
     wizard_completed: bool = False
@@ -185,6 +186,7 @@ class OrganizationProfileState(rx.State):
             self.wizard_completed = True
             self.show_wizard = False
             self.error = ""
+            self.success_message = "Organisatieprofiel opgeslagen"
         except Exception as e:
             self.error = str(e)
         finally:

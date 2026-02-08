@@ -30,6 +30,12 @@ class ComplianceState(rx.State):
     # Form state for editing
     show_edit_dialog: bool = False
     editing_entry: Dict[str, Any] = {}
+    # Flattened edit fields (Reflex can't track nested dict mutations)
+    edit_entry_id: int = 0
+    edit_is_applicable: bool = True
+    edit_implementation_status: str = ""
+    edit_justification: str = ""
+    edit_implementation_notes: str = ""
 
     # Initialize dialog
     show_init_dialog: bool = False
@@ -187,6 +193,11 @@ class ComplianceState(rx.State):
         for entry in self.soa_entries:
             if entry.get("id") == entry_id:
                 self.editing_entry = entry.copy()
+                self.edit_entry_id = entry.get("id", 0)
+                self.edit_is_applicable = entry.get("is_applicable", True)
+                self.edit_implementation_status = entry.get("implementation_status", "")
+                self.edit_justification = entry.get("justification", "") or ""
+                self.edit_implementation_notes = entry.get("implementation_notes", "") or ""
                 self.show_edit_dialog = True
                 break
 
@@ -196,34 +207,34 @@ class ComplianceState(rx.State):
         self.editing_entry = {}
 
     def set_edit_is_applicable(self, value: bool):
-        """Set is_applicable in editing entry."""
-        self.editing_entry["is_applicable"] = value
+        """Set is_applicable."""
+        self.edit_is_applicable = value
 
     def set_edit_implementation_status(self, status: str):
-        """Set implementation_status in editing entry."""
-        self.editing_entry["implementation_status"] = status
+        """Set implementation_status."""
+        self.edit_implementation_status = status
 
     def set_edit_justification(self, value: str):
-        """Set justification in editing entry."""
-        self.editing_entry["justification"] = value
+        """Set justification."""
+        self.edit_justification = value
 
     def set_edit_implementation_notes(self, value: str):
-        """Set implementation_notes in editing entry."""
-        self.editing_entry["implementation_notes"] = value
+        """Set implementation_notes."""
+        self.edit_implementation_notes = value
 
     async def save_entry(self):
         """Save edited entry."""
-        if not self.editing_entry.get("id"):
+        if not self.edit_entry_id:
             return
 
         try:
             await api_client.update_soa_entry(
-                self.editing_entry["id"],
+                self.edit_entry_id,
                 {
-                    "is_applicable": self.editing_entry.get("is_applicable"),
-                    "implementation_status": self.editing_entry.get("implementation_status"),
-                    "justification": self.editing_entry.get("justification"),
-                    "implementation_notes": self.editing_entry.get("implementation_notes"),
+                    "is_applicable": self.edit_is_applicable,
+                    "implementation_status": self.edit_implementation_status,
+                    "justification": self.edit_justification,
+                    "implementation_notes": self.edit_implementation_notes,
                 }
             )
             self.success_message = "Wijzigingen opgeslagen"

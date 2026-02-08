@@ -1,6 +1,7 @@
 """
 Risk Framework State — Risicokader (Hiaat 3)
 """
+import json
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
@@ -33,7 +34,8 @@ class RiskFrameworkState(rx.State):
         self.success_message = ""
         try:
             self.frameworks = await api_client.get_risk_frameworks()
-        except Exception:
+        except Exception as e:
+            self.error = f"Fout bij laden frameworks: {str(e)}"
             self.frameworks = []
         finally:
             self.is_loading = False
@@ -50,10 +52,10 @@ class RiskFrameworkState(rx.State):
                 self.is_editing = True
                 self.editing_id = framework_id
                 self.form_name = fw.get("name", "")
-                self.form_impact_definitions = fw.get("impact_definitions", "")
-                self.form_likelihood_definitions = fw.get("likelihood_definitions", "")
-                self.form_risk_tolerance = fw.get("risk_tolerance", "")
-                self.form_decision_rules = fw.get("decision_rules", "")
+                self.form_impact_definitions = self._to_str(fw.get("impact_definitions", ""))
+                self.form_likelihood_definitions = self._to_str(fw.get("likelihood_definitions", ""))
+                self.form_risk_tolerance = self._to_str(fw.get("risk_tolerance", ""))
+                self.form_decision_rules = self._to_str(fw.get("decision_rules", ""))
                 self.show_form_dialog = True
                 break
 
@@ -69,6 +71,15 @@ class RiskFrameworkState(rx.State):
         self.form_decision_rules = ""
         self.error = ""
         self.success_message = ""
+
+    @staticmethod
+    def _to_str(value) -> str:
+        """Convert value to string, handling dicts/lists from JSON API responses."""
+        if value is None:
+            return ""
+        if isinstance(value, (dict, list)):
+            return json.dumps(value, ensure_ascii=False, indent=2)
+        return str(value)
 
     def set_form_name(self, v: str): self.form_name = v
     def set_form_impact_definitions(self, v: str): self.form_impact_definitions = v

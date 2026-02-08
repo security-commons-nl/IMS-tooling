@@ -239,7 +239,7 @@ def form_dialog() -> rx.Component:
     return rx.dialog.root(
         rx.dialog.content(
             rx.dialog.title(
-                rx.cond(BacklogState.is_editing, "Item Bekijken", "Nieuw Verzoek")
+                rx.cond(BacklogState.is_editing, "Item Bewerken", "Nieuw Verzoek")
             ),
             rx.dialog.description(
                 rx.cond(

@@ -108,8 +108,8 @@ class RiskState(rx.State):
                 params["scope_id"] = self.filter_scope_id
 
             self.risks = await api_client.get_risks(**params)
-        except Exception:
-            # Silently fail - just show empty list
+        except Exception as e:
+            self.error = f"Fout bij laden risico's: {str(e)}"
             self.risks = []
         finally:
             self.is_loading = False
@@ -122,8 +122,8 @@ class RiskState(rx.State):
 
         try:
             self.heatmap_data = await api_client.get_risk_heatmap()
-        except Exception:
-            # Silently fail - just show empty heatmap
+        except Exception as e:
+            self.error = f"Fout bij laden heatmap: {str(e)}"
             self.heatmap_data = {
                 "heatmap": {
                     "MITIGATE": [],

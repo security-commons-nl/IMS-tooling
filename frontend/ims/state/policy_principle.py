@@ -42,7 +42,8 @@ class PolicyPrincipleState(rx.State):
         try:
             self.principles = await api_client.get_policy_principles()
             self.policies = await api_client.get_policies()
-        except Exception:
+        except Exception as e:
+            self.error = f"Fout bij laden principes: {str(e)}"
             self.principles = []
         finally:
             self.is_loading = False

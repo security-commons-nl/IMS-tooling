@@ -41,7 +41,8 @@ class DecisionState(rx.State):
         self.success_message = ""
         try:
             self.decisions = await api_client.get_decisions()
-        except Exception:
+        except Exception as e:
+            self.error = f"Fout bij laden besluiten: {str(e)}"
             self.decisions = []
         finally:
             self.is_loading = False

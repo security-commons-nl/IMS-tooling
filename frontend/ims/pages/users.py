@@ -112,14 +112,11 @@ def user_row(user: dict) -> rx.Component:
         ),
         rx.table.cell(
             rx.hstack(
-                rx.tooltip(
-                    rx.icon_button(
-                        rx.icon("key", size=14),
-                        variant="ghost",
-                        size="1",
-                        on_click=lambda: UserState.open_role_dialog(user["id"]),
-                    ),
-                    content="Rollen beheren",
+                rx.icon_button(
+                    rx.icon("key", size=14),
+                    variant="ghost",
+                    size="1",
+                    on_click=lambda: UserState.open_role_dialog(user["id"]),
                 ),
                 rx.icon_button(
                     rx.icon("pencil", size=14),
@@ -586,13 +583,14 @@ def user_form_dialog() -> rx.Component:
     )
 
 
-def scope_role_item(scope_data: dict) -> rx.Component:
+def scope_role_item(scope_data: rx.Var[dict]) -> rx.Component:
     """Display a scope with its assigned roles."""
+    scope = scope_data["scope"].to(dict)
     return rx.box(
         rx.hstack(
             rx.vstack(
-                rx.text(scope_data["scope"]["name"].to(str), weight="medium", size="2"),
-                rx.text(scope_data["scope"]["scope_type"].to(str), size="1", color="gray"),
+                rx.text(scope["name"].to(str), weight="medium", size="2"),
+                rx.text(scope["scope_type"].to(str), size="1", color="gray"),
                 align_items="start",
                 spacing="0",
             ),
@@ -606,7 +604,7 @@ def scope_role_item(scope_data: dict) -> rx.Component:
                             rx.icon("x", size=10),
                             variant="ghost",
                             size="1",
-                            on_click=lambda: UserState.remove_role(scope_data["scope"]["id"], role),
+                            on_click=lambda: UserState.remove_role(scope["id"], role),
                         ),
                         spacing="1",
                     ),

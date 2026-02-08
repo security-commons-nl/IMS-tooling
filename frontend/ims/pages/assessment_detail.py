@@ -14,65 +14,72 @@ from ims.components.layout import layout
 # =============================================================================
 
 def phase_step(phase_name: str, index: int) -> rx.Component:
-    """Single step in the phase stepper."""
-    return rx.hstack(
-        rx.cond(
-            AssessmentState.detail_phase_index > index,
-            # Completed
-            rx.box(
-                rx.icon("check", size=14, color="white"),
-                width="28px",
-                height="28px",
-                border_radius="50%",
-                background="var(--green-9)",
-                display="flex",
-                align_items="center",
-                justify_content="center",
-            ),
+    """Single step in the phase stepper with hover effect and tooltip."""
+    return rx.el.div(
+        rx.hstack(
             rx.cond(
-                AssessmentState.detail_phase_index == index,
-                # Current
+                AssessmentState.detail_phase_index > index,
+                # Completed
                 rx.box(
-                    rx.text(str(index + 1), size="1", color="white", weight="bold"),
+                    rx.icon("check", size=14, color="white"),
                     width="28px",
                     height="28px",
                     border_radius="50%",
-                    background="var(--indigo-9)",
+                    background="var(--green-9)",
                     display="flex",
                     align_items="center",
                     justify_content="center",
                 ),
-                # Future
-                rx.box(
-                    rx.text(str(index + 1), size="1", color="gray"),
-                    width="28px",
-                    height="28px",
-                    border_radius="50%",
-                    border="2px solid var(--gray-6)",
-                    display="flex",
-                    align_items="center",
-                    justify_content="center",
+                rx.cond(
+                    AssessmentState.detail_phase_index == index,
+                    # Current
+                    rx.box(
+                        rx.text(str(index + 1), size="1", color="white", weight="bold"),
+                        width="28px",
+                        height="28px",
+                        border_radius="50%",
+                        background="var(--indigo-9)",
+                        display="flex",
+                        align_items="center",
+                        justify_content="center",
+                    ),
+                    # Future
+                    rx.box(
+                        rx.text(str(index + 1), size="1", color="gray"),
+                        width="28px",
+                        height="28px",
+                        border_radius="50%",
+                        border="2px solid var(--gray-6)",
+                        display="flex",
+                        align_items="center",
+                        justify_content="center",
+                    ),
                 ),
             ),
-        ),
-        rx.text(
-            phase_name,
-            size="1",
-            weight=rx.cond(
-                AssessmentState.detail_phase_index == index,
-                "bold",
-                "regular",
+            rx.text(
+                phase_name,
+                size="1",
+                weight=rx.cond(
+                    AssessmentState.detail_phase_index == index,
+                    "bold",
+                    "regular",
+                ),
+                color=rx.cond(
+                    AssessmentState.detail_phase_index >= index,
+                    "var(--gray-12)",
+                    "var(--gray-8)",
+                ),
             ),
-            color=rx.cond(
-                AssessmentState.detail_phase_index >= index,
-                "var(--gray-12)",
-                "var(--gray-8)",
-            ),
+            spacing="2",
+            align_items="center",
         ),
-        spacing="2",
-        align_items="center",
+        title=f"Klik om naar '{phase_name}' te gaan",
         cursor="pointer",
+        padding="4px 8px",
+        border_radius="6px",
+        transition="background 0.15s",
         on_click=AssessmentState.advance_phase(phase_name),
+        _hover={"background": "var(--gray-a3)"},
     )
 
 
@@ -676,6 +683,61 @@ def tab_button(label: str, value: str, icon_name: str) -> rx.Component:
     )
 
 
+def next_phase_button() -> rx.Component:
+    """Prominent button to advance to the next workflow phase."""
+    return rx.cond(
+        AssessmentState.is_final_phase,
+        # Already completed
+        rx.badge(
+            rx.hstack(
+                rx.icon("circle-check", size=14),
+                rx.text("Assessment afgerond"),
+                spacing="1",
+            ),
+            color_scheme="green",
+            variant="soft",
+            size="2",
+        ),
+        # Show next phase button
+        rx.button(
+            rx.icon("arrow-right", size=14),
+            "Volgende fase: " + AssessmentState.next_phase_label,
+            size="2",
+            on_click=AssessmentState.advance_to_next_phase,
+        ),
+    )
+
+
+def complete_confirmation_dialog() -> rx.Component:
+    """Confirmation dialog for completing an assessment."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Assessment afronden"),
+            rx.alert_dialog.description(
+                "Weet je zeker dat je dit assessment wilt afronden? "
+                "De status wordt op 'Afgerond' gezet en het assessment wordt afgesloten.",
+            ),
+            rx.flex(
+                rx.alert_dialog.cancel(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray"),
+                ),
+                rx.alert_dialog.action(
+                    rx.button(
+                        "Afronden",
+                        color_scheme="green",
+                        on_click=AssessmentState.confirm_complete,
+                    ),
+                ),
+                spacing="3",
+                margin_top="16px",
+                justify="end",
+            ),
+        ),
+        open=AssessmentState.show_complete_dialog,
+        on_open_change=AssessmentState.set_show_complete_dialog,
+    )
+
+
 def assessment_detail_content() -> rx.Component:
     """Detail page content."""
     return rx.vstack(
@@ -729,6 +791,11 @@ def assessment_detail_content() -> rx.Component:
                 ),
                 # Phase stepper
                 phase_stepper(),
+                # Next phase action button
+                rx.hstack(
+                    next_phase_button(),
+                    width="100%",
+                ),
                 # Tab navigation
                 rx.flex(
                     tab_button("Overzicht", "overzicht", "layout-dashboard"),
@@ -754,6 +821,7 @@ def assessment_detail_content() -> rx.Component:
             ),
         ),
         wizard_dialog(),
+        complete_confirmation_dialog(),
         width="100%",
         spacing="4",
     )

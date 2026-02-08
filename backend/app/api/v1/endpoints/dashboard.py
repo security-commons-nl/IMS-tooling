@@ -6,9 +6,11 @@ from sqlmodel import select, or_
 from pydantic import BaseModel
 
 from app.core.db import get_session
+from app.core.rbac import get_current_user
 from app.models.core_models import (
     CorrectiveAction,
     ReviewSchedule,
+    User,
     WorkflowInstance,
     WorkflowStatus,
 )
@@ -38,30 +40,25 @@ class MyTasksResponse(BaseModel):
 
 @router.get("/my-tasks", response_model=MyTasksResponse)
 async def get_my_tasks(
-    # SECURITY TODO: Replace these query params with auth dependencies:
-    # user_id should come from: Depends(get_current_user) -> current_user.id
-    # tenant_id should come from: Depends(get_current_tenant) -> tenant_id
-    # NEVER trust client-provided user_id - this creates an IDOR vulnerability
-    user_id: int = Query(..., description="ID of the user (TEMPORARY - must come from auth)"),
     tenant_id: int = Query(..., description="Tenant context (REQUIRED to prevent cross-tenant leakage)"),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Get a unified list of tasks for the user.
+    Get a unified list of tasks for the authenticated user.
     Includes:
     - Corrective Actions assigned to the user
     - Scheduled Reviews responsible by the user
     - Workflow approvals/tasks assigned to the user
-    
-    SECURITY NOTE: tenant_id is required to enforce tenant isolation.
     """
+    user_id = current_user.id
     tasks: List[TaskItem] = []
     now = datetime.utcnow()
     due_soon_threshold = now + timedelta(days=7)
 
     # 1. Corrective Actions
     query_actions = select(CorrectiveAction).where(
-        CorrectiveAction.tenant_id == tenant_id,  # SECURITY: tenant filter ALWAYS applied
+        CorrectiveAction.tenant_id == tenant_id,
         CorrectiveAction.assigned_to_id == user_id,
         CorrectiveAction.completed == False
     )
@@ -84,7 +81,7 @@ async def get_my_tasks(
 
     # 2. Review Schedules
     query_reviews = select(ReviewSchedule).where(
-        ReviewSchedule.tenant_id == tenant_id,  # SECURITY: tenant filter ALWAYS applied
+        ReviewSchedule.tenant_id == tenant_id,  # tenant isolation
         ReviewSchedule.responsible_id == user_id,
         ReviewSchedule.is_active == True,
         ReviewSchedule.next_review <= now + timedelta(days=30)
@@ -109,7 +106,7 @@ async def get_my_tasks(
     # 3. Workflow Instances
     # Tasks where user is assignee OR approver
     query_workflows = select(WorkflowInstance).where(
-        WorkflowInstance.tenant_id == tenant_id,  # SECURITY: tenant filter ALWAYS applied
+        WorkflowInstance.tenant_id == tenant_id,  # tenant isolation
         or_(
             WorkflowInstance.current_assignee_id == user_id,
             WorkflowInstance.current_approver_id == user_id

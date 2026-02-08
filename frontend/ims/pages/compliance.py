@@ -353,7 +353,7 @@ def edit_dialog() -> rx.Component:
                 rx.hstack(
                     rx.text("Toepasbaar:", size="2", weight="medium"),
                     rx.switch(
-                        checked=ComplianceState.editing_entry.get("is_applicable", True),
+                        checked=ComplianceState.edit_is_applicable,
                         on_change=ComplianceState.set_edit_is_applicable,
                     ),
                     spacing="2",
@@ -371,7 +371,7 @@ def edit_dialog() -> rx.Component:
                             rx.select.item("Geimplementeerd", value="Implemented"),
                             rx.select.item("N.v.t.", value="Not Applicable"),
                         ),
-                        value=ComplianceState.editing_entry.get("implementation_status", ""),
+                        value=ComplianceState.edit_implementation_status,
                         on_change=ComplianceState.set_edit_implementation_status,
                     ),
                     align_items="start",
@@ -383,7 +383,7 @@ def edit_dialog() -> rx.Component:
                     rx.text("Onderbouwing", size="2", weight="medium"),
                     rx.text_area(
                         placeholder="Waarom is dit wel/niet toepasbaar?",
-                        value=ComplianceState.editing_entry.get("justification", ""),
+                        value=ComplianceState.edit_justification,
                         on_change=ComplianceState.set_edit_justification,
                         width="100%",
                         rows="2",
@@ -397,7 +397,7 @@ def edit_dialog() -> rx.Component:
                     rx.text("Implementatie Notities", size="2", weight="medium"),
                     rx.text_area(
                         placeholder="Notities over de implementatie...",
-                        value=ComplianceState.editing_entry.get("implementation_notes", ""),
+                        value=ComplianceState.edit_implementation_notes,
                         on_change=ComplianceState.set_edit_implementation_notes,
                         width="100%",
                         rows="3",

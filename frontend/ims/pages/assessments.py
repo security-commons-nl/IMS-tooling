@@ -268,6 +268,19 @@ def stat_cards() -> rx.Component:
         ),
         rx.card(
             rx.hstack(
+                rx.icon("clock", size=20, color="var(--amber-9)"),
+                rx.vstack(
+                    rx.text("Aangevraagd", size="1", color="gray"),
+                    rx.text(AssessmentState.pending_count, size="4", weight="bold"),
+                    spacing="0",
+                    align_items="start",
+                ),
+                spacing="3",
+            ),
+            padding="12px",
+        ),
+        rx.card(
+            rx.hstack(
                 rx.icon("circle-play", size=20, color="var(--blue-9)"),
                 rx.vstack(
                     rx.text("Actief", size="1", color="gray"),
@@ -292,7 +305,7 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
-        columns=rx.breakpoints(initial="1", sm="3"),
+        columns=rx.breakpoints(initial="2", sm="4"),
         spacing="3",
         width="100%",
     )

@@ -17,6 +17,9 @@ class SupplierState(rx.State):
     error: str = ""
     success_message: str = ""
 
+    # Search
+    search_query: str = ""
+
     # Dialog state
     show_form_dialog: bool = False
     is_editing: bool = False
@@ -42,6 +45,19 @@ class SupplierState(rx.State):
     # ==========================================================================
     # COMPUTED PROPERTIES
     # ==========================================================================
+
+    @rx.var
+    def filtered_suppliers(self) -> List[Dict[str, Any]]:
+        """Filter suppliers by search query."""
+        if not self.search_query:
+            return self.suppliers
+        q = self.search_query.lower()
+        return [
+            s for s in self.suppliers
+            if q in (s.get("name") or "").lower()
+            or q in (s.get("owner") or "").lower()
+            or q in (s.get("vendor_contact_name") or "").lower()
+        ]
 
     @rx.var
     def total_suppliers(self) -> int:
@@ -126,9 +142,8 @@ class SupplierState(rx.State):
                 self.form_parent_id = str(supplier.get("parent_id", "")) if supplier.get("parent_id") else "0"
                 self.form_vendor_contact_name = supplier.get("vendor_contact_name", "") or ""
                 self.form_vendor_contact_email = supplier.get("vendor_contact_email", "") or ""
-                # Date handling would need proper formatting
-                self.form_contract_start_date = ""
-                self.form_contract_end_date = ""
+                self.form_contract_start_date = (supplier.get("contract_start_date") or "")[:10] if supplier.get("contract_start_date") else ""
+                self.form_contract_end_date = (supplier.get("contract_end_date") or "")[:10] if supplier.get("contract_end_date") else ""
                 self.show_form_dialog = True
                 break
 
@@ -137,6 +152,9 @@ class SupplierState(rx.State):
         self._reset_form()
 
     # Form field setters
+    def set_search_query(self, value: str):
+        self.search_query = value
+
     def set_form_name(self, value: str):
         self.form_name = value
 
@@ -183,6 +201,8 @@ class SupplierState(rx.State):
                 "parent_id": int(self.form_parent_id) if self.form_parent_id and self.form_parent_id != "0" else None,
                 "vendor_contact_name": self.form_vendor_contact_name.strip() or None,
                 "vendor_contact_email": self.form_vendor_contact_email.strip() or None,
+                "contract_start_date": self.form_contract_start_date or None,
+                "contract_end_date": self.form_contract_end_date or None,
                 "tenant_id": 1,
             }
 

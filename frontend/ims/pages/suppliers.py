@@ -125,6 +125,37 @@ def supplier_form_dialog() -> rx.Component:
                     width="100%",
                 ),
 
+                # Contract dates
+                rx.flex(
+                    rx.vstack(
+                        rx.text("Contractstart", size="2", weight="medium"),
+                        rx.input(
+                            type="date",
+                            value=SupplierState.form_contract_start_date,
+                            on_change=SupplierState.set_form_contract_start_date,
+                            width="100%",
+                        ),
+                        align_items="start",
+                        flex="1",
+                        min_width="200px",
+                    ),
+                    rx.vstack(
+                        rx.text("Contracteinde", size="2", weight="medium"),
+                        rx.input(
+                            type="date",
+                            value=SupplierState.form_contract_end_date,
+                            on_change=SupplierState.set_form_contract_end_date,
+                            width="100%",
+                        ),
+                        align_items="start",
+                        flex="1",
+                        min_width="200px",
+                    ),
+                    wrap="wrap",
+                    gap="3",
+                    width="100%",
+                ),
+
                 rx.divider(),
 
                 # Contact info
@@ -259,7 +290,11 @@ def supplier_row(supplier: dict) -> rx.Component:
             ),
         ),
         rx.table.cell(
-            rx.badge("Actief", color_scheme="green", variant="soft"),
+            rx.cond(
+                supplier["is_active"],
+                rx.badge("Actief", color_scheme="green", variant="soft"),
+                rx.badge("Inactief", color_scheme="gray", variant="soft"),
+            ),
         ),
         rx.table.cell(
             rx.hstack(
@@ -353,7 +388,7 @@ def suppliers_table() -> rx.Component:
                 ),
                 rx.cond(
                     SupplierState.suppliers.length() > 0,
-                    rx.foreach(SupplierState.suppliers, supplier_row),
+                    rx.foreach(SupplierState.filtered_suppliers, supplier_row),
                     rx.table.row(
                         rx.table.cell(
                             rx.center(
@@ -388,6 +423,8 @@ def filter_bar() -> rx.Component:
     return rx.flex(
         rx.input(
             placeholder="Zoek leverancier...",
+            value=SupplierState.search_query,
+            on_change=SupplierState.set_search_query,
             width=rx.breakpoints(initial="100%", md="auto"),
             style={"min_width": "200px"},
         ),
@@ -460,7 +497,7 @@ def suppliers_content() -> rx.Component:
                     rx.center(rx.spinner(size="2"), padding="40px"),
                     rx.cond(
                         SupplierState.suppliers.length() > 0,
-                        rx.foreach(SupplierState.suppliers, supplier_mobile_card),
+                        rx.foreach(SupplierState.filtered_suppliers, supplier_mobile_card),
                         rx.center(rx.text("Geen leveranciers gevonden", color="gray"), padding="40px"),
                     ),
                 ),

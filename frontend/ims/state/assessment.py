@@ -448,10 +448,19 @@ class AssessmentState(rx.State):
     # ==========================================================================
 
     async def advance_phase(self, phase: str):
-        """Advance the assessment to a new phase."""
+        """Advance the assessment to a new phase (linear enforcement)."""
         aid = self.detail_assessment.get("id")
         if not aid:
             return
+
+        # Validate linear phase progression
+        current_phase = self.detail_assessment.get("phase", "Aangevraagd")
+        if phase in ASSESSMENT_PHASES and current_phase in ASSESSMENT_PHASES:
+            current_idx = ASSESSMENT_PHASES.index(current_phase)
+            target_idx = ASSESSMENT_PHASES.index(phase)
+            if target_idx != current_idx + 1:
+                self.error = f"Kan niet naar '{phase}' — volgende fase is '{ASSESSMENT_PHASES[current_idx + 1] if current_idx + 1 < len(ASSESSMENT_PHASES) else 'geen'}'"
+                return
 
         try:
             result = await api_client.advance_assessment_phase(aid, phase)
