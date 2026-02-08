@@ -1,7 +1,9 @@
 """
-Layout Components - Hamburger navigation with push sidebar
-Single sidebar: temporarily open (hamburger) or pinned (user toggle).
-Content pushes right when sidebar is visible — no overlay/drawer.
+Layout Components - Responsive sidebar navigation
+
+Desktop (md+): sidebar always visible, part of flex layout.
+Mobile (<md):  hamburger in top bar, sidebar slides in as overlay.
+               Auto-closes on navigation. Backdrop click closes.
 """
 import reflex as rx
 from ims.state.auth import AuthState
@@ -11,11 +13,11 @@ from ims.components.chat_island import chat_island
 
 
 # ---------------------------------------------------------------------------
-# Navigation link helper
+# Navigation link helpers
 # ---------------------------------------------------------------------------
 
 def sidebar_nav_link(label: str, href: str, icon: str) -> rx.Component:
-    """Navigation link — closes sidebar on click when not pinned."""
+    """Nav link — closes mobile sidebar on click (no-op on desktop)."""
     return rx.link(
         rx.hstack(
             rx.icon(icon, size=20),
@@ -29,7 +31,7 @@ def sidebar_nav_link(label: str, href: str, icon: str) -> rx.Component:
         width="100%",
         text_decoration="none",
         color="inherit",
-        on_click=BaseState.nav_link_close,
+        on_click=BaseState.close_sidebar,
     )
 
 
@@ -54,20 +56,15 @@ def _section_header(label: str, is_open_var, toggle_handler):
 
 
 def _build_nav_links(link_fn):
-    """Build the full list of navigation items for a given link function.
+    """Build the full list of navigation items.
 
     Sections are collapsible. MS Hub is always visible at the top.
-    - DOEN: default open
-    - ONTDEKKEN: default closed
-    - INRICHTEN: default closed, only for configurers
-    - BEHEER: default closed, only for user managers
     """
     return [
-        # MS Hub — always visible at top
         link_fn("MS Hub", "/ms-hub", "layout-grid"),
         link_fn("Dashboard", "/", "layout-dashboard"),
         rx.divider(margin_y="4px"),
-        # DOEN — collapsible, default open
+        # DOEN
         _section_header("DOEN", BaseState.menu_doen_open, BaseState.toggle_menu_doen),
         rx.cond(
             BaseState.menu_doen_open,
@@ -82,7 +79,7 @@ def _build_nav_links(link_fn):
             ),
         ),
         rx.divider(margin_y="4px"),
-        # ONTDEKKEN — collapsible, default closed
+        # ONTDEKKEN
         _section_header("ONTDEKKEN", BaseState.menu_ontdekken_open, BaseState.toggle_menu_ontdekken),
         rx.cond(
             BaseState.menu_ontdekken_open,
@@ -96,7 +93,7 @@ def _build_nav_links(link_fn):
                 link_fn("Backlog", "/backlog", "list-todo"),
             ),
         ),
-        # INRICHTEN — only for configurers (Beheerder, Coordinator, Eigenaar)
+        # INRICHTEN — only for configurers
         rx.cond(
             AuthState.can_configure,
             rx.fragment(
@@ -113,7 +110,7 @@ def _build_nav_links(link_fn):
                 ),
             ),
         ),
-        # BEHEER — only for user managers (Beheerder, Coordinator)
+        # BEHEER — only for user managers
         rx.cond(
             AuthState.can_manage_users,
             rx.fragment(
@@ -135,11 +132,134 @@ def _build_nav_links(link_fn):
 
 
 # ---------------------------------------------------------------------------
-# Top bar (hamburger) — shown when sidebar is hidden
+# Sidebar content (shared between desktop and mobile)
+# ---------------------------------------------------------------------------
+
+def _sidebar_inner() -> rx.Component:
+    """Sidebar content: header, navigation, user section."""
+    return rx.vstack(
+        # Header
+        rx.hstack(
+            rx.icon("shield-check", size=28, color="var(--accent-9)"),
+            rx.text("IMS", size="5", weight="bold"),
+            rx.spacer(),
+            # X button — only visible on mobile
+            rx.icon_button(
+                rx.icon("x", size=20),
+                variant="ghost",
+                size="2",
+                on_click=BaseState.close_sidebar,
+                display=rx.breakpoints(initial="flex", md="none"),
+            ),
+            width="100%",
+            padding="16px",
+            align="center",
+        ),
+        rx.divider(),
+
+        # Navigation
+        rx.vstack(
+            *_build_nav_links(sidebar_nav_link),
+            spacing="1",
+            width="100%",
+            padding="8px",
+            overflow_y="auto",
+            flex="1",
+        ),
+
+        rx.divider(),
+
+        # User section
+        rx.hstack(
+            rx.avatar(
+                fallback=AuthState.user_display_name[0],
+                size="2",
+            ),
+            rx.vstack(
+                rx.text(AuthState.user_display_name, size="2", weight="medium"),
+                rx.text(AuthState.user_email, size="1", color="gray"),
+                spacing="0",
+                align_items="start",
+            ),
+            rx.spacer(),
+            rx.icon_button(
+                rx.color_mode_cond(
+                    light=rx.icon("moon", size=16),
+                    dark=rx.icon("sun", size=16),
+                ),
+                variant="ghost",
+                size="1",
+                on_click=rx.toggle_color_mode,
+            ),
+            rx.icon_button(
+                rx.icon("log-out", size=16),
+                variant="ghost",
+                size="1",
+                on_click=AuthState.logout,
+            ),
+            width="100%",
+            padding="12px",
+        ),
+
+        height="100vh",
+        width="100%",
+        align_items="stretch",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Desktop sidebar — always visible on md+
+# ---------------------------------------------------------------------------
+
+def desktop_sidebar() -> rx.Component:
+    """Permanent sidebar for desktop — part of flex layout, pushes content."""
+    return rx.box(
+        _sidebar_inner(),
+        display=rx.breakpoints(initial="none", md="flex"),
+        width="260px",
+        min_width="260px",
+        background="var(--gray-a2)",
+        border_right="1px solid var(--gray-a5)",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mobile sidebar — overlay + backdrop, controlled by state
+# ---------------------------------------------------------------------------
+
+def mobile_sidebar() -> rx.Component:
+    """Overlay sidebar for mobile — slides over content with backdrop."""
+    return rx.fragment(
+        # Backdrop
+        rx.box(
+            position="fixed",
+            inset="0",
+            background="rgba(0,0,0,0.4)",
+            z_index="40",
+            on_click=BaseState.close_sidebar,
+        ),
+        # Sidebar panel
+        rx.box(
+            _sidebar_inner(),
+            position="fixed",
+            left="0",
+            top="0",
+            width="85vw",
+            max_width="320px",
+            height="100vh",
+            background="var(--color-background)",
+            border_right="1px solid var(--gray-a5)",
+            z_index="50",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Top bar — hamburger menu, only visible on mobile
 # ---------------------------------------------------------------------------
 
 def top_bar() -> rx.Component:
-    """Sticky top bar with hamburger menu."""
+    """Sticky top bar with hamburger — mobile only."""
     return rx.box(
         rx.hstack(
             rx.icon_button(
@@ -168,108 +288,12 @@ def top_bar() -> rx.Component:
             padding="8px 12px",
             align="center",
         ),
+        display=rx.breakpoints(initial="block", md="none"),
         border_bottom="1px solid var(--gray-a5)",
         background="var(--color-background)",
         position="sticky",
         top="0",
         z_index="10",
-    )
-
-
-# ---------------------------------------------------------------------------
-# Push sidebar — replaces both drawer and pinned sidebar
-# ---------------------------------------------------------------------------
-
-def sidebar() -> rx.Component:
-    """Push sidebar — visible when open or pinned, pushes content right."""
-    return rx.box(
-        rx.vstack(
-            # Header with pin toggle and close button
-            rx.hstack(
-                rx.icon("shield-check", size=28, color="var(--accent-9)"),
-                rx.text("IMS", size="5", weight="bold"),
-                rx.spacer(),
-                # Pin toggle
-                rx.icon_button(
-                    rx.cond(
-                        BaseState.sidebar_pinned,
-                        rx.icon("pin-off", size=18),
-                        rx.icon("pin", size=18),
-                    ),
-                    variant=rx.cond(
-                        BaseState.sidebar_pinned,
-                        "solid",
-                        "outline",
-                    ),
-                    color_scheme="indigo",
-                    size="2",
-                    on_click=BaseState.toggle_pin,
-                ),
-                # Close (X)
-                rx.icon_button(
-                    rx.icon("x", size=20),
-                    variant="ghost",
-                    size="2",
-                    on_click=BaseState.close_sidebar,
-                ),
-                width="100%",
-                padding="16px",
-                align="center",
-            ),
-            rx.divider(),
-
-            # Navigation
-            rx.vstack(
-                *_build_nav_links(sidebar_nav_link),
-                spacing="1",
-                width="100%",
-                padding="8px",
-                overflow_y="auto",
-                flex="1",
-            ),
-
-            rx.divider(),
-
-            # User section
-            rx.hstack(
-                rx.avatar(
-                    fallback=AuthState.user_display_name[0],
-                    size="2",
-                ),
-                rx.vstack(
-                    rx.text(AuthState.user_display_name, size="2", weight="medium"),
-                    rx.text(AuthState.user_email, size="1", color="gray"),
-                    spacing="0",
-                    align_items="start",
-                ),
-                rx.spacer(),
-                rx.icon_button(
-                    rx.color_mode_cond(
-                        light=rx.icon("moon", size=16),
-                        dark=rx.icon("sun", size=16),
-                    ),
-                    variant="ghost",
-                    size="1",
-                    on_click=rx.toggle_color_mode,
-                ),
-                rx.icon_button(
-                    rx.icon("log-out", size=16),
-                    variant="ghost",
-                    size="1",
-                    on_click=AuthState.logout,
-                ),
-                width="100%",
-                padding="12px",
-            ),
-
-            height="100vh",
-            width="100%",
-            align_items="stretch",
-        ),
-        width="260px",
-        min_width="260px",
-        background="var(--gray-a2)",
-        border_right="1px solid var(--gray-a5)",
     )
 
 
@@ -299,28 +323,20 @@ def page_header(title: str, subtitle: str = "") -> rx.Component:
 
 
 def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Component:
-    """Main layout wrapper with push sidebar and optional pin.
+    """Responsive layout: permanent desktop sidebar + mobile hamburger overlay.
 
-    The sidebar pushes content right when visible — no overlay/drawer.
+    Desktop (md+): sidebar always visible, pushes content.
+    Mobile (<md):  hamburger top bar, sidebar overlay on toggle.
     """
     return rx.cond(
         AuthState.is_authenticated,
         rx.fragment(
             rx.hstack(
-                # Sidebar: visible when open or pinned, pushes content
-                rx.cond(
-                    BaseState.sidebar_visible,
-                    sidebar(),
-                    rx.fragment(),
-                ),
-                # Main content area
+                # Desktop sidebar (always visible on md+, hidden on mobile)
+                desktop_sidebar(),
+                # Main content
                 rx.box(
-                    # Top bar: only when sidebar is hidden
-                    rx.cond(
-                        BaseState.sidebar_visible,
-                        rx.fragment(),
-                        top_bar(),
-                    ),
+                    top_bar(),
                     rx.cond(
                         title != "",
                         page_header(title, subtitle),
@@ -342,11 +358,15 @@ def layout(content: rx.Component, title: str = "", subtitle: str = "") -> rx.Com
                 width="100%",
                 spacing="0",
             ),
+            # Mobile sidebar overlay (only rendered when open)
+            rx.cond(
+                BaseState.sidebar_open,
+                mobile_sidebar(),
+                rx.fragment(),
+            ),
             chat_island(),
         ),
-        # Not (yet) authenticated — client-side localStorage check avoids
-        # server-side hydration race: the browser knows immediately whether
-        # the user is logged in, no WebSocket round-trip needed.
+        # Not (yet) authenticated
         rx.fragment(
             rx.center(
                 rx.spinner(size="3"),
