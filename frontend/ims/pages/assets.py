@@ -224,10 +224,10 @@ def asset_form_dialog() -> rx.Component:
                             rx.select.root(
                                 rx.select.trigger(placeholder="Rating"),
                                 rx.select.content(
-                                    rx.select.item("Laag", value="Public"),
-                                    rx.select.item("Gemiddeld", value="Internal"),
-                                    rx.select.item("Hoog", value="Confidential"),
-                                    rx.select.item("Kritiek", value="Secret"),
+                                    rx.select.item("Laag", value="LOW"),
+                                    rx.select.item("Gemiddeld", value="MEDIUM"),
+                                    rx.select.item("Hoog", value="HIGH"),
+                                    rx.select.item("Kritiek", value="CRITICAL"),
                                 ),
                                 value=AssetState.form_availability_rating,
                                 on_change=AssetState.set_form_availability_rating,
@@ -247,10 +247,10 @@ def asset_form_dialog() -> rx.Component:
                             rx.select.root(
                                 rx.select.trigger(placeholder="Rating"),
                                 rx.select.content(
-                                    rx.select.item("Laag", value="Public"),
-                                    rx.select.item("Gemiddeld", value="Internal"),
-                                    rx.select.item("Hoog", value="Confidential"),
-                                    rx.select.item("Kritiek", value="Secret"),
+                                    rx.select.item("Laag", value="LOW"),
+                                    rx.select.item("Gemiddeld", value="MEDIUM"),
+                                    rx.select.item("Hoog", value="HIGH"),
+                                    rx.select.item("Kritiek", value="CRITICAL"),
                                 ),
                                 value=AssetState.form_integrity_rating,
                                 on_change=AssetState.set_form_integrity_rating,
@@ -264,10 +264,10 @@ def asset_form_dialog() -> rx.Component:
                             rx.select.root(
                                 rx.select.trigger(placeholder="Rating"),
                                 rx.select.content(
-                                    rx.select.item("Laag", value="Public"),
-                                    rx.select.item("Gemiddeld", value="Internal"),
-                                    rx.select.item("Hoog", value="Confidential"),
-                                    rx.select.item("Kritiek", value="Secret"),
+                                    rx.select.item("Laag", value="LOW"),
+                                    rx.select.item("Gemiddeld", value="MEDIUM"),
+                                    rx.select.item("Hoog", value="HIGH"),
+                                    rx.select.item("Kritiek", value="CRITICAL"),
                                 ),
                                 value=AssetState.form_confidentiality_rating,
                                 on_change=AssetState.set_form_confidentiality_rating,

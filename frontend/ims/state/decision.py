@@ -101,6 +101,8 @@ class DecisionState(rx.State):
         }
         if self.form_justification:
             data["justification"] = self.form_justification
+        if self.form_valid_until:
+            data["valid_until"] = self.form_valid_until
         if self.form_scope_id:
             data["scope_id"] = int(self.form_scope_id)
 

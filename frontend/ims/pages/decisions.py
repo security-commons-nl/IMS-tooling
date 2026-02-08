@@ -49,6 +49,18 @@ def decision_form_dialog() -> rx.Component:
                     ),
                     align_items="start", width="100%",
                 ),
+                # Valid until
+                rx.vstack(
+                    rx.text("Geldig tot", size="2", weight="medium"),
+                    rx.input(
+                        type="date",
+                        placeholder="Verloopdatum",
+                        value=DecisionState.form_valid_until,
+                        on_change=DecisionState.set_form_valid_until,
+                        width="100%",
+                    ),
+                    align_items="start", width="100%",
+                ),
                 # Justification
                 rx.vstack(
                     rx.text("Onderbouwing", size="2", weight="medium"),

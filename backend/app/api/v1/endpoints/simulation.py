@@ -96,8 +96,8 @@ async def run_simulation(
     # TODO: Replace with Depends(get_current_tenant) from auth context
     tenant_id: int = Query(..., description="Tenant ID"),
     iterations: int = Query(default=10000, ge=100, le=100000, description="Number of iterations (max 100,000)"),
-    scope_id: Optional[int] = None,
-    risk_ids: Optional[List[int]] = None,
+    scope_id: Optional[int] = Query(default=None, description="Filter by scope"),
+    risk_ids: Optional[List[int]] = Query(default=None, description="Specific risk IDs to simulate"),
     session: AsyncSession = Depends(get_session),
 ):
     """

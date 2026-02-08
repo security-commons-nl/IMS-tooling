@@ -375,6 +375,7 @@ def backlog_page() -> rx.Component:
             
             width="100%",
             spacing="4",
+            on_mount=BacklogState.load_items,
         ),
         title="Backlog",
         subtitle="Verzoeken, verbeteringen en ideeën voor het IMS"

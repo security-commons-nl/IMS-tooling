@@ -93,6 +93,9 @@ class AssessmentState(rx.State):
     evidence_type: str = ""
     evidence_url: str = ""
 
+    # Complete confirmation dialog
+    show_complete_dialog: bool = False
+
     # BIA questionnaire
     bia_questions: List[Dict[str, Any]] = []
     bia_responses: Dict[str, int] = {}
@@ -113,15 +116,27 @@ class AssessmentState(rx.State):
 
     @rx.var
     def active_count(self) -> int:
-        return len([a for a in self.assessments if a.get("status") == "Active"])
+        """Count assessments that are actively being worked on (not Aangevraagd, not Afgerond)."""
+        return len([
+            a for a in self.assessments
+            if a.get("phase") not in ("Aangevraagd", "Afgerond")
+        ])
 
     @rx.var
     def completed_count(self) -> int:
-        return len([a for a in self.assessments if a.get("status") == "Closed"])
+        """Count assessments that are finished."""
+        return len([
+            a for a in self.assessments
+            if a.get("phase") == "Afgerond" or a.get("status") == "Closed"
+        ])
 
     @rx.var
-    def draft_count(self) -> int:
-        return len([a for a in self.assessments if a.get("status") == "Draft"])
+    def pending_count(self) -> int:
+        """Count assessments still in the initial request phase."""
+        return len([
+            a for a in self.assessments
+            if a.get("phase") == "Aangevraagd" and a.get("status") != "Closed"
+        ])
 
     @rx.var
     def total_count(self) -> int:
@@ -157,6 +172,19 @@ class AssessmentState(rx.State):
     @rx.var
     def bia_has_all_answers(self) -> bool:
         return self.bia_progress_total > 0 and self.bia_progress_answered >= self.bia_progress_total
+
+    @rx.var
+    def next_phase_label(self) -> str:
+        """Label for the next phase, or empty if already at the end."""
+        idx = self.detail_phase_index
+        if idx < len(ASSESSMENT_PHASES) - 1:
+            return ASSESSMENT_PHASES[idx + 1]
+        return ""
+
+    @rx.var
+    def is_final_phase(self) -> bool:
+        """Whether the assessment is on the last phase."""
+        return self.detail_phase_index >= len(ASSESSMENT_PHASES) - 1
 
     # ==========================================================================
     # LOAD METHODS
@@ -433,6 +461,30 @@ class AssessmentState(rx.State):
         except Exception as e:
             self.error = f"Fout bij fase-overgang: {str(e)}"
 
+    async def advance_to_next_phase(self):
+        """Advance to the next phase in the workflow."""
+        idx = self.detail_phase_index
+        if idx >= len(ASSESSMENT_PHASES) - 1:
+            return
+
+        next_phase = ASSESSMENT_PHASES[idx + 1]
+
+        # If the next phase is "Afgerond", show confirmation dialog
+        if next_phase == "Afgerond":
+            self.show_complete_dialog = True
+            return
+
+        await self.advance_phase(next_phase)
+
+    async def confirm_complete(self):
+        """Confirm completing the assessment (set phase to Afgerond)."""
+        self.show_complete_dialog = False
+        await self.advance_phase("Afgerond")
+
+    def cancel_complete(self):
+        """Cancel the complete confirmation."""
+        self.show_complete_dialog = False
+
     # ==========================================================================
     # FINDINGS
     # ==========================================================================
@@ -517,12 +569,17 @@ class AssessmentState(rx.State):
             return
 
         try:
-            await api_client.create_corrective_action(self.action_finding_id, {
+            data = {
                 "tenant_id": 1,
                 "title": self.action_description.strip(),
                 "description": self.action_description.strip(),
                 "status": "Active",
-            })
+            }
+            if self.action_due_date.strip():
+                data["due_date"] = self.action_due_date.strip()
+            if self.action_assigned_to.strip():
+                data["assigned_to"] = self.action_assigned_to.strip()
+            await api_client.create_corrective_action(self.action_finding_id, data)
             self.show_action_dialog = False
             self.success_message = "Corrigerende maatregel toegevoegd"
         except Exception as e:

@@ -853,7 +853,7 @@ def users_content() -> rx.Component:
 
         # Dialogs
         user_form_dialog(),
-        # role_assignment_dialog(),
+        role_assignment_dialog(),
         delete_confirm_dialog(),
 
         width="100%",

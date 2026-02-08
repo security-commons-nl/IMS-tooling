@@ -74,7 +74,7 @@ async def get_organization_profile(
             "completion_pct": 0,
         }
 
-    data = {c: getattr(profile, c) for c in profile.__fields__}
+    data = profile.model_dump() if hasattr(profile, "model_dump") else profile.dict()
     data["completion_pct"] = _calc_completion(profile)
     return data
 
@@ -107,7 +107,7 @@ async def upsert_organization_profile(
     await session.commit()
     await session.refresh(profile)
 
-    data = {c: getattr(profile, c) for c in profile.__fields__}
+    data = profile.model_dump() if hasattr(profile, "model_dump") else profile.dict()
     data["completion_pct"] = _calc_completion(profile)
     return data
 
@@ -139,7 +139,7 @@ async def patch_organization_profile(
     await session.commit()
     await session.refresh(profile)
 
-    data = {c: getattr(profile, c) for c in profile.__fields__}
+    data = profile.model_dump() if hasattr(profile, "model_dump") else profile.dict()
     data["completion_pct"] = _calc_completion(profile)
     return data
 

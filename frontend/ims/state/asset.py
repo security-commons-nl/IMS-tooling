@@ -36,9 +36,9 @@ class AssetState(rx.State):
     form_data_classification: str = "Internal"
 
     # BIA fields
-    form_availability_rating: str = "Internal"
-    form_integrity_rating: str = "Internal"
-    form_confidentiality_rating: str = "Internal"
+    form_availability_rating: str = "MEDIUM"
+    form_integrity_rating: str = "MEDIUM"
+    form_confidentiality_rating: str = "MEDIUM"
     form_rto_hours: str = ""
     form_rpo_hours: str = ""
 

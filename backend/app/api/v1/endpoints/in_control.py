@@ -20,6 +20,7 @@ from app.models.core_models import (
     Control,
     Finding,
     CorrectiveAction,
+    Assessment,
     Status,
     Scope,
     User,
@@ -59,22 +60,30 @@ async def _calculate_scope_level(
     )
     high_risks = result.scalar() or 0
 
-    # Count open findings
+    # Count open findings (filtered by scope via assessment)
     result = await session.execute(
-        select(func.count()).select_from(Finding).where(
+        select(func.count()).select_from(Finding).join(
+            Assessment, Finding.assessment_id == Assessment.id
+        ).where(
             Finding.tenant_id == tenant_id,
             Finding.status == Status.ACTIVE,
+            Assessment.scope_id == scope_id,
         )
     )
     open_findings = result.scalar() or 0
 
-    # Count overdue corrective actions
+    # Count overdue corrective actions (filtered by scope via finding -> assessment)
     result = await session.execute(
-        select(func.count()).select_from(CorrectiveAction).where(
+        select(func.count()).select_from(CorrectiveAction).join(
+            Finding, CorrectiveAction.finding_id == Finding.id
+        ).join(
+            Assessment, Finding.assessment_id == Assessment.id
+        ).where(
             CorrectiveAction.tenant_id == tenant_id,
             CorrectiveAction.completed == False,
             CorrectiveAction.due_date != None,
             CorrectiveAction.due_date < datetime.utcnow(),
+            Assessment.scope_id == scope_id,
         )
     )
     overdue_actions = result.scalar() or 0
