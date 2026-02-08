@@ -339,12 +339,12 @@ def wizard_dialog() -> rx.Component:
                 rx.select.root(
                     rx.select.trigger(placeholder="Kies scope (optioneel)"),
                     rx.select.content(
-                        rx.select.item("Geen scope", value=""),
+                        rx.select.item("Geen scope", value="__none__"),
                         rx.foreach(
                             AssessmentState.available_scopes,
                             lambda s: rx.select.item(
                                 s["name"],
-                                value=s["id"].to(str),
+                                value=s["id"],
                             ),
                         ),
                     ),
@@ -366,12 +366,12 @@ def wizard_dialog() -> rx.Component:
                 rx.select.root(
                     rx.select.trigger(placeholder="Kies assessor (optioneel)"),
                     rx.select.content(
-                        rx.select.item("Geen assessor", value=""),
+                        rx.select.item("Geen assessor", value="__none__"),
                         rx.foreach(
                             AssessmentState.available_users,
                             lambda u: rx.select.item(
                                 u["full_name"],
-                                value=u["id"].to(str),
+                                value=u["id"],
                             ),
                         ),
                     ),

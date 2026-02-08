@@ -182,14 +182,38 @@ class AssessmentState(rx.State):
         finally:
             self.is_loading = False
 
-    async def load_dropdowns(self):
-        """Load scopes and users for form dropdowns."""
         try:
-            self.available_scopes = await api_client.get_scopes(limit=200)
+            scopes = await api_client.get_scopes(limit=200)
+            valid_scopes = []
+            for s in scopes:
+                if not s.get("id"):
+                    continue
+                s["id"] = str(s["id"])  # Pre-convert to string
+                if not s.get("name"):
+                    s["name"] = f"Scope {s.get('id')}"
+                valid_scopes.append(s)
+            self.available_scopes = valid_scopes
         except Exception:
             self.available_scopes = []
+
         try:
-            self.available_users = await api_client.get_users(limit=200)
+            users = await api_client.get_users(limit=200)
+            valid_users = []
+            for u in users:
+                if not u.get("id"):
+                    continue
+                u["id"] = str(u["id"])  # Pre-convert to string
+                
+                if not u.get("full_name"):
+                    # Construct full name from parts or fallback to username
+                    first = u.get("first_name", "") or ""
+                    last = u.get("last_name", "") or ""
+                    full = f"{first} {last}".strip()
+                    if not full:
+                        full = u.get("username", f"User {u.get('id')}")
+                    u["full_name"] = full
+                valid_users.append(u)
+            self.available_users = valid_users
         except Exception:
             self.available_users = []
 
@@ -264,7 +288,7 @@ class AssessmentState(rx.State):
     # WIZARD: CREATE / EDIT
     # ==========================================================================
 
-    async def open_create_dialog(self):
+    def open_create_dialog(self):
         """Open wizard for new assessment."""
         self.is_editing = False
         self.editing_assessment_id = 0
@@ -279,10 +303,8 @@ class AssessmentState(rx.State):
         self.show_form_dialog = True
         self.error = ""
         self.success_message = ""
-        yield
-        await self.load_dropdowns()
 
-    async def open_edit_dialog(self, assessment: Dict[str, Any]):
+    def open_edit_dialog(self, assessment: Dict[str, Any]):
         """Open wizard to edit existing assessment."""
         self.is_editing = True
         self.editing_assessment_id = assessment.get("id", 0)
@@ -297,8 +319,6 @@ class AssessmentState(rx.State):
         self.show_form_dialog = True
         self.error = ""
         self.success_message = ""
-        yield
-        await self.load_dropdowns()
 
     def close_form_dialog(self):
         self.show_form_dialog = False
@@ -342,9 +362,9 @@ class AssessmentState(rx.State):
             "external_assessor": self.form_external_assessor.strip() or None,
         }
 
-        if self.form_scope_id:
+        if self.form_scope_id and self.form_scope_id != "__none__":
             data["scope_id"] = int(self.form_scope_id)
-        if self.form_lead_assessor_id:
+        if self.form_lead_assessor_id and self.form_lead_assessor_id != "__none__":
             data["lead_assessor_id"] = int(self.form_lead_assessor_id)
 
         try:
