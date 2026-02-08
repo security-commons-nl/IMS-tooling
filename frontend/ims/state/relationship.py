@@ -144,20 +144,31 @@ class RelationshipState(rx.State):
 
     @rx.var
     def computed_nodes(self) -> List[Dict[str, Any]]:
-        """Nodes enriched with color and icon for rendering."""
+        """Nodes enriched with color, icon, and short_label for rendering."""
         result = []
         for node in self.nodes:
             t = node.get("type", "other")
+            label = node.get("label", "")
+            short = label[:20] + "..." if len(label) > 20 else label
             result.append({
                 **node,
                 "color": TYPE_COLORS.get(t, "#6b7280"),
                 "icon": TYPE_ICONS.get(t, "circle"),
+                "short_label": short,
             })
         return result
 
     @rx.var
     def computed_edges(self) -> List[Dict[str, Any]]:
-        """Edges enriched with source/target coordinates for SVG rendering."""
+        """Edges enriched with source/target coordinates and color for SVG rendering."""
+        edge_colors = {
+            "mitigates": "#3b82f6",
+            "implements": "#7c3aed",
+            "decides": "#d97706",
+            "depends_on": "#06b6d4",
+            "belongs_to": "#9ca3af",
+            "child_of": "#6b7280",
+        }
         # Build a position lookup from nodes
         pos = {}
         for node in self.nodes:
@@ -170,12 +181,14 @@ class RelationshipState(rx.State):
             if src in pos and tgt in pos:
                 sx, sy = pos[src]
                 tx, ty = pos[tgt]
+                etype = edge.get("type", "belongs_to")
                 result.append({
                     **edge,
                     "source_x": sx,
                     "source_y": sy,
                     "target_x": tx,
                     "target_y": ty,
+                    "color": edge_colors.get(etype, "#9ca3af"),
                 })
         return result
 
@@ -217,6 +230,13 @@ class RelationshipState(rx.State):
                     if g.get("type") == "scope_without_risks"
                 }
                 raw_nodes = [n for n in raw_nodes if n["id"] in gap_entity_ids or n["type"] != "scope"]
+
+            # Filter edges to match remaining nodes
+            filtered_node_ids = {n["id"] for n in raw_nodes}
+            self.edges = [
+                e for e in self.edges
+                if e["source"] in filtered_node_ids and e["target"] in filtered_node_ids
+            ]
 
             # Calculate layout positions
             self.nodes = _circular_layout(raw_nodes)
@@ -264,19 +284,61 @@ class RelationshipState(rx.State):
         self.prompt_text = value
 
     async def apply_prompt(self):
-        """Send prompt to AI agent for filter interpretation."""
+        """Smart keyword filter — matches prompt text to presets or node labels."""
         if not self.prompt_text.strip():
             return
+        query = self.prompt_text.strip().lower()
+
+        # Match known preset patterns (Dutch + English)
+        if any(kw in query for kw in ["zonder control", "ongedekt", "unmitigated", "no control"]):
+            self.active_preset = "uncovered_risks"
+            self.clear_selection()
+            return RelationshipState.load_graph
+        elif any(kw in query for kw in ["wees", "orphan", "losse control"]):
+            self.active_preset = "orphan_controls"
+            self.clear_selection()
+            return RelationshipState.load_graph
+        elif any(kw in query for kw in ["scope zonder", "scope coverage", "lege scope"]):
+            self.active_preset = "scope_coverage"
+            self.clear_selection()
+            return RelationshipState.load_graph
+        elif query in ("alles", "all", "reset", "toon alles"):
+            self.active_preset = "all"
+            self.filter_types = ["risk", "control", "scope", "measure", "decision", "assessment"]
+            self.clear_selection()
+            return RelationshipState.load_graph
+
+        # Fallback: filter nodes by label substring match
+        self.active_preset = "all"
         self.is_loading = True
         try:
-            result = await api_client.chat_with_agent(
-                message=self.prompt_text,
-                agent_name="scope_agent",
-                context={"page": "relationships", "action": "filter_graph"},
-            )
-            # For now just reload with current filters — AI response shown as info
+            entity_types = ",".join(self.filter_types)
+            data = await api_client.get_graph_relationships(entity_types=entity_types)
+            raw_nodes = data.get("nodes", [])
+            all_edges = data.get("edges", [])
+            all_gaps = data.get("gaps", [])
+
+            # Keep nodes whose label matches the query
+            matched = [n for n in raw_nodes if query in n.get("label", "").lower()]
+            if not matched:
+                # No match — show all nodes (don't hide everything)
+                matched = raw_nodes
+
+            # Also keep nodes connected via edges to matched nodes
+            matched_ids = {n["id"] for n in matched}
+            for edge in all_edges:
+                if edge["source"] in matched_ids:
+                    matched_ids.add(edge["target"])
+                elif edge["target"] in matched_ids:
+                    matched_ids.add(edge["source"])
+            matched = [n for n in raw_nodes if n["id"] in matched_ids]
+
+            # Filter edges
+            final_ids = {n["id"] for n in matched}
+            self.edges = [e for e in all_edges if e["source"] in final_ids and e["target"] in final_ids]
+            self.nodes = _circular_layout(matched)
+            self.gaps = all_gaps
+        except Exception as e:
+            self.error = str(e)
+        finally:
             self.is_loading = False
-            return RelationshipState.load_graph
-        except Exception:
-            self.is_loading = False
-            return RelationshipState.load_graph

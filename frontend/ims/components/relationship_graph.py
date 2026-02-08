@@ -25,64 +25,99 @@ NODE_ICONS = {
     "assessment": "clipboard-check",
 }
 
+# Edge colors per relationship type
+EDGE_COLORS = {
+    "mitigates": "#3b82f6",      # blue
+    "implements": "#7c3aed",     # purple
+    "decides": "#d97706",        # amber
+    "depends_on": "#06b6d4",     # cyan
+    "belongs_to": "#9ca3af",     # gray
+    "child_of": "#6b7280",       # dark gray
+}
+
 
 def _render_edge(edge: dict) -> rx.Component:
     """Render a single SVG line for an edge."""
-    # Find source and target positions from nodes
-    # We use rx.foreach on nodes so we need a simpler approach:
-    # Pre-compute edge coordinates in state. For now, draw with data attributes.
     return rx.el.line(
         x1=edge["source_x"].to(str),
         y1=edge["source_y"].to(str),
         x2=edge["target_x"].to(str),
         y2=edge["target_y"].to(str),
-        stroke="var(--gray-a6)",
-        stroke_width="1.5",
+        stroke=edge["color"],
+        stroke_width=rx.cond(
+            edge["type"] == "belongs_to",
+            "1.5",
+            "2.5",
+        ),
         stroke_dasharray=rx.cond(
             edge["type"] == "belongs_to",
             "4,4",
-            "0",
+            rx.cond(
+                edge["type"] == "child_of",
+                "6,3",
+                "0",
+            ),
         ),
+        stroke_opacity="0.7",
+        marker_end="url(#arrowhead)",
     )
 
 
 def _render_node(node: dict) -> rx.Component:
-    """Render a single node as an absolutely positioned box."""
+    """Render a single node as an absolutely positioned box with label."""
     return rx.box(
-        rx.tooltip(
-            rx.center(
-                rx.icon(
-                    node["icon"].to(str),
-                    size=18,
-                    color="white",
+        rx.vstack(
+            rx.tooltip(
+                rx.center(
+                    rx.icon(
+                        node["icon"].to(str),
+                        size=18,
+                        color="white",
+                    ),
+                    width="36px",
+                    height="36px",
+                    border_radius="50%",
+                    background=node["color"],
+                    border=rx.cond(
+                        node["has_gap"],
+                        "2.5px solid #ef4444",
+                        "2px solid transparent",
+                    ),
+                    box_shadow=rx.cond(
+                        node["has_gap"],
+                        "0 0 8px rgba(239, 68, 68, 0.5)",
+                        "0 1px 3px rgba(0,0,0,0.1)",
+                    ),
+                    _hover={
+                        "transform": "scale(1.15)",
+                        "box_shadow": "0 2px 8px rgba(0,0,0,0.2)",
+                    },
+                    transition="all 0.15s ease",
                 ),
-                width="36px",
-                height="36px",
-                border_radius="50%",
-                background=node["color"],
-                border=rx.cond(
-                    node["has_gap"],
-                    "2.5px solid #ef4444",
-                    "2px solid transparent",
-                ),
-                box_shadow=rx.cond(
-                    node["has_gap"],
-                    "0 0 8px rgba(239, 68, 68, 0.5)",
-                    "0 1px 3px rgba(0,0,0,0.1)",
-                ),
-                _hover={
-                    "transform": "scale(1.15)",
-                    "box_shadow": "0 2px 8px rgba(0,0,0,0.2)",
-                },
-                transition="all 0.15s ease",
+                content=node["label"],
             ),
-            content=node["label"],
+            rx.text(
+                node["short_label"],
+                size="1",
+                color="var(--gray-11)",
+                text_align="center",
+                max_width="80px",
+                overflow="hidden",
+                text_overflow="ellipsis",
+                white_space="nowrap",
+                weight="medium",
+            ),
+            align="center",
+            spacing="1",
         ),
         position="absolute",
         cursor="pointer",
         on_click=RelationshipState.select_node(node["id"]),
-        left=(node["x"].to(int) - 18).to(str) + "px",
+        left=(node["x"].to(int) - 40).to(str) + "px",
         top=(node["y"].to(int) - 18).to(str) + "px",
+        width="80px",
+        display="flex",
+        justify_content="center",
     )
 
 
@@ -111,6 +146,21 @@ def relationship_graph() -> rx.Component:
             rx.box(
                 # SVG layer for edges
                 rx.el.svg(
+                    # Arrowhead marker definition
+                    rx.el.defs(
+                        rx.el.marker(
+                            rx.el.path(
+                                d="M 0 0 L 8 4 L 0 8 z",
+                                fill="var(--gray-9)",
+                            ),
+                            id="arrowhead",
+                            marker_width="8",
+                            marker_height="8",
+                            ref_x="8",
+                            ref_y="4",
+                            orient="auto",
+                        ),
+                    ),
                     rx.foreach(
                         RelationshipState.computed_edges,
                         _render_edge,

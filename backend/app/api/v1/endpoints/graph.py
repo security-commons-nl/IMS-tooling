@@ -136,7 +136,7 @@ async def get_relationships(
     # Scope dependencies
     result = await session.execute(select(ScopeDependency))
     for dep in result.scalars().all():
-        src = f"scope-{dep.consumer_id}"
+        src = f"scope-{dep.depender_id}"
         tgt = f"scope-{dep.provider_id}"
         if src in node_ids and tgt in node_ids:
             edges.append({"source": src, "target": tgt, "type": "depends_on", "label": dep.dependency_type or ""})
@@ -156,6 +156,22 @@ async def get_relationships(
                         "source": node["id"],
                         "target": scope_nid,
                         "type": "belongs_to",
+                        "label": "",
+                    })
+
+    # Scope parent → child hierarchy
+    for node in nodes:
+        if node["type"] == "scope":
+            entity_id = node["entity_id"]
+            result = await session.execute(select(Scope).where(Scope.id == entity_id))
+            entity = result.scalars().first()
+            if entity and entity.parent_id:
+                parent_nid = f"scope-{entity.parent_id}"
+                if parent_nid in node_ids:
+                    edges.append({
+                        "source": node["id"],
+                        "target": parent_nid,
+                        "type": "child_of",
                         "label": "",
                     })
 
