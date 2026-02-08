@@ -1361,6 +1361,39 @@ class RiskThreatLink(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class IncidentControlLink(SQLModel, table=True):
+    """
+    Many-to-Many link between Incident and Control.
+    Tracks which controls failed during an incident (root cause analysis).
+    """
+    incident_id: Optional[int] = Field(default=None, foreign_key="incident.id", primary_key=True)
+    control_id: Optional[int] = Field(default=None, foreign_key="control.id", primary_key=True)
+
+    failure_description: Optional[str] = None  # How the control failed
+    contributed_to_incident: bool = True  # Did this control failure contribute?
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    incident: "Incident" = Relationship(back_populates="control_links")
+    control: "Control" = Relationship(back_populates="incident_links")
+
+
+class InitiativeObjectiveLink(SQLModel, table=True):
+    """
+    Many-to-Many link between Initiative and Objective (ISO 27001 6.2 + 10.2).
+    Tracks which improvement initiatives contribute to which objectives.
+    """
+    initiative_id: Optional[int] = Field(default=None, foreign_key="initiative.id", primary_key=True)
+    objective_id: Optional[int] = Field(default=None, foreign_key="objective.id", primary_key=True)
+
+    contribution_description: Optional[str] = None  # How does this initiative contribute?
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    initiative: "Initiative" = Relationship(back_populates="objective_links")
+    objective: "Objective" = Relationship(back_populates="initiative_links")
+
+
 # =============================================================================
 # HIAAT 1: BESLUITLOG (Decision Log)
 # =============================================================================
@@ -1387,6 +1420,9 @@ class Decision(SQLModel, table=True):
     # Links (optional — a decision can relate to one or more risks)
     scope_id: Optional[int] = Field(default=None, foreign_key="scope.id")
 
+    # Link to ManagementReview (ISO 27001 9.3.3 - decisions from review)
+    management_review_id: Optional[int] = Field(default=None, foreign_key="managementreview.id")
+
     # Audit trail
     justification: Optional[str] = None
     conditions: Optional[str] = None  # Voorwaarden bij het besluit
@@ -1396,6 +1432,7 @@ class Decision(SQLModel, table=True):
 
     # Relationships
     risk_links: List["DecisionRiskLink"] = Relationship(back_populates="decision")
+    management_review: Optional["ManagementReview"] = Relationship(back_populates="decisions")
 
 
 class DecisionRiskLink(SQLModel, table=True):
@@ -1848,6 +1885,9 @@ class Risk(SQLModel, table=True):
     # ==========================================================================
     policy_principle_id: Optional[int] = Field(default=None, foreign_key="policyprinciple.id")
 
+    # Link to ProcessingActivity (ISO 27701 / AVG - privacy risk traceability)
+    processing_activity_id: Optional[int] = Field(default=None, foreign_key="processingactivity.id")
+
     # ==========================================================================
     # RISK ACCEPTANCE
     # ==========================================================================
@@ -1881,6 +1921,7 @@ class Risk(SQLModel, table=True):
     # Relationships
     scope: Optional[Scope] = Relationship(back_populates="risks")
     control_links: List["ControlRiskLink"] = Relationship(back_populates="risk")
+    processing_activity: Optional["ProcessingActivity"] = Relationship(back_populates="risks")
 
 
 class RiskQuantificationProfile(SQLModel, table=True):
@@ -1966,6 +2007,7 @@ class Control(SQLModel, table=True):
     risk_links: List["ControlRiskLink"] = Relationship(back_populates="control")
     evidences: List["Evidence"] = Relationship(back_populates="control")
     measure_links: List["ControlMeasureLink"] = Relationship(back_populates="control")
+    incident_links: List["IncidentControlLink"] = Relationship(back_populates="control")
 
 
 # =============================================================================
@@ -2023,6 +2065,12 @@ class Incident(SQLModel, table=True):
     is_incidental: bool = True  # True = one-off, False = structural problem
     issue_id: Optional[int] = Field(default=None, foreign_key="issue.id")  # Link to Issue if structural
 
+    # Link to ContinuityPlan (ISO 22301 8.4.4 - which plan was activated)
+    continuity_plan_id: Optional[int] = Field(default=None, foreign_key="continuityplan.id")
+
+    # Link to ProcessingActivity (AVG Art. 33/34 - which processing was affected in data breach)
+    processing_activity_id: Optional[int] = Field(default=None, foreign_key="processingactivity.id")
+
     # --- External System Integration ---
     # Where is this incident tracked operationally?
     external_system: Optional[str] = None  # e.g., "TopDesk", "ServiceNow"
@@ -2036,6 +2084,9 @@ class Incident(SQLModel, table=True):
     scope: Optional[Scope] = Relationship(back_populates="incidents")
     corrective_actions: List["CorrectiveAction"] = Relationship(back_populates="incident")
     issue: Optional["Issue"] = Relationship(back_populates="incidents")
+    continuity_plan: Optional["ContinuityPlan"] = Relationship(back_populates="incidents")
+    processing_activity: Optional["ProcessingActivity"] = Relationship(back_populates="incidents")
+    control_links: List["IncidentControlLink"] = Relationship(back_populates="incident")
 
 
 class Exception(SQLModel, table=True):
@@ -2064,6 +2115,9 @@ class Exception(SQLModel, table=True):
     requirement_id: Optional[int] = Field(default=None, foreign_key="requirement.id")
     requested_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
     approved_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
+
+    # Link to Risk (ISO 27001 - exception = risk acceptance)
+    risk_id: Optional[int] = Field(default=None, foreign_key="risk.id")
 
     scope: Optional[Scope] = Relationship(back_populates="exceptions")
     requirement: Optional[Requirement] = Relationship()
@@ -2095,6 +2149,9 @@ class Assessment(SQLModel, table=True):
     scope_id: Optional[int] = Field(default=None, foreign_key="scope.id")
     standard_id: Optional[int] = Field(default=None, foreign_key="standard.id")
 
+    # Link to ProcessingActivity (AVG Art. 35 - for DPIA assessments)
+    processing_activity_id: Optional[int] = Field(default=None, foreign_key="processingactivity.id")
+
     # Team
     lead_assessor_id: Optional[int] = Field(default=None, foreign_key="user.id")
     external_assessor: Optional[str] = None  # For external audits
@@ -2119,6 +2176,8 @@ class Assessment(SQLModel, table=True):
     findings: List["Finding"] = Relationship(back_populates="assessment")
     standard: Optional["Standard"] = Relationship()
     responses: List["AssessmentResponse"] = Relationship(back_populates="assessment")
+    processing_activity: Optional["ProcessingActivity"] = Relationship(back_populates="assessments")
+    continuity_tests: List["ContinuityTest"] = Relationship(back_populates="assessment")
 
 
 class Evidence(SQLModel, table=True):
@@ -2408,6 +2467,9 @@ class ProcessingActivity(SQLModel, table=True):
 
     scope: Optional[Scope] = Relationship(back_populates="processing_activities")
     processor_agreements: List["ProcessorAgreement"] = Relationship(back_populates="processing_activity")
+    risks: List["Risk"] = Relationship(back_populates="processing_activity")
+    assessments: List["Assessment"] = Relationship(back_populates="processing_activity")
+    incidents: List["Incident"] = Relationship(back_populates="processing_activity")
 
 
 class DataSubjectRequest(SQLModel, table=True):
@@ -2544,6 +2606,7 @@ class ContinuityPlan(SQLModel, table=True):
 
     scope: Optional[Scope] = Relationship(back_populates="continuity_plans")
     tests: List["ContinuityTest"] = Relationship(back_populates="plan")
+    incidents: List["Incident"] = Relationship(back_populates="continuity_plan")
 
 
 class ContinuityTest(SQLModel, table=True):
@@ -2578,7 +2641,11 @@ class ContinuityTest(SQLModel, table=True):
     # Follow-up
     next_test_date: Optional[datetime] = None
 
+    # Link to Assessment (ISO 22301 8.5 + 10.1 - test results feed PDCA via findings)
+    assessment_id: Optional[int] = Field(default=None, foreign_key="assessment.id")
+
     plan: Optional[ContinuityPlan] = Relationship(back_populates="tests")
+    assessment: Optional["Assessment"] = Relationship(back_populates="continuity_tests")
 
 
 # =============================================================================
@@ -2813,6 +2880,7 @@ class ManagementReview(SQLModel, table=True):
 
     # Relationships
     initiatives: List["Initiative"] = Relationship(back_populates="management_review")
+    decisions: List["Decision"] = Relationship(back_populates="management_review")
 
 
 # =============================================================================
@@ -2990,6 +3058,7 @@ class Initiative(SQLModel, table=True):
     management_review: Optional[ManagementReview] = Relationship(back_populates="initiatives")
     milestones: List["InitiativeMilestone"] = Relationship(back_populates="initiative")
     corrective_actions: List["CorrectiveAction"] = Relationship(back_populates="initiative")
+    objective_links: List["InitiativeObjectiveLink"] = Relationship(back_populates="initiative")
 
 
 class InitiativeMilestone(SQLModel, table=True):
@@ -3995,6 +4064,7 @@ class Objective(SQLModel, table=True):
 
     # Relationships
     kpis: List["ObjectiveKPI"] = Relationship(back_populates="objective")
+    initiative_links: List["InitiativeObjectiveLink"] = Relationship(back_populates="objective")
 
 
 class ObjectiveKPI(SQLModel, table=True):
