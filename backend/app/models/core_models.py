@@ -115,6 +115,17 @@ class AssessmentType(str, Enum):
     SUPPLIER_ASSESSMENT = "Supplier Assessment"
     MATURITY_ASSESSMENT = "Maturity Assessment"
 
+class AssessmentPhase(str, Enum):
+    """7-phase workflow for assessments"""
+    REQUESTED    = "Aangevraagd"
+    PLANNING     = "Planning"
+    PREPARATION  = "Voorbereiding"
+    IN_PROGRESS  = "In uitvoering"
+    REVIEW       = "Review"
+    REPORTING    = "Rapportage"
+    COMPLETED    = "Afgerond"
+    CANCELLED    = "Geannuleerd"
+
 class ImplementationStatus(str, Enum):
     """Status of control implementation for Statement of Applicability"""
     NOT_STARTED = "Not Started"
@@ -231,6 +242,7 @@ class QuestionType(str, Enum):
     """Types of assessment questions"""
     YES_NO = "Yes/No"
     YES_NO_NA = "Yes/No/N.A."
+    SCALE_1_4 = "Scale 1-4"
     SCALE_1_5 = "Scale 1-5"
     SCALE_1_10 = "Scale 1-10"
     TEXT = "Text"
@@ -2013,9 +2025,21 @@ class Assessment(SQLModel, table=True):
     lead_assessor_id: Optional[int] = Field(default=None, foreign_key="user.id")
     external_assessor: Optional[str] = None  # For external audits
 
+    # Workflow
+    phase: Optional[str] = Field(default="Aangevraagd")
+    methodology: Optional[str] = None
+    next_assessment_date: Optional[datetime] = None
+
     # Results
     overall_result: Optional[AuditResult] = None
     executive_summary: Optional[str] = None
+
+    # BIA Snapshot (populated when type=BIA and phase=Afgerond)
+    bia_cia_label: Optional[str] = None       # e.g. "C3-I2-A4"
+    bia_rto_hours: Optional[int] = None
+    bia_rpo_hours: Optional[int] = None
+    bia_mtpd_hours: Optional[int] = None
+    bia_bcp_required: Optional[bool] = None
 
     lead_assessor: Optional["User"] = Relationship(back_populates="assessments_led")
     findings: List["Finding"] = Relationship(back_populates="assessment")
@@ -2133,6 +2157,27 @@ class AssessmentResponse(SQLModel, table=True):
     # Relationships
     assessment: Optional[Assessment] = Relationship(back_populates="responses")
     question: Optional[AssessmentQuestion] = Relationship(back_populates="responses")
+
+
+# =============================================================================
+# BIA THRESHOLD CONFIGURATION
+# =============================================================================
+
+class BIAThreshold(SQLModel, table=True):
+    """Configurable BIA score → CIA/RTO/RPO mapping per tenant."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: Optional[int] = Field(default=None, foreign_key="tenant.id")  # NULL = global default
+
+    score: int                              # 1, 2, 3 or 4
+    label: str                              # "Laag", "Midden", "Hoog", "Kritiek"
+    classification_level: str               # "Public", "Internal", "Confidential", "Secret"
+    rto_hours: int                          # Recovery Time Objective in hours
+    rpo_hours: int                          # Recovery Point Objective in hours
+    mtpd_hours: int                         # Max Tolerable Period of Disruption in hours
+    rto_label: str                          # "< 1 week", "< 24 uur", etc.
+    rpo_label: str                          # "< 24 uur", "< 4 uur", etc.
+    plan_required: bool                     # Continuity plan mandatory?
+    plan_label: Optional[str] = None        # "Nee", "Basis BCP", "Uitgebreid BCP", "Full DR Plan"
 
 
 # =============================================================================

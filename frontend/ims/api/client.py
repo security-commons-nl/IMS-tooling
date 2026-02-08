@@ -324,14 +324,209 @@ class APIClient:
         skip: int = 0,
         limit: int = 100,
         tenant_id: Optional[int] = None,
+        assessment_type: Optional[str] = None,
+        status: Optional[str] = None,
+        scope_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Get list of assessments."""
         async with self._get_client() as client:
             params = {"skip": skip, "limit": limit}
             if tenant_id:
                 params["tenant_id"] = tenant_id
+            if assessment_type:
+                params["assessment_type"] = assessment_type
+            if status:
+                params["status"] = status
+            if scope_id:
+                params["scope_id"] = scope_id
 
             response = await client.get("/assessments/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_assessment(self, assessment_id: int) -> Dict[str, Any]:
+        """Get a single assessment by ID."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_assessment(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new assessment."""
+        async with self._get_client() as client:
+            response = await client.post("/assessments/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_assessment(self, assessment_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update an assessment."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/assessments/{assessment_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_assessment(self, assessment_id: int) -> Dict[str, Any]:
+        """Delete an assessment."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/assessments/{assessment_id}")
+            response.raise_for_status()
+            return response.json()
+
+    # Assessment lifecycle
+    async def advance_assessment_phase(self, assessment_id: int, phase: str) -> Dict[str, Any]:
+        """Advance assessment to a new phase."""
+        async with self._get_client() as client:
+            response = await client.post(
+                f"/assessments/{assessment_id}/advance-phase",
+                params={"phase": phase},
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def start_assessment(self, assessment_id: int) -> Dict[str, Any]:
+        """Start an assessment."""
+        async with self._get_client() as client:
+            response = await client.post(f"/assessments/{assessment_id}/start")
+            response.raise_for_status()
+            return response.json()
+
+    async def complete_assessment(self, assessment_id: int, overall_result: str, executive_summary: Optional[str] = None) -> Dict[str, Any]:
+        """Complete an assessment."""
+        async with self._get_client() as client:
+            params = {"overall_result": overall_result}
+            if executive_summary:
+                params["executive_summary"] = executive_summary
+            response = await client.post(f"/assessments/{assessment_id}/complete", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_assessment_summary_detail(self, assessment_id: int) -> Dict[str, Any]:
+        """Get assessment summary statistics."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}/summary")
+            response.raise_for_status()
+            return response.json()
+
+    # Findings
+    async def get_assessment_findings(self, assessment_id: int) -> List[Dict[str, Any]]:
+        """Get findings for an assessment."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}/findings")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_finding(self, assessment_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a finding for an assessment."""
+        async with self._get_client() as client:
+            response = await client.post(f"/assessments/{assessment_id}/findings", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_finding(self, finding_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a finding."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/assessments/findings/{finding_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def close_finding(self, finding_id: int) -> Dict[str, Any]:
+        """Close a finding (requires completed corrective action)."""
+        async with self._get_client() as client:
+            response = await client.post(f"/assessments/findings/{finding_id}/close")
+            response.raise_for_status()
+            return response.json()
+
+    # Corrective Actions
+    async def get_finding_corrective_actions(self, finding_id: int) -> List[Dict[str, Any]]:
+        """Get corrective actions for a finding."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/findings/{finding_id}/corrective-actions")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_corrective_action(self, finding_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a corrective action for a finding."""
+        async with self._get_client() as client:
+            response = await client.post(f"/assessments/findings/{finding_id}/corrective-actions", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_corrective_action(self, action_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a corrective action."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/assessments/corrective-actions/{action_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def complete_corrective_action(self, action_id: int, completed_by_id: int, notes: Optional[str] = None) -> Dict[str, Any]:
+        """Mark a corrective action as completed."""
+        async with self._get_client() as client:
+            params = {"completed_by_id": completed_by_id}
+            if notes:
+                params["completion_notes"] = notes
+            response = await client.post(f"/assessments/corrective-actions/{action_id}/complete", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    # Evidence
+    async def get_assessment_evidence(self, assessment_id: int) -> List[Dict[str, Any]]:
+        """Get evidence for an assessment."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}/evidence")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_evidence(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create evidence."""
+        async with self._get_client() as client:
+            response = await client.post("/assessments/evidence/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    # Questions & Responses (BIA)
+    async def get_assessment_questions(self, assessment_id: int) -> List[Dict[str, Any]]:
+        """Get questions for an assessment."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}/questions")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_assessment_responses(self, assessment_id: int) -> List[Dict[str, Any]]:
+        """Get all responses for an assessment."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}/responses")
+            response.raise_for_status()
+            return response.json()
+
+    async def save_assessment_response(self, assessment_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Save (upsert) a response for a question."""
+        async with self._get_client() as client:
+            response = await client.post(f"/assessments/{assessment_id}/responses", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_assessment_progress(self, assessment_id: int) -> Dict[str, Any]:
+        """Get question completion progress."""
+        async with self._get_client() as client:
+            response = await client.get(f"/assessments/{assessment_id}/progress")
+            response.raise_for_status()
+            return response.json()
+
+    async def calculate_bia(self, assessment_id: int) -> Dict[str, Any]:
+        """Calculate BIA scores from responses."""
+        async with self._get_client() as client:
+            response = await client.post(f"/assessments/{assessment_id}/calculate-bia")
+            response.raise_for_status()
+            return response.json()
+
+    # BIA Thresholds
+    async def get_bia_thresholds(self, tenant_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get BIA threshold configuration."""
+        async with self._get_client() as client:
+            params = {}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+            response = await client.get("/assessments/bia-thresholds", params=params)
             response.raise_for_status()
             return response.json()
 
@@ -1091,6 +1286,25 @@ class APIClient:
     async def get_control_trace(self, control_id: int) -> Dict[str, Any]:
         async with self._get_client() as client:
             response = await client.get(f"/policy-principles/trace/{control_id}")
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # GRAPH / RELATIONSHIPS
+    # =========================================================================
+
+    async def get_graph_relationships(
+        self,
+        entity_types: str = "risk,control,scope,measure,decision,assessment",
+        scope_id: Optional[int] = None,
+        tenant_id: int = 1,
+    ) -> Dict[str, Any]:
+        """Get relationship graph data (nodes, edges, gaps)."""
+        async with self._get_client() as client:
+            params = {"entity_types": entity_types, "tenant_id": tenant_id}
+            if scope_id:
+                params["scope_id"] = scope_id
+            response = await client.get("/graph/relationships", params=params)
             response.raise_for_status()
             return response.json()
 

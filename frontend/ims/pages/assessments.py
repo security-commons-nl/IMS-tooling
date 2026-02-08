@@ -1,8 +1,9 @@
 """
 Assessments Page - Verification/Audit management
+Full CRUD + wizard dialog + phase badges + clickable rows
 """
 import reflex as rx
-from ims.state.assessment import AssessmentState
+from ims.state.assessment import AssessmentState, ASSESSMENT_TYPES
 from ims.components.layout import layout
 
 
@@ -14,35 +15,56 @@ def type_badge(assessment_type: str) -> rx.Component:
             rx.hstack(rx.icon("shield", size=12), rx.text("DPIA"), spacing="1"),
             color_scheme="purple", variant="soft"
         )),
-        ("PENTEST", rx.badge(
+        ("Pentest", rx.badge(
             rx.hstack(rx.icon("bug", size=12), rx.text("Pentest"), spacing="1"),
             color_scheme="red", variant="soft"
         )),
-        ("AUDIT", rx.badge(
+        ("Audit", rx.badge(
             rx.hstack(rx.icon("clipboard-check", size=12), rx.text("Audit"), spacing="1"),
             color_scheme="blue", variant="soft"
         )),
-        ("SELF_ASSESSMENT", rx.badge(
+        ("Self-Assessment", rx.badge(
             rx.hstack(rx.icon("user-check", size=12), rx.text("Self-Assessment"), spacing="1"),
             color_scheme="green", variant="soft"
+        )),
+        ("BIA", rx.badge(
+            rx.hstack(rx.icon("shield-check", size=12), rx.text("BIA"), spacing="1"),
+            color_scheme="orange", variant="soft"
+        )),
+        ("Compliance Journey", rx.badge(
+            rx.hstack(rx.icon("route", size=12), rx.text("Compliance"), spacing="1"),
+            color_scheme="cyan", variant="soft"
+        )),
+        ("Supplier Assessment", rx.badge(
+            rx.hstack(rx.icon("truck", size=12), rx.text("Supplier"), spacing="1"),
+            color_scheme="amber", variant="soft"
+        )),
+        ("Maturity Assessment", rx.badge(
+            rx.hstack(rx.icon("trending-up", size=12), rx.text("Maturity"), spacing="1"),
+            color_scheme="teal", variant="soft"
         )),
         rx.badge(assessment_type, color_scheme="gray", variant="outline"),
     )
 
 
-def status_badge(status: str) -> rx.Component:
-    """Badge for assessment status."""
+def phase_badge(phase: str) -> rx.Component:
+    """Badge for assessment phase."""
     return rx.match(
-        status,
-        ("DRAFT", rx.badge("Gepland", color_scheme="gray", variant="soft")),
-        ("ACTIVE", rx.badge("Actief", color_scheme="blue", variant="soft")),
-        ("CLOSED", rx.badge("Afgerond", color_scheme="green", variant="soft")),
-        rx.badge(status, color_scheme="gray", variant="outline"),
+        phase,
+        ("Aangevraagd", rx.badge("Aangevraagd", color_scheme="gray", variant="soft")),
+        ("Planning", rx.badge("Planning", color_scheme="blue", variant="soft")),
+        ("Voorbereiding", rx.badge("Voorbereiding", color_scheme="cyan", variant="soft")),
+        ("In uitvoering", rx.badge("In uitvoering", color_scheme="indigo", variant="soft")),
+        ("Review", rx.badge("Review", color_scheme="orange", variant="soft")),
+        ("Rapportage", rx.badge("Rapportage", color_scheme="amber", variant="soft")),
+        ("Afgerond", rx.badge("Afgerond", color_scheme="green", variant="soft")),
+        ("Geannuleerd", rx.badge("Geannuleerd", color_scheme="red", variant="soft")),
+        rx.badge(phase, color_scheme="gray", variant="outline"),
     )
 
 
 def assessment_row(assessment: dict) -> rx.Component:
-    """Single row in assessments table."""
+    """Single clickable row in assessments table."""
     return rx.table.row(
         rx.table.cell(
             rx.text(assessment["id"], size="2", color="gray"),
@@ -61,23 +83,33 @@ def assessment_row(assessment: dict) -> rx.Component:
             ),
         ),
         rx.table.cell(type_badge(assessment["type"])),
-        rx.table.cell(status_badge(assessment["status"])),
+        rx.table.cell(phase_badge(assessment["phase"])),
         rx.table.cell(
             rx.hstack(
                 rx.icon_button(
                     rx.icon("eye", size=14),
                     variant="ghost",
                     size="1",
+                    on_click=AssessmentState.go_to_detail(assessment),
                 ),
                 rx.icon_button(
-                    rx.icon("play", size=14),
+                    rx.icon("pencil", size=14),
                     variant="ghost",
                     size="1",
+                    on_click=AssessmentState.open_edit_dialog(assessment),
+                ),
+                rx.icon_button(
+                    rx.icon("trash-2", size=14),
+                    variant="ghost",
+                    size="1",
+                    color_scheme="red",
+                    on_click=AssessmentState.confirm_delete(assessment),
                 ),
                 spacing="1",
             ),
         ),
-        _hover={"background": "var(--gray-a3)"},
+        _hover={"background": "var(--gray-a3)", "cursor": "pointer"},
+        on_click=AssessmentState.go_to_detail(assessment),
     )
 
 
@@ -85,11 +117,21 @@ def assessment_mobile_card(assessment: dict) -> rx.Component:
     """Mobile card view for a single assessment."""
     return rx.card(
         rx.vstack(
-            rx.text(assessment["title"], weight="medium", size="2"),
+            rx.hstack(
+                rx.text(assessment["title"], weight="medium", size="2"),
+                rx.spacer(),
+                rx.icon_button(
+                    rx.icon("pencil", size=12),
+                    variant="ghost",
+                    size="1",
+                    on_click=AssessmentState.open_edit_dialog(assessment),
+                ),
+                width="100%",
+            ),
             rx.text(assessment["description"], size="1", color="gray", no_of_lines=2),
             rx.hstack(
                 type_badge(assessment["type"]),
-                status_badge(assessment["status"]),
+                phase_badge(assessment["phase"]),
                 spacing="2",
                 wrap="wrap",
             ),
@@ -97,6 +139,8 @@ def assessment_mobile_card(assessment: dict) -> rx.Component:
             width="100%",
         ),
         width="100%",
+        cursor="pointer",
+        on_click=AssessmentState.go_to_detail(assessment),
     )
 
 
@@ -108,8 +152,8 @@ def assessments_table() -> rx.Component:
                 rx.table.column_header_cell("ID", width="60px"),
                 rx.table.column_header_cell("Assessment"),
                 rx.table.column_header_cell("Type", width="140px"),
-                rx.table.column_header_cell("Status", width="100px"),
-                rx.table.column_header_cell("Acties", width="100px"),
+                rx.table.column_header_cell("Fase", width="130px"),
+                rx.table.column_header_cell("Acties", width="120px"),
             ),
         ),
         rx.table.body(
@@ -157,9 +201,13 @@ def filter_bar() -> rx.Component:
             rx.select.content(
                 rx.select.item("Alle types", value="ALLE"),
                 rx.select.item("DPIA", value="DPIA"),
-                rx.select.item("Pentest", value="PENTEST"),
-                rx.select.item("Audit", value="AUDIT"),
-                rx.select.item("Self-Assessment", value="SELF_ASSESSMENT"),
+                rx.select.item("Pentest", value="Pentest"),
+                rx.select.item("Audit", value="Audit"),
+                rx.select.item("Self-Assessment", value="Self-Assessment"),
+                rx.select.item("BIA", value="BIA"),
+                rx.select.item("Compliance Journey", value="Compliance Journey"),
+                rx.select.item("Supplier Assessment", value="Supplier Assessment"),
+                rx.select.item("Maturity Assessment", value="Maturity Assessment"),
             ),
             value=AssessmentState.filter_type,
             on_change=AssessmentState.set_filter_type,
@@ -171,9 +219,9 @@ def filter_bar() -> rx.Component:
             rx.select.trigger(placeholder="Filter op status"),
             rx.select.content(
                 rx.select.item("Alle statussen", value="ALLE"),
-                rx.select.item("Gepland", value="DRAFT"),
-                rx.select.item("Actief", value="ACTIVE"),
-                rx.select.item("Afgerond", value="CLOSED"),
+                rx.select.item("Concept", value="Draft"),
+                rx.select.item("Actief", value="Active"),
+                rx.select.item("Afgerond", value="Closed"),
             ),
             value=AssessmentState.filter_status,
             on_change=AssessmentState.set_filter_status,
@@ -194,6 +242,7 @@ def filter_bar() -> rx.Component:
             rx.icon("plus", size=14),
             "Nieuw Assessment",
             size="2",
+            on_click=AssessmentState.open_create_dialog,
             width=rx.breakpoints(initial="100%", md="auto"),
         ),
         wrap="wrap",
@@ -205,6 +254,19 @@ def filter_bar() -> rx.Component:
 def stat_cards() -> rx.Component:
     """Statistics cards."""
     return rx.grid(
+        rx.card(
+            rx.hstack(
+                rx.icon("clipboard-list", size=20, color="var(--gray-9)"),
+                rx.vstack(
+                    rx.text("Totaal", size="1", color="gray"),
+                    rx.text(AssessmentState.total_count, size="4", weight="bold"),
+                    spacing="0",
+                    align_items="start",
+                ),
+                spacing="3",
+            ),
+            padding="12px",
+        ),
         rx.card(
             rx.hstack(
                 rx.icon("circle-play", size=20, color="var(--blue-9)"),
@@ -231,9 +293,170 @@ def stat_cards() -> rx.Component:
             ),
             padding="12px",
         ),
-        columns=rx.breakpoints(initial="1", sm="2"),
+        columns=rx.breakpoints(initial="1", sm="3"),
         spacing="3",
         width="100%",
+    )
+
+
+def wizard_dialog() -> rx.Component:
+    """Create/edit assessment wizard dialog."""
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(
+                rx.cond(
+                    AssessmentState.is_editing,
+                    "Assessment bewerken",
+                    "Nieuw Assessment",
+                ),
+            ),
+            rx.dialog.description(
+                "Vul de gegevens in voor het assessment.",
+                size="2",
+                margin_bottom="16px",
+            ),
+            rx.vstack(
+                # Title
+                rx.text("Titel *", size="2", weight="medium"),
+                rx.input(
+                    placeholder="Naam van het assessment",
+                    value=AssessmentState.form_title,
+                    on_change=AssessmentState.set_form_title,
+                    width="100%",
+                ),
+                # Type
+                rx.text("Type", size="2", weight="medium"),
+                rx.select.root(
+                    rx.select.trigger(placeholder="Kies type"),
+                    rx.select.content(
+                        *[rx.select.item(label, value=value) for label, value in ASSESSMENT_TYPES],
+                    ),
+                    value=AssessmentState.form_type,
+                    on_change=AssessmentState.set_form_type,
+                    width="100%",
+                ),
+                # Scope
+                rx.text("Scope", size="2", weight="medium"),
+                rx.select.root(
+                    rx.select.trigger(placeholder="Kies scope (optioneel)"),
+                    rx.select.content(
+                        rx.select.item("Geen scope", value=""),
+                        rx.foreach(
+                            AssessmentState.available_scopes,
+                            lambda s: rx.select.item(
+                                s["name"],
+                                value=s["id"].to(str),
+                            ),
+                        ),
+                    ),
+                    value=AssessmentState.form_scope_id,
+                    on_change=AssessmentState.set_form_scope_id,
+                    width="100%",
+                ),
+                # Description
+                rx.text("Beschrijving", size="2", weight="medium"),
+                rx.text_area(
+                    placeholder="Beschrijving van het assessment",
+                    value=AssessmentState.form_description,
+                    on_change=AssessmentState.set_form_description,
+                    width="100%",
+                    rows=3,
+                ),
+                # Lead assessor
+                rx.text("Lead Assessor", size="2", weight="medium"),
+                rx.select.root(
+                    rx.select.trigger(placeholder="Kies assessor (optioneel)"),
+                    rx.select.content(
+                        rx.select.item("Geen assessor", value=""),
+                        rx.foreach(
+                            AssessmentState.available_users,
+                            lambda u: rx.select.item(
+                                u["full_name"],
+                                value=u["id"].to(str),
+                            ),
+                        ),
+                    ),
+                    value=AssessmentState.form_lead_assessor_id,
+                    on_change=AssessmentState.set_form_lead_assessor_id,
+                    width="100%",
+                ),
+                # External assessor
+                rx.text("Externe Assessor", size="2", weight="medium"),
+                rx.input(
+                    placeholder="Naam externe assessor (optioneel)",
+                    value=AssessmentState.form_external_assessor,
+                    on_change=AssessmentState.set_form_external_assessor,
+                    width="100%",
+                ),
+                # Methodology
+                rx.text("Methodologie", size="2", weight="medium"),
+                rx.input(
+                    placeholder="bijv. ISO 27001, OWASP, BIO...",
+                    value=AssessmentState.form_methodology,
+                    on_change=AssessmentState.set_form_methodology,
+                    width="100%",
+                ),
+                # Error
+                rx.cond(
+                    AssessmentState.error != "",
+                    rx.callout(
+                        AssessmentState.error,
+                        icon="circle-alert",
+                        color_scheme="red",
+                        size="1",
+                    ),
+                ),
+                spacing="2",
+                width="100%",
+            ),
+            rx.flex(
+                rx.dialog.close(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray"),
+                ),
+                rx.button(
+                    rx.cond(AssessmentState.is_editing, "Opslaan", "Aanmaken"),
+                    on_click=AssessmentState.save_assessment,
+                ),
+                spacing="3",
+                margin_top="16px",
+                justify="end",
+            ),
+            max_width="500px",
+        ),
+        open=AssessmentState.show_form_dialog,
+        on_open_change=lambda open: rx.cond(
+            open,
+            AssessmentState.open_create_dialog,
+            AssessmentState.close_form_dialog,
+        ),
+    )
+
+
+def delete_dialog() -> rx.Component:
+    """Delete confirmation dialog."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Assessment verwijderen"),
+            rx.alert_dialog.description(
+                rx.text(
+                    "Weet je zeker dat je ",
+                    rx.text(AssessmentState.deleting_assessment_title, weight="bold"),
+                    " wilt verwijderen? Dit kan niet ongedaan worden.",
+                ),
+            ),
+            rx.flex(
+                rx.alert_dialog.cancel(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray"),
+                ),
+                rx.alert_dialog.action(
+                    rx.button("Verwijderen", color_scheme="red", on_click=AssessmentState.delete_assessment),
+                ),
+                spacing="3",
+                margin_top="16px",
+                justify="end",
+            ),
+        ),
+        open=AssessmentState.show_delete_dialog,
     )
 
 
@@ -245,7 +468,16 @@ def assessments_content() -> rx.Component:
             rx.callout(
                 AssessmentState.error,
                 icon="circle-alert",
-                color="red",
+                color_scheme="red",
+                margin_bottom="16px",
+            ),
+        ),
+        rx.cond(
+            AssessmentState.success_message != "",
+            rx.callout(
+                AssessmentState.success_message,
+                icon="circle-check",
+                color_scheme="green",
                 margin_bottom="16px",
             ),
         ),
@@ -280,6 +512,8 @@ def assessments_content() -> rx.Component:
             margin_top="16px",
             display=rx.breakpoints(initial="block", md="none"),
         ),
+        wizard_dialog(),
+        delete_dialog(),
         width="100%",
         spacing="4",
         on_mount=AssessmentState.load_assessments,
@@ -291,5 +525,5 @@ def assessments_page() -> rx.Component:
     return layout(
         assessments_content(),
         title="Assessments",
-        subtitle="DPIA's, Pentests, Audits en Self-Assessments",
+        subtitle="DPIA's, Pentests, Audits, BIA's en Self-Assessments",
     )

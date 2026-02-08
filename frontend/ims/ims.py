@@ -10,6 +10,7 @@ from ims.pages.index import dashboard_page
 from ims.pages.risks import risks_page
 from ims.pages.policies import policies_page
 from ims.pages.assessments import assessments_page
+from ims.pages.assessment_detail import assessment_detail_page
 from ims.pages.incidents import incidents_page
 from ims.pages.scopes import scopes_page
 from ims.pages.measures import measures_page
@@ -28,6 +29,7 @@ from ims.pages.policy_principles import policy_principles_page
 from ims.pages.admin import admin_page
 from ims.pages.reports import reports_page
 from ims.pages.ms_hub import ms_hub_page
+from ims.pages.relationships import relationships_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -53,6 +55,7 @@ from ims.state.dashboard import DashboardState
 from ims.state.admin import AdminState
 from ims.state.report import ReportState
 from ims.state.ms_hub import MsHubState
+from ims.state.relationship import RelationshipState
 
 
 # Create app
@@ -77,6 +80,7 @@ app.add_page(risks_page, route="/risks", title="Risico's - IMS")
 app.add_page(measures_page, route="/measures", title="Maatregelen - IMS")
 app.add_page(controls_page, route="/controls", title="Controls - IMS")
 app.add_page(assessments_page, route="/assessments", title="Assessments - IMS")
+app.add_page(assessment_detail_page, route="/assessments/[id]", title="Assessment Detail - IMS", on_load=AssessmentState.load_detail)
 app.add_page(incidents_page, route="/incidents", title="Incidenten - IMS")
 app.add_page(policies_page, route="/policies", title="Beleid - IMS")
 app.add_page(scopes_page, route="/scopes", title="Scopes - IMS")
@@ -94,3 +98,4 @@ app.add_page(policy_principles_page, route="/policy-principles", title="Beleidsu
 app.add_page(admin_page, route="/admin", title="Beheer - IMS")
 app.add_page(reports_page, route="/reports", title="Rapportage - IMS")
 app.add_page(ms_hub_page, route="/ms-hub", title="MS Hub - IMS")
+app.add_page(relationships_page, route="/relaties", title="Relaties - IMS")
