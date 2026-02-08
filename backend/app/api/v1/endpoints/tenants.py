@@ -10,11 +10,13 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import require_admin, require_coordinator_or_admin
 from app.models.core_models import (
     Tenant,
     TenantUser,
     TenantRelationship,
     TenantRelationshipType,
+    User,
 )
 
 router = APIRouter()
@@ -41,8 +43,9 @@ async def list_tenants(
 async def create_tenant(
     tenant: Tenant,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
-    """Create a new tenant."""
+    """Create a new tenant. Requires Beheerder role."""
     # Check slug uniqueness
     existing = await crud_tenant.get_by_field(session, "slug", tenant.slug)
     if existing:
@@ -77,8 +80,9 @@ async def update_tenant(
     tenant_id: int,
     tenant_update: dict,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
-    """Update a tenant."""
+    """Update a tenant. Requires Beheerder or Coordinator role."""
     db_tenant = await crud_tenant.get_or_404(session, tenant_id)
 
     # Check slug uniqueness if changing
@@ -95,8 +99,9 @@ async def update_tenant(
 async def deactivate_tenant(
     tenant_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
-    """Deactivate a tenant (soft delete)."""
+    """Deactivate a tenant (soft delete). Requires Beheerder role."""
     db_tenant = await crud_tenant.get_or_404(session, tenant_id)
     await crud_tenant.update(session, db_obj=db_tenant, obj_in={"is_active": False})
     return {"message": "Tenant deactivated"}
@@ -125,8 +130,9 @@ async def add_user_to_tenant(
     tenant_id: int,
     user_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
-    """Add a user to a tenant (membership-only, roles via UserScopeRole)."""
+    """Add a user to a tenant. Requires Beheerder or Coordinator role."""
     await crud_tenant.get_or_404(session, tenant_id)
 
     # Check if already member
@@ -154,8 +160,9 @@ async def remove_user_from_tenant(
     tenant_id: int,
     user_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
 ):
-    """Remove a user from a tenant."""
+    """Remove a user from a tenant. Requires Beheerder or Coordinator role."""
     result = await session.execute(
         select(TenantUser).where(
             TenantUser.tenant_id == tenant_id,
@@ -208,8 +215,9 @@ async def create_tenant_relationship(
     consumer_id: int,
     relationship_type: TenantRelationshipType,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
-    """Create a relationship between tenants (provider provides services to consumer)."""
+    """Create a relationship between tenants. Requires Beheerder role."""
     # Verify both tenants exist
     await crud_tenant.get_or_404(session, provider_id)
     await crud_tenant.get_or_404(session, consumer_id)
@@ -243,8 +251,9 @@ async def create_tenant_relationship(
 async def delete_tenant_relationship(
     relationship_id: int,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_admin),
 ):
-    """Delete a tenant relationship."""
+    """Delete a tenant relationship. Requires Beheerder role."""
     result = await session.execute(
         select(TenantRelationship).where(TenantRelationship.id == relationship_id)
     )
