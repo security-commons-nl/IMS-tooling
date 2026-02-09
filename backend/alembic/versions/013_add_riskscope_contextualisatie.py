@@ -29,7 +29,7 @@ def upgrade() -> None:
     # =========================================================================
     op.execute("""
         DO $$ BEGIN
-            CREATE TYPE acceptancestatus AS ENUM ('Voorgesteld', 'Geaccepteerd', 'Afgewezen', 'Verlopen');
+            CREATE TYPE acceptancestatus AS ENUM ('PROPOSED', 'ACCEPTED', 'REJECTED', 'EXPIRED');
         EXCEPTION
             WHEN duplicate_object THEN null;
         END $$;
@@ -73,7 +73,7 @@ def upgrade() -> None:
         sa.Column("owner_user_id", sa.Integer(), sa.ForeignKey("user.id"), nullable=True),
 
         # Acceptance
-        sa.Column("acceptance_status", sa.VARCHAR(), nullable=False, server_default="Voorgesteld"),
+        sa.Column("acceptance_status", sa.VARCHAR(), nullable=False, server_default="PROPOSED"),
         sa.Column("accepted_by_decision_id", sa.Integer(), sa.ForeignKey("decision.id"), nullable=True),
         sa.Column("risk_accepted", sa.Boolean(), nullable=False, server_default="false"),
         sa.Column("accepted_by_id", sa.Integer(), sa.ForeignKey("user.id"), nullable=True),
@@ -163,7 +163,7 @@ def upgrade() -> None:
             r.vulnerability_score, r.control_effectiveness_pct,
             r.attention_quadrant, r.ai_suggested_quadrant,
             r.mitigation_approach, r.treatment_strategy, r.treatment_justification, r.transfer_party,
-            CASE WHEN r.risk_accepted THEN 'Geaccepteerd' ELSE 'Voorgesteld' END,
+            CASE WHEN r.risk_accepted THEN 'ACCEPTED' ELSE 'PROPOSED' END,
             r.risk_accepted, r.accepted_by_id, r.acceptance_date, r.acceptance_justification,
             r.risk_appetite_threshold,
             r.last_review_date, r.next_review_date, r.review_frequency_months, r.is_critical,
@@ -192,7 +192,7 @@ def upgrade() -> None:
             r.residual_likelihood, r.residual_impact, r.residual_risk_score,
             r.vulnerability_score, r.control_effectiveness_pct,
             r.attention_quadrant, r.treatment_strategy,
-            CASE WHEN r.risk_accepted THEN 'Geaccepteerd' ELSE 'Voorgesteld' END,
+            CASE WHEN r.risk_accepted THEN 'ACCEPTED' ELSE 'PROPOSED' END,
             r.risk_accepted,
             now(), now()
         FROM risk r
@@ -212,7 +212,7 @@ def upgrade() -> None:
     # =========================================================================
     op.execute("""
         INSERT INTO scope (tenant_id, name, type, description, is_active, created_at, updated_at)
-        SELECT DISTINCT t.id, 'Niet-toegewezen', 'Organization',
+        SELECT DISTINCT t.id, 'Niet-toegewezen', 'ORGANIZATION',
                'Automatisch aangemaakt voor risicos zonder scope', true, now(), now()
         FROM tenant t
         WHERE NOT EXISTS (
@@ -237,7 +237,7 @@ def upgrade() -> None:
             r.residual_likelihood, r.residual_impact, r.residual_risk_score,
             r.vulnerability_score, r.control_effectiveness_pct,
             r.attention_quadrant, r.treatment_strategy,
-            CASE WHEN r.risk_accepted THEN 'Geaccepteerd' ELSE 'Voorgesteld' END,
+            CASE WHEN r.risk_accepted THEN 'ACCEPTED' ELSE 'PROPOSED' END,
             r.risk_accepted,
             now(), now()
         FROM risk r
