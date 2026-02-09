@@ -34,6 +34,7 @@ from app.models.core_models import (
     Status,
     Control,
     ControlRiskLink,
+    AttentionQuadrant,
 )
 from app.core.risk_appetite_engine import (
     evaluate_risk_scope,
@@ -458,9 +459,9 @@ async def check_decision_required(risk_id: int) -> str:
             return f"Risk with ID {risk_id} not found."
 
         score = risk.residual_risk_score or risk.inherent_risk_score or 0
-        strategy = risk.treatment_strategy
+        quadrant = risk.attention_quadrant
 
-        needs_decision = score >= 9 and strategy and strategy.value == "Accepteren"
+        needs_decision = score >= 9 and quadrant == AttentionQuadrant.ACCEPT
 
         # Check if decision already exists
         existing = await session.execute(
@@ -469,12 +470,12 @@ async def check_decision_required(risk_id: int) -> str:
         has_decision = existing.scalars().first() is not None
 
         if not needs_decision:
-            return f"Risk #{risk_id} (score={score}, strategy={strategy}) does NOT require a management decision."
+            return f"Risk #{risk_id} (score={score}, quadrant={quadrant}) does NOT require a management decision."
 
         if has_decision:
-            return f"Risk #{risk_id} (score={score}, strategy=Accepteren) REQUIRES a management decision — and one already exists."
+            return f"Risk #{risk_id} (score={score}, quadrant=Accepteren) REQUIRES a management decision — and one already exists."
 
-        return f"⚠ Risk #{risk_id} (score={score}, strategy=Accepteren) REQUIRES a management decision — NONE found! A formal decision must be recorded."
+        return f"⚠ Risk #{risk_id} (score={score}, quadrant=Accepteren) REQUIRES a management decision — NONE found! A formal decision must be recorded."
 
 
 # =============================================================================
@@ -845,7 +846,7 @@ async def trace_control_origin(control_id: int) -> str:
                 risk_result = await session.execute(select(Risk).where(Risk.id == link.risk_id))
                 risk = risk_result.scalars().first()
                 if risk:
-                    output += f"→ Risk #{risk.id}: {risk.title} (Score: {risk.residual_risk_score or 'N/A'}, Strategy: {risk.treatment_strategy or 'N/A'})\n"
+                    output += f"→ Risk #{risk.id}: {risk.title} (Score: {risk.residual_risk_score or 'N/A'}, Quadrant: {risk.attention_quadrant or 'N/A'})\n"
 
         # Get linked requirement → standard
         if control.requirement_id:

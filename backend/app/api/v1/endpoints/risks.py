@@ -24,7 +24,6 @@ from app.models.core_models import (
     MitigationApproach,
     Scope,
     ScopeGovernanceStatus,
-    TreatmentStrategy,
     User,
 )
 from app.services.knowledge_service import knowledge_service
@@ -84,8 +83,8 @@ async def create_risk(
                 detail="Kan geen risico aanmaken in een verlopen scope. Vernieuw de scope eerst."
             )
 
-    # Hiaat 4: Validate treatment strategy constraints
-    if risk.treatment_strategy == TreatmentStrategy.TRANSFER and not risk.transfer_party:
+    # Validate transfer_party constraint
+    if risk.mitigation_approach == MitigationApproach.TRANSFER and not risk.transfer_party:
         raise HTTPException(
             status_code=400,
             detail="Bij overdragen is een leverancier/verzekeraar verplicht."

@@ -467,7 +467,7 @@ De risk agent is het meest complete (14 tools) maar mist:
 | Kwantitatieve risicobeoordeling | Model ondersteunt frequentie-bereiken en EUR impact, agent kent alleen kwalitatief (LOW/MEDIUM/HIGH/CRITICAL) |
 | Vulnerability score (0-100) + control effectiveness (0-100) | Voedt de In Control kwadranten maar agent legt niet uit hoe |
 | AI-gesuggereerd kwadrant | `ai_suggested_quadrant` veld bestaat, agent weet niet |
-| Onderscheid `mitigation_approach` vs `treatment_strategy` | Twee aparte velden met verschillende semantiek, prompt verwart ze |
+| ~~Onderscheid `mitigation_approach` vs `treatment_strategy`~~ | **Opgelost**: `treatment_strategy` verwijderd, `attention_quadrant` is single source of truth |
 | Risk-Policy Principle link | `policy_principle_id` voor Hiaat 6 tracering, niet in prompt |
 | Risk scoring formule | score = likelihood_value * impact_value (1-16), nergens gedocumenteerd |
 

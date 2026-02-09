@@ -20,7 +20,7 @@ from app.models.core_models import (
     DecisionType,
     DecisionStatus,
     DecisionRiskLink,
-    TreatmentStrategy,
+    MitigationApproach,
 )
 
 
@@ -346,14 +346,16 @@ async def create_decision(
 @tool
 async def update_risk_treatment(
     risk_id: int,
-    treatment_strategy: str,
+    attention_quadrant: str,
+    mitigation_approach: Optional[str] = None,
     transfer_party: Optional[str] = None,
 ) -> str:
     """
-    Set the treatment strategy for a risk.
+    Set the attention quadrant (In Control model) and optional mitigation approach for a risk.
 
-    Strategies: Vermijden, Reduceren, Overdragen, Accepteren.
-    If strategy is Overdragen, transfer_party is required (e.g. verzekeraar or leverancier).
+    Quadrants: Mitigeren, Zekerheid, Monitoren, Accepteren.
+    If quadrant is Mitigeren, optionally set mitigation_approach: Reduceren, Overdragen, Vermijden.
+    If approach is Overdragen, transfer_party is required (e.g. verzekeraar or leverancier).
     Hard rule: if Accepteren AND score >= 9, a management decision is required.
     """
     async for session in get_session():
@@ -362,20 +364,36 @@ async def update_risk_treatment(
         if not risk:
             return f"Risk with ID {risk_id} not found."
 
-        strategy_map = {
-            "Vermijden": TreatmentStrategy.AVOID,
-            "Reduceren": TreatmentStrategy.REDUCE,
-            "Overdragen": TreatmentStrategy.TRANSFER,
-            "Accepteren": TreatmentStrategy.ACCEPT,
+        quadrant_map = {
+            "Mitigeren": AttentionQuadrant.MITIGATE,
+            "Zekerheid": AttentionQuadrant.ASSURANCE,
+            "Monitoren": AttentionQuadrant.MONITOR,
+            "Accepteren": AttentionQuadrant.ACCEPT,
         }
-        strategy = strategy_map.get(treatment_strategy)
-        if not strategy:
-            return f"Unknown strategy '{treatment_strategy}'. Options: {', '.join(strategy_map.keys())}"
+        quadrant = quadrant_map.get(attention_quadrant)
+        if not quadrant:
+            return f"Unknown quadrant '{attention_quadrant}'. Options: {', '.join(quadrant_map.keys())}"
 
-        if strategy == TreatmentStrategy.TRANSFER and not transfer_party:
-            return "transfer_party is required when strategy is 'Overdragen'. Specify the party (e.g. verzekeraar, leverancier)."
+        risk.attention_quadrant = quadrant
 
-        risk.treatment_strategy = strategy
+        # Handle mitigation approach (only for MITIGATE quadrant)
+        if quadrant == AttentionQuadrant.MITIGATE and mitigation_approach:
+            approach_map = {
+                "Reduceren": MitigationApproach.REDUCE,
+                "Overdragen": MitigationApproach.TRANSFER,
+                "Vermijden": MitigationApproach.AVOID,
+            }
+            approach = approach_map.get(mitigation_approach)
+            if not approach:
+                return f"Unknown mitigation_approach '{mitigation_approach}'. Options: {', '.join(approach_map.keys())}"
+
+            if approach == MitigationApproach.TRANSFER and not transfer_party:
+                return "transfer_party is required when approach is 'Overdragen'. Specify the party (e.g. verzekeraar, leverancier)."
+
+            risk.mitigation_approach = approach
+        elif quadrant != AttentionQuadrant.MITIGATE:
+            risk.mitigation_approach = None
+
         if transfer_party:
             risk.transfer_party = transfer_party
         risk.updated_at = datetime.utcnow()
@@ -386,7 +404,7 @@ async def update_risk_treatment(
         # Warning if acceptance requires decision
         score = risk.residual_risk_score or risk.inherent_risk_score or 0
         warning = ""
-        if strategy == TreatmentStrategy.ACCEPT and score >= 9:
+        if quadrant == AttentionQuadrant.ACCEPT and score >= 9:
             warning = "\n⚠ HARD RULE: Score >= 9 + Accepteren requires a formal management decision. Use create_decision to record it."
 
-        return f"Updated risk #{risk.id} treatment strategy to {strategy.value}.{warning}"
+        return f"Updated risk #{risk.id} attention quadrant to {quadrant.value}.{warning}"

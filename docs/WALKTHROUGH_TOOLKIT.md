@@ -17,7 +17,7 @@ Het Walkthrough Toolkit transformeert het IMS van een passief archief naar een a
 | 1 | Scopes definieren | Minstens 1 scope | "Geen scopes gedefinieerd" |
 | 2 | BIA uitvoeren | Minstens 1 scope met BIA-rating | "X scopes missen BIA-classificatie" |
 | 3 | Risico's identificeren | Minstens 3 risico's | "Slechts X risico's geregistreerd" |
-| 4 | Behandeling bepalen | Alle risico's hebben treatment_strategy | "X risico's zonder behandelstrategie" |
+| 4 | Behandeling bepalen | Alle risico's hebben attention_quadrant | "X risico's zonder aandachtskwadrant" |
 | 5 | Controls implementeren | Minstens 1 control gekoppeld aan risico | "Controls niet gekoppeld aan risico's" |
 | 6 | Besluiten vastleggen | Minstens 1 besluit | "Geen formele besluiten vastgelegd" |
 | 7 | Review uitvoeren | Minstens 1 afgerond assessment | "Nog geen assessments afgerond" |
@@ -74,7 +74,7 @@ Contextuele `rx.callout` die verschijnt bovenaan domeinpagina's wanneer er actie
 
 | Pagina | Hint verschijnt wanneer |
 |--------|------------------------|
-| `"risks"` | Risico's zonder behandelstrategie, of minder dan 3 risico's |
+| `"risks"` | Risico's zonder aandachtskwadrant, of minder dan 3 risico's |
 | `"controls"` | Geen controls gekoppeld aan risico's |
 | `"scopes"` | Geen scopes, of scopes zonder BIA-classificatie |
 | `"policies"` | (Gereserveerd voor toekomstige hints) |

@@ -551,18 +551,6 @@ class RiskFrameworkStatus(str, Enum):
     ARCHIVED = "Gearchiveerd"
 
 
-# =============================================================================
-# HIAAT 4: BEHANDELSTRATEGIE (Treatment Strategy)
-# =============================================================================
-
-class TreatmentStrategy(str, Enum):
-    """Mandatory risk treatment strategy"""
-    AVOID = "Vermijden"
-    REDUCE = "Reduceren"
-    TRANSFER = "Overdragen"
-    ACCEPT = "Accepteren"
-
-
 class AcceptanceStatus(str, Enum):
     """Acceptance status for scope-contextualized risk acceptance."""
     PROPOSED = "Voorgesteld"
@@ -1922,11 +1910,8 @@ class Risk(SQLModel, table=True):
     # Justification for the chosen approach
     treatment_justification: Optional[str] = None
 
-    # ==========================================================================
-    # HIAAT 4: BEHANDELSTRATEGIE (mandatory treatment strategy)
-    # ==========================================================================
-    treatment_strategy: Optional[TreatmentStrategy] = None  # Vermijden/Reduceren/Overdragen/Accepteren
-    transfer_party: Optional[str] = None  # Leverancier/verzekeraar (required if strategy=Transfer)
+    # Transfer party (required if mitigation_approach=Transfer)
+    transfer_party: Optional[str] = None
 
     # ==========================================================================
     # HIAAT 6: BELEID-TRACE (link to policy principle)
@@ -2006,7 +1991,6 @@ class RiskScope(SQLModel, table=True):
 
     # --- Treatment ---
     mitigation_approach: Optional[MitigationApproach] = None
-    treatment_strategy: Optional[TreatmentStrategy] = None
     treatment_justification: Optional[str] = None
     transfer_party: Optional[str] = None
 
@@ -2836,7 +2820,7 @@ class RiskAppetite(SQLModel, table=True):
 
     This is a key input for the "In Control" model:
     - Determines thresholds for when risks need treatment
-    - Guides the treatment_strategy selection
+    - Guides the attention_quadrant selection
     """
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_id: int = Field(foreign_key="tenant.id", index=True)

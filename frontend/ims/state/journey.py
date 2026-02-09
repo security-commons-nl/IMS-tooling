@@ -48,7 +48,7 @@ STEP_LINK_LABELS = [
     "Ga naar Scopes",
     "Voeg BIA toe",
     "Registreer risico's",
-    "Kies strategie",
+    "Bepaal kwadrant",
     "Koppel controls",
     "Documenteer besluiten",
     "Start assessment",
@@ -113,12 +113,12 @@ class JourneyState(rx.State):
 
     @rx.var
     def step4_ok(self) -> bool:
-        """Behandeling bepalen: all risks have treatment_strategy."""
+        """Behandeling bepalen: all risks have attention_quadrant."""
         if len(self._risks) == 0:
             return False
         for r in self._risks:
-            strategy = r.get("treatment_strategy", "")
-            if not strategy or strategy in ("", "NONE", "Geen"):
+            quadrant = r.get("attention_quadrant", "")
+            if not quadrant or quadrant in ("", "NONE", "Geen"):
                 return False
         return True
 
@@ -128,12 +128,12 @@ class JourneyState(rx.State):
             return ""
         missing = 0
         for r in self._risks:
-            strategy = r.get("treatment_strategy", "")
-            if not strategy or strategy in ("", "NONE", "Geen"):
+            quadrant = r.get("attention_quadrant", "")
+            if not quadrant or quadrant in ("", "NONE", "Geen"):
                 missing += 1
         if missing == 0:
             return "Registreer eerst risico's"
-        return f"{missing} risico's zonder behandelstrategie"
+        return f"{missing} risico's zonder aandachtskwadrant"
 
     @rx.var
     def step5_ok(self) -> bool:
@@ -214,10 +214,10 @@ class JourneyState(rx.State):
         if not self.step4_ok:
             missing = 0
             for r in self._risks:
-                strategy = r.get("treatment_strategy", "")
-                if not strategy or strategy in ("", "NONE", "Geen"):
+                quadrant = r.get("attention_quadrant", "")
+                if not quadrant or quadrant in ("", "NONE", "Geen"):
                     missing += 1
-            return f"{missing} risico's zonder behandelstrategie — kies Vermijden/Reduceren/Overdragen/Accepteren"
+            return f"{missing} risico's zonder aandachtskwadrant — kies Mitigeren/Zekerheid/Monitoren/Accepteren"
         return ""
 
     @rx.var
