@@ -62,10 +62,11 @@ async def list_users(
 @router.post("/", response_model=UserRead)
 async def create_user(
     user: User,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_coordinator_or_admin),
 ):
-    """Create a new user."""
+    """Create a new user and add them to the current tenant."""
     # Check if username or email already exists
     existing = await crud_user.get_by_field(session, "username", user.username)
     if existing:
@@ -75,7 +76,18 @@ async def create_user(
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    return await crud_user.create(session, obj_in=user)
+    db_user = await crud_user.create(session, obj_in=user)
+
+    # Automatically add user to the current tenant
+    tenant_user = TenantUser(
+        user_id=db_user.id,
+        tenant_id=tenant_id,
+        is_default=True,
+    )
+    session.add(tenant_user)
+    await session.commit()
+
+    return db_user
 
 
 @router.get("/{user_id}", response_model=UserRead)
