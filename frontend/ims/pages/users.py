@@ -491,9 +491,9 @@ def user_form_dialog() -> rx.Component:
                         rx.select.root(
                             rx.select.trigger(placeholder="Selecteer thema"),
                             rx.select.content(
-                                rx.select.item("Systeem", value="SYSTEM"),
-                                rx.select.item("Licht", value="LIGHT"),
-                                rx.select.item("Donker", value="DARK"),
+                                rx.select.item("Systeem", value="system"),
+                                rx.select.item("Licht", value="light"),
+                                rx.select.item("Donker", value="dark"),
                             ),
                             value=UserState.form_theme,
                             on_change=UserState.set_form_theme,
@@ -507,8 +507,8 @@ def user_form_dialog() -> rx.Component:
                         rx.select.root(
                             rx.select.trigger(placeholder="Selecteer taal"),
                             rx.select.content(
-                                rx.select.item("Nederlands", value="NL"),
-                                rx.select.item("Engels", value="EN"),
+                                rx.select.item("Nederlands", value="nl"),
+                                rx.select.item("Engels", value="en"),
                             ),
                             value=UserState.form_language,
                             on_change=UserState.set_form_language,

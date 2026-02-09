@@ -37,8 +37,8 @@ class UserState(rx.State):
     form_job_title: str = ""
     form_is_active: bool = True
     form_is_superuser: bool = False
-    form_theme: str = "SYSTEM"
-    form_language: str = "NL"
+    form_theme: str = "system"
+    form_language: str = "nl"
 
     # Role assignment form
     form_scope_id: str = ""
@@ -125,8 +125,8 @@ class UserState(rx.State):
         self.form_job_title = ""
         self.form_is_active = True
         self.form_is_superuser = False
-        self.form_theme = "SYSTEM"
-        self.form_language = "NL"
+        self.form_theme = "system"
+        self.form_language = "nl"
         self.error = ""
 
     def open_create_dialog(self):
@@ -150,8 +150,8 @@ class UserState(rx.State):
                 self.form_job_title = user.get("job_title", "") or ""
                 self.form_is_active = user.get("is_active", True)
                 self.form_is_superuser = user.get("is_superuser", False)
-                self.form_theme = user.get("theme", "SYSTEM") or "SYSTEM"
-                self.form_language = user.get("preferred_language", "NL") or "NL"
+                self.form_theme = user.get("theme", "system") or "system"
+                self.form_language = user.get("preferred_language", "nl") or "nl"
                 self.show_form_dialog = True
                 break
 
