@@ -1965,6 +1965,7 @@ class Risk(SQLModel, table=True):
     control_links: List["ControlRiskLink"] = Relationship(back_populates="risk")
     processing_activity: Optional["ProcessingActivity"] = Relationship(back_populates="risks")
     risk_scopes: List["RiskScope"] = Relationship(back_populates="risk")
+    corrective_actions: List["CorrectiveAction"] = Relationship(back_populates="risk")
 
 
 class RiskScope(SQLModel, table=True):
@@ -2116,6 +2117,10 @@ class Control(SQLModel, table=True):
     evidences: List["Evidence"] = Relationship(back_populates="control")
     measure_links: List["ControlMeasureLink"] = Relationship(back_populates="control")
     incident_links: List["IncidentControlLink"] = Relationship(back_populates="control")
+    corrective_actions: List["CorrectiveAction"] = Relationship(
+        back_populates="control",
+        sa_relationship_kwargs={"foreign_keys": "[CorrectiveAction.control_id]"},
+    )
 
 
 # =============================================================================
@@ -2462,11 +2467,13 @@ class CorrectiveAction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_id: int = Field(foreign_key="tenant.id", index=True)
 
-    # Can be linked to Finding, Incident, Issue, or Initiative
+    # Can be linked to Finding, Incident, Issue, Initiative, Risk, or Control
     finding_id: Optional[int] = Field(default=None, foreign_key="finding.id")
     incident_id: Optional[int] = Field(default=None, foreign_key="incident.id")
     issue_id: Optional[int] = Field(default=None, foreign_key="issue.id")
     initiative_id: Optional[int] = Field(default=None, foreign_key="initiative.id")
+    risk_id: Optional[int] = Field(default=None, foreign_key="risk.id")
+    control_id: Optional[int] = Field(default=None, foreign_key="control.id")
 
     title: str
     description: Optional[str] = None
@@ -2506,6 +2513,8 @@ class CorrectiveAction(SQLModel, table=True):
     incident: Optional["Incident"] = Relationship(back_populates="corrective_actions")
     issue: Optional["Issue"] = Relationship(back_populates="corrective_actions")
     initiative: Optional["Initiative"] = Relationship(back_populates="corrective_actions")
+    risk: Optional["Risk"] = Relationship(back_populates="corrective_actions")
+    control: Optional["Control"] = Relationship(back_populates="corrective_actions")
 
 
 # =============================================================================

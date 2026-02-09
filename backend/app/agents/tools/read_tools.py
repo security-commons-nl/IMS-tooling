@@ -876,6 +876,67 @@ async def trace_control_origin(control_id: int) -> str:
 
 
 # =============================================================================
+# CORRECTIVE ACTIONS READ TOOLS
+# =============================================================================
+
+@tool
+async def list_corrective_actions(
+    tenant_id: int,
+    status: Optional[str] = None,
+    limit: int = 50,
+) -> str:
+    """
+    List corrective actions for a tenant.
+
+    Optional status filter: 'open', 'overdue', 'completed', 'verified'.
+    Returns a formatted summary of corrective actions.
+    """
+    async for session in get_session():
+        query = select(CorrectiveAction).where(
+            CorrectiveAction.tenant_id == tenant_id
+        )
+
+        now = datetime.utcnow()
+        if status == "open":
+            query = query.where(CorrectiveAction.completed == False)
+        elif status == "overdue":
+            query = query.where(
+                CorrectiveAction.completed == False,
+                CorrectiveAction.due_date != None,
+                CorrectiveAction.due_date < now,
+            )
+        elif status == "completed":
+            query = query.where(CorrectiveAction.completed == True)
+        elif status == "verified":
+            query = query.where(CorrectiveAction.verified == True)
+
+        query = query.order_by(CorrectiveAction.created_at.desc()).limit(limit)
+        result = await session.execute(query)
+        actions = result.scalars().all()
+
+        if not actions:
+            return f"Geen verbeteracties gevonden (filter: {status or 'alle'})."
+
+        output = f"Verbeteracties ({len(actions)} resultaten, filter: {status or 'alle'})\n{'='*50}\n\n"
+        for a in actions:
+            source = "Los"
+            if a.risk_id:
+                source = f"Risico #{a.risk_id}"
+            elif a.control_id:
+                source = f"Control #{a.control_id}"
+            elif a.finding_id:
+                source = f"Finding #{a.finding_id}"
+            elif a.incident_id:
+                source = f"Incident #{a.incident_id}"
+
+            status_label = "Geverifieerd" if a.verified else ("Afgerond" if a.completed else "Open")
+            due = a.due_date.date() if a.due_date else "Geen"
+            output += f"- #{a.id}: {a.title} | {status_label} | Prio: {a.priority} | Bron: {source} | Deadline: {due}\n"
+
+        return output
+
+
+# =============================================================================
 # ACT-OVERDUE TOOLS (Hiaat 7: ACT-feedbackloop)
 # =============================================================================
 

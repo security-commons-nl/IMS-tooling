@@ -77,6 +77,7 @@ def _build_nav_links(link_fn):
                 link_fn("Controls", "/controls", "shield-check"),
                 link_fn("Assessments", "/assessments", "clipboard-check"),
                 link_fn("Incidenten", "/incidents", "circle-alert"),
+                link_fn("Verbeteracties", "/corrective-actions", "list-checks"),
             ),
         ),
         # ONTDEKKEN — only for Eigenaar+, Toezichthouder

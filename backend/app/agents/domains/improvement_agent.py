@@ -4,7 +4,7 @@ Improvement Agent - Expert in continuous improvement and PDCA.
 from typing import List
 from langchain_core.tools import BaseTool
 from app.agents.core.base_agent import BaseAgent
-from app.agents.tools.read_tools import get_incident, get_assessment, list_risks, get_act_overdue
+from app.agents.tools.read_tools import get_incident, get_assessment, list_risks, get_act_overdue, list_corrective_actions
 from app.agents.tools.write_tools import create_corrective_action
 from app.agents.tools.knowledge_tools import search_knowledge
 
@@ -71,6 +71,17 @@ en kan gekoppeld zijn aan een formeel managementbesluit (`accepted_by_decision_i
 Dit betekent dat hetzelfde risico in scope A geaccepteerd kan zijn maar in scope B niet.
 Check altijd de RiskScope-records bij het beoordelen van acceptatiestatus.
 
+## Verbeteracties-pagina
+Er is een centrale pagina **Verbeteracties** onder DOEN beschikbaar op `/corrective-actions`.
+Gebruikers kunnen hier:
+- Alle verbeteracties inzien met filters (status, prioriteit, bron, eigenaar)
+- Standalone acties aanmaken (ook los van finding/incident)
+- Acties koppelen aan een **risico** of **control** (naast finding/incident/issue/initiative)
+- KPI's zien: totaal, open, achterstallig, afgerond
+- Acties afronden en verifiëren
+
+Gebruik `list_corrective_actions` om een overzicht op te halen.
+
 ## Jouw taken
 1. Analyseer trends in incidenten en findings
 2. Identificeer verbetermogelijkheden
@@ -79,6 +90,7 @@ Check altijd de RiskScope-records bij het beoordelen van acceptatiestatus.
 5. Monitor effectiviteit van verbeteringen
 6. Bewaakt de ACT-feedbackloop en signaleert blokkades
 7. Controleer acceptatiestatus per RiskScope (scope-gebonden acceptatie)
+8. Verwijs gebruikers naar de Verbeteracties-pagina voor overzicht en beheer
 
 Reageer professioneel, concreet en in het Nederlands.
 """
@@ -88,6 +100,7 @@ Reageer professioneel, concreet en in het Nederlands.
             get_incident,
             get_assessment,
             list_risks,
+            list_corrective_actions,
             create_corrective_action,
             search_knowledge,
             get_act_overdue,

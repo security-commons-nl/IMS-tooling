@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     users,
     assessments,
     incidents,
+    corrective_actions,
     policies,
     workflows,
     soa,
@@ -111,6 +112,13 @@ api_router.include_router(
     incidents.router,
     prefix="/incidents",
     tags=["Improvement: Incidents"]
+)
+
+# Improvement (PDCA Act) - Corrective Actions
+api_router.include_router(
+    corrective_actions.router,
+    prefix="/corrective-actions",
+    tags=["Improvement: Corrective Actions"]
 )
 
 # Workflows

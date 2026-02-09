@@ -229,14 +229,15 @@ async def create_corrective_action(
     due_date: Optional[str] = None,
     assigned_to_id: Optional[int] = None,
     risk_id: Optional[int] = None,
+    control_id: Optional[int] = None,
     finding_id: Optional[int] = None,
     incident_id: Optional[int] = None,
 ) -> str:
     """
-    Create a corrective action to address a finding, incident, or risk.
+    Create a corrective action to address a finding, incident, risk, or control.
 
     Due date format: YYYY-MM-DD
-    Link to at least one of: risk_id, finding_id, or incident_id.
+    Link to at least one of: risk_id, control_id, finding_id, or incident_id.
     """
     async for session in get_session():
         due_datetime = None
@@ -253,9 +254,9 @@ async def create_corrective_action(
             due_date=due_datetime,
             assigned_to_id=assigned_to_id,
             risk_id=risk_id,
+            control_id=control_id,
             finding_id=finding_id,
             incident_id=incident_id,
-            status=Status.DRAFT,
         )
 
         session.add(action)

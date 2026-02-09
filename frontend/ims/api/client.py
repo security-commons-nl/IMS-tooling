@@ -645,6 +645,86 @@ class APIClient:
             return response.json()
 
     # =========================================================================
+    # CORRECTIVE ACTIONS (Standalone)
+    # =========================================================================
+
+    async def get_corrective_actions(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        priority: Optional[str] = None,
+        assigned_to_id: Optional[int] = None,
+        source_type: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get list of corrective actions with filters."""
+        async with self._get_client() as client:
+            params = {"skip": skip, "limit": limit}
+            if status:
+                params["status"] = status
+            if priority:
+                params["priority"] = priority
+            if assigned_to_id:
+                params["assigned_to_id"] = assigned_to_id
+            if source_type:
+                params["source_type"] = source_type
+            response = await client.get("/corrective-actions/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_corrective_action_stats(self) -> Dict[str, Any]:
+        """Get corrective action KPI statistics."""
+        async with self._get_client() as client:
+            response = await client.get("/corrective-actions/stats")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_standalone_corrective_action(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a standalone corrective action."""
+        async with self._get_client() as client:
+            response = await client.post("/corrective-actions/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_standalone_corrective_action(self, action_id: int) -> Dict[str, Any]:
+        """Get a corrective action by ID."""
+        async with self._get_client() as client:
+            response = await client.get(f"/corrective-actions/{action_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def update_standalone_corrective_action(self, action_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a corrective action."""
+        async with self._get_client() as client:
+            response = await client.patch(f"/corrective-actions/{action_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def complete_standalone_corrective_action(self, action_id: int, result_notes: Optional[str] = None) -> Dict[str, Any]:
+        """Mark a corrective action as completed."""
+        async with self._get_client() as client:
+            params = {}
+            if result_notes:
+                params["result_notes"] = result_notes
+            response = await client.post(f"/corrective-actions/{action_id}/complete", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def verify_standalone_corrective_action(self, action_id: int, verified_by_id: int) -> Dict[str, Any]:
+        """Verify a completed corrective action."""
+        async with self._get_client() as client:
+            params = {"verified_by_id": verified_by_id}
+            response = await client.post(f"/corrective-actions/{action_id}/verify", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_standalone_corrective_action(self, action_id: int) -> None:
+        """Delete a corrective action."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/corrective-actions/{action_id}")
+            response.raise_for_status()
+
+    # =========================================================================
     # INCIDENTS
     # =========================================================================
 

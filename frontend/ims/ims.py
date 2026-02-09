@@ -32,6 +32,7 @@ from ims.pages.ms_hub import ms_hub_page
 from ims.pages.relationships import relationships_page
 from ims.pages.organization import organization_page
 from ims.pages.risk_appetite import risk_appetite_page
+from ims.pages.corrective_actions import corrective_actions_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -60,6 +61,7 @@ from ims.state.ms_hub import MsHubState
 from ims.state.relationship import RelationshipState
 from ims.state.organization_profile import OrganizationProfileState
 from ims.state.risk_appetite import RiskAppetiteState
+from ims.state.corrective_action import CorrectiveActionState
 
 
 # Create app
@@ -107,3 +109,4 @@ app.add_page(organization_page, route="/organization", title="Mijn Organisatie -
              on_load=OrganizationProfileState.load_profile)
 app.add_page(risk_appetite_page, route="/risk-appetite", title="Risicotolerantie - IMS",
              on_load=RiskAppetiteState.load_appetite)
+app.add_page(corrective_actions_page, route="/corrective-actions", title="Verbeteracties - IMS")
