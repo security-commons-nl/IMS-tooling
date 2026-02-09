@@ -25,11 +25,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # =========================================================================
-    # 1. Create AcceptanceStatus enum type
+    # 1. Create AcceptanceStatus enum type (if not already created by SQLModel)
     # =========================================================================
     acceptance_status_enum = sa.Enum(
         "Voorgesteld", "Geaccepteerd", "Afgewezen", "Verlopen",
         name="acceptancestatus",
+        create_type=False,
     )
     acceptance_status_enum.create(op.get_bind(), checkfirst=True)
 
