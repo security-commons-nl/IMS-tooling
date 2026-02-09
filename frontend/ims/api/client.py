@@ -862,6 +862,13 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    async def permanently_delete_user(self, user_id: int) -> Dict[str, Any]:
+        """Permanently delete a user (hard delete)."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/users/{user_id}/permanent")
+            response.raise_for_status()
+            return response.json()
+
     async def get_user_scopes(
         self,
         user_id: int,

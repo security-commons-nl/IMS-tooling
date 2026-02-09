@@ -44,10 +44,15 @@ class UserState(rx.State):
     form_scope_id: str = ""
     form_role: str = ""
 
-    # Delete confirmation
+    # Deactivate confirmation
     show_delete_dialog: bool = False
     deleting_user_id: Optional[int] = None
     deleting_user_name: str = ""
+
+    # Hard delete confirmation
+    show_hard_delete_dialog: bool = False
+    hard_deleting_user_id: Optional[int] = None
+    hard_deleting_user_name: str = ""
 
     # Success/Error messages
     success_message: str = ""
@@ -345,3 +350,35 @@ class UserState(rx.State):
         except Exception as e:
             self.error = f"Fout bij deactiveren: {str(e)}"
             self.close_delete_dialog()
+
+    # ==========================================================================
+    # HARD DELETE METHODS
+    # ==========================================================================
+
+    def open_hard_delete_dialog(self, user_id: int):
+        """Open hard delete confirmation dialog."""
+        for user in self.users:
+            if user.get("id") == user_id:
+                self.hard_deleting_user_id = user_id
+                self.hard_deleting_user_name = user.get("full_name") or user.get("username", "")
+                self.show_hard_delete_dialog = True
+                break
+
+    def close_hard_delete_dialog(self):
+        self.show_hard_delete_dialog = False
+        self.hard_deleting_user_id = None
+        self.hard_deleting_user_name = ""
+
+    async def confirm_hard_delete(self):
+        """Confirm and execute permanent deletion."""
+        if not self.hard_deleting_user_id:
+            return
+
+        try:
+            await api_client.permanently_delete_user(self.hard_deleting_user_id)
+            self.success_message = "Gebruiker permanent verwijderd"
+            self.close_hard_delete_dialog()
+            await self.load_users()
+        except Exception as e:
+            self.error = f"Fout bij verwijderen: {str(e)}"
+            self.close_hard_delete_dialog()

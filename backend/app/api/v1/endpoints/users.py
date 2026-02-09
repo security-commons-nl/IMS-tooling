@@ -172,6 +172,41 @@ async def deactivate_user(
     return {"message": "User deactivated"}
 
 
+@router.delete("/{user_id}/permanent")
+async def permanently_delete_user(
+    user_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(require_coordinator_or_admin),
+):
+    """Permanently delete a user and all related records."""
+    db_user = await crud_user.get_or_404(session, user_id)
+
+    # Prevent deleting yourself
+    if db_user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+
+    # Remove scope roles
+    result = await session.execute(
+        select(UserScopeRole).where(UserScopeRole.user_id == user_id)
+    )
+    for role in result.scalars().all():
+        await session.delete(role)
+
+    # Remove tenant memberships
+    result = await session.execute(
+        select(TenantUser).where(TenantUser.user_id == user_id)
+    )
+    for tu in result.scalars().all():
+        await session.delete(tu)
+
+    # Delete user
+    await session.delete(db_user)
+    await session.commit()
+
+    return {"message": "User permanently deleted"}
+
+
 @router.post("/{user_id}/login")
 async def record_login(
     user_id: int,

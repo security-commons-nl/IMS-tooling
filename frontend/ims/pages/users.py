@@ -128,8 +128,15 @@ def user_row(user: dict) -> rx.Component:
                     rx.icon("user-x", size=14),
                     variant="ghost",
                     size="1",
-                    color_scheme="red",
+                    color_scheme="orange",
                     on_click=lambda: UserState.open_delete_dialog(user["id"]),
+                ),
+                rx.icon_button(
+                    rx.icon("trash-2", size=14),
+                    variant="ghost",
+                    size="1",
+                    color_scheme="red",
+                    on_click=lambda: UserState.open_hard_delete_dialog(user["id"]),
                 ),
                 spacing="1",
             ),
@@ -177,8 +184,15 @@ def user_mobile_card(user: dict) -> rx.Component:
                         rx.icon("user-x", size=14),
                         variant="ghost",
                         size="1",
-                        color_scheme="red",
+                        color_scheme="orange",
                         on_click=lambda: UserState.open_delete_dialog(user["id"]),
+                    ),
+                    rx.icon_button(
+                        rx.icon("trash-2", size=14),
+                        variant="ghost",
+                        size="1",
+                        color_scheme="red",
+                        on_click=lambda: UserState.open_hard_delete_dialog(user["id"]),
                     ),
                     spacing="1",
                 ),
@@ -794,6 +808,55 @@ def delete_confirm_dialog() -> rx.Component:
     )
 
 
+def hard_delete_confirm_dialog() -> rx.Component:
+    """Dialog for confirming permanent user deletion."""
+    return rx.alert_dialog.root(
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Gebruiker Permanent Verwijderen"),
+            rx.alert_dialog.description(
+                rx.vstack(
+                    rx.callout(
+                        "Dit kan niet ongedaan worden gemaakt!",
+                        icon="triangle-alert",
+                        color_scheme="red",
+                        size="1",
+                    ),
+                    rx.text("Weet u zeker dat u deze gebruiker permanent wilt verwijderen?"),
+                    rx.text(UserState.hard_deleting_user_name, weight="bold", color="red"),
+                    rx.text(
+                        "Alle gegevens, roltoewijzingen en koppelingen worden definitief verwijderd.",
+                        size="2",
+                        color="gray",
+                    ),
+                    spacing="2",
+                    align_items="start",
+                ),
+            ),
+            rx.hstack(
+                rx.alert_dialog.cancel(
+                    rx.button(
+                        "Annuleren",
+                        variant="soft",
+                        color_scheme="gray",
+                        on_click=UserState.close_hard_delete_dialog,
+                    ),
+                ),
+                rx.alert_dialog.action(
+                    rx.button(
+                        "Permanent Verwijderen",
+                        color_scheme="red",
+                        on_click=UserState.confirm_hard_delete,
+                    ),
+                ),
+                spacing="3",
+                justify="end",
+                margin_top="16px",
+            ),
+        ),
+        open=UserState.show_hard_delete_dialog,
+    )
+
+
 def users_content() -> rx.Component:
     """Users page content."""
     return rx.vstack(
@@ -853,6 +916,7 @@ def users_content() -> rx.Component:
         user_form_dialog(),
         role_assignment_dialog(),
         delete_confirm_dialog(),
+        hard_delete_confirm_dialog(),
 
         width="100%",
         spacing="4",
