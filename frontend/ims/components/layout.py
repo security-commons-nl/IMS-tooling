@@ -75,7 +75,6 @@ def _build_nav_links(link_fn):
             rx.fragment(
                 link_fn("Risico's", "/risks", "triangle-alert"),
                 link_fn("Controls", "/controls", "shield-check"),
-                link_fn("Compliance", "/compliance", "clipboard-list"),
                 link_fn("Assessments", "/assessments", "clipboard-check"),
                 link_fn("Incidenten", "/incidents", "circle-alert"),
                 # Besluiten — only for Eigenaar+ (formal risk decisions)
@@ -95,6 +94,7 @@ def _build_nav_links(link_fn):
                 rx.cond(
                     BaseState.menu_ontdekken_open,
                     rx.fragment(
+                        link_fn("Compliance", "/compliance", "clipboard-list"),
                         link_fn("Frameworks", "/frameworks", "library"),
                         link_fn("Maatregelen", "/measures", "book-open"),
                         link_fn("Uitgangspunten", "/policy-principles", "link-2"),
