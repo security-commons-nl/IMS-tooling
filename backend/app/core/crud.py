@@ -5,13 +5,32 @@ Reduces boilerplate across endpoint files.
 Includes:
 - CRUDBase: Standard CRUD without tenant filtering
 - TenantCRUDBase: CRUD with automatic tenant_id filtering (recommended)
+- ScopedTenantCRUDBase: Tenant + scope-level filtering (for models with scope_id)
 """
-from typing import TypeVar, Generic, Type, List, Optional, Any
+from typing import TypeVar, Generic, Type, List, Optional, Any, Set
 from sqlmodel import SQLModel, select
+from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
 ModelType = TypeVar("ModelType", bound=SQLModel)
+
+
+def _integrity_error_detail(e: IntegrityError) -> str:
+    """Extract a user-friendly message from an IntegrityError."""
+    msg = str(e.orig) if e.orig else str(e)
+    if "not-null" in msg.lower() or "notnullviolation" in msg.lower():
+        # Extract column name from: null value in column "description" ...
+        import re
+        m = re.search(r'column "(\w+)"', msg)
+        col = m.group(1) if m else "unknown"
+        return f"Verplicht veld '{col}' ontbreekt of is leeg."
+    if "unique" in msg.lower():
+        return "Dit item bestaat al (unieke waarde duplicaat)."
+    if "foreign" in msg.lower() or "foreignkey" in msg.lower():
+        return "Ongeldige referentie — gekoppeld item bestaat niet."
+    return f"Database constraint fout: {msg[:200]}"
 
 
 class CRUDBase(Generic[ModelType]):
@@ -99,7 +118,12 @@ class CRUDBase(Generic[ModelType]):
     async def create(self, session: AsyncSession, *, obj_in: ModelType) -> ModelType:
         """Create new record."""
         session.add(obj_in)
-        await session.commit()
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            detail = _integrity_error_detail(e)
+            raise HTTPException(status_code=400, detail=detail)
         await session.refresh(obj_in)
         return obj_in
 
@@ -116,7 +140,12 @@ class CRUDBase(Generic[ModelType]):
                 setattr(db_obj, field, value)
 
         session.add(db_obj)
-        await session.commit()
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            detail = _integrity_error_detail(e)
+            raise HTTPException(status_code=400, detail=detail)
         await session.refresh(db_obj)
         return db_obj
 
@@ -125,7 +154,12 @@ class CRUDBase(Generic[ModelType]):
         obj = await self.get(session, id)
         if obj:
             await session.delete(obj)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+                detail = _integrity_error_detail(e)
+                raise HTTPException(status_code=400, detail=detail)
             return True
         return False
 
@@ -225,7 +259,12 @@ class TenantCRUDBase(CRUDBase[ModelType]):
         if hasattr(obj_in, "tenant_id"):
             obj_in.tenant_id = tenant_id
         session.add(obj_in)
-        await session.commit()
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            detail = _integrity_error_detail(e)
+            raise HTTPException(status_code=400, detail=detail)
         await session.refresh(obj_in)
         return obj_in
 
@@ -253,7 +292,12 @@ class TenantCRUDBase(CRUDBase[ModelType]):
                 setattr(db_obj, field, value)
 
         session.add(db_obj)
-        await session.commit()
+        try:
+            await session.commit()
+        except IntegrityError as e:
+            await session.rollback()
+            detail = _integrity_error_detail(e)
+            raise HTTPException(status_code=400, detail=detail)
         await session.refresh(db_obj)
         return db_obj
 
@@ -268,7 +312,12 @@ class TenantCRUDBase(CRUDBase[ModelType]):
         obj = await self.get(session, id, tenant_id)
         if obj:
             await session.delete(obj)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError as e:
+                await session.rollback()
+                detail = _integrity_error_detail(e)
+                raise HTTPException(status_code=400, detail=detail)
             return True
         return False
 
@@ -282,6 +331,117 @@ class TenantCRUDBase(CRUDBase[ModelType]):
         from sqlalchemy import func
         query = select(func.count()).select_from(self.model)
         query = self._apply_tenant_filter(query, tenant_id)
+
+        if filters:
+            for field, value in filters.items():
+                if hasattr(self.model, field) and value is not None:
+                    query = query.where(getattr(self.model, field) == value)
+
+        result = await session.execute(query)
+        return result.scalar() or 0
+
+
+class ScopedTenantCRUDBase(TenantCRUDBase[ModelType]):
+    """
+    Tenant + scope-aware CRUD operations.
+
+    Extends TenantCRUDBase with scope-level filtering for models that have
+    a scope_id field. Resources with scope_id=NULL are visible to all tenant members.
+
+    Usage:
+        crud_risk = ScopedTenantCRUDBase(Risk)
+        risks = await crud_risk.get_multi_scoped(
+            session, tenant_id=1, accessible_scope_ids={1, 2, 3}
+        )
+    """
+
+    def _apply_scope_filter(self, query, accessible_scope_ids: Optional[Set[int]]):
+        """Apply scope filter to query.
+
+        Args:
+            accessible_scope_ids: Set of scope IDs the user can access.
+                None means unrestricted (admin/coordinator/superuser).
+        """
+        if accessible_scope_ids is None:
+            return query  # No restriction
+
+        if not hasattr(self.model, "scope_id"):
+            return query  # Model has no scope_id — no filtering
+
+        # Show resources in accessible scopes OR with scope_id=NULL
+        return query.where(
+            or_(
+                self.model.scope_id.in_(accessible_scope_ids),
+                self.model.scope_id.is_(None),
+            )
+        )
+
+    async def get_scoped(
+        self,
+        session: AsyncSession,
+        id: int,
+        tenant_id: int,
+        accessible_scope_ids: Optional[Set[int]] = None,
+    ) -> Optional[ModelType]:
+        """Get single record by ID within tenant, with scope check."""
+        query = select(self.model).where(self.model.id == id)
+        query = self._apply_tenant_filter(query, tenant_id)
+        query = self._apply_scope_filter(query, accessible_scope_ids)
+        result = await session.execute(query)
+        return result.scalars().first()
+
+    async def get_scoped_or_404(
+        self,
+        session: AsyncSession,
+        id: int,
+        tenant_id: int,
+        accessible_scope_ids: Optional[Set[int]] = None,
+    ) -> ModelType:
+        """Get single record by ID within tenant + scope, or raise 404."""
+        obj = await self.get_scoped(session, id, tenant_id, accessible_scope_ids)
+        if not obj:
+            raise HTTPException(
+                status_code=404,
+                detail=f"{self.model.__name__} with id {id} not found"
+            )
+        return obj
+
+    async def get_multi_scoped(
+        self,
+        session: AsyncSession,
+        tenant_id: int,
+        accessible_scope_ids: Optional[Set[int]] = None,
+        *,
+        skip: int = 0,
+        limit: int = 100,
+        filters: Optional[dict] = None,
+    ) -> List[ModelType]:
+        """Get multiple records within tenant + scope with pagination."""
+        query = select(self.model)
+        query = self._apply_tenant_filter(query, tenant_id)
+        query = self._apply_scope_filter(query, accessible_scope_ids)
+
+        if filters:
+            for field, value in filters.items():
+                if hasattr(self.model, field) and value is not None:
+                    query = query.where(getattr(self.model, field) == value)
+
+        query = query.offset(skip).limit(limit)
+        result = await session.execute(query)
+        return result.scalars().all()
+
+    async def count_scoped(
+        self,
+        session: AsyncSession,
+        tenant_id: int,
+        accessible_scope_ids: Optional[Set[int]] = None,
+        filters: Optional[dict] = None,
+    ) -> int:
+        """Count records within tenant + scope."""
+        from sqlalchemy import func
+        query = select(func.count()).select_from(self.model)
+        query = self._apply_tenant_filter(query, tenant_id)
+        query = self._apply_scope_filter(query, accessible_scope_ids)
 
         if filters:
             for field, value in filters.items():

@@ -745,6 +745,7 @@ class TenantUser(SQLModel, table=True):
     invited_at: Optional[datetime] = None
     accepted_at: Optional[datetime] = None
 
+    is_default: bool = False  # First membership per user is default
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -1077,7 +1078,7 @@ class Measure(SQLModel, table=True):
 
     code: Optional[str] = None  # "M-001"
     name: str  # "Multi-Factor Authenticatie implementeren"
-    description: str
+    description: Optional[str] = None
 
     # Classification
     control_type: Optional[str] = None  # "Preventive", "Detective", "Corrective"
@@ -1410,7 +1411,7 @@ class Decision(SQLModel, table=True):
     # Core fields
     decision_type: DecisionType
     decision_text: str
-    decision_maker_id: int = Field(foreign_key="user.id")  # DT role only
+    decision_maker_id: Optional[int] = Field(default=None, foreign_key="user.id")  # DT role only
     decision_date: datetime = Field(default_factory=datetime.utcnow)
 
     # Validity
@@ -1633,7 +1634,7 @@ class Scope(SQLModel, table=True):
     name: str
     type: ScopeType = ScopeType.PROCESS
     description: Optional[str] = None
-    owner: str
+    owner: Optional[str] = None
 
     accountable_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
 
@@ -1810,7 +1811,7 @@ class Risk(SQLModel, table=True):
     scope_id: Optional[int] = Field(default=None, foreign_key="scope.id")
 
     title: str
-    description: str
+    description: Optional[str] = None
     risk_category: Optional[str] = None  # e.g., "Operational", "Compliance", "Strategic"
 
     # From template? (for catalog-based risks)
@@ -1829,8 +1830,8 @@ class Risk(SQLModel, table=True):
 
     # --- Inherent Risk (before controls) ---
     # This is the "raw" risk if no controls were in place
-    inherent_likelihood: RiskLevel
-    inherent_impact: RiskLevel
+    inherent_likelihood: Optional[RiskLevel] = None
+    inherent_impact: Optional[RiskLevel] = None
 
     # Calculated inherent risk score (1-16 based on 4x4 matrix)
     # LOW=1, MEDIUM=2, HIGH=3, CRITICAL=4 → score = likelihood × impact
@@ -1972,7 +1973,7 @@ class Control(SQLModel, table=True):
     requirement_id: Optional[int] = Field(default=None, foreign_key="requirement.id")
 
     title: str
-    description: str
+    description: Optional[str] = None
 
     # Control type classification
     control_type: Optional[str] = None  # "Preventive", "Detective", "Corrective"
@@ -2023,7 +2024,7 @@ class Incident(SQLModel, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", index=True)
 
     title: str
-    description: str
+    description: Optional[str] = None
     date_occurred: datetime = Field(default_factory=datetime.utcnow)
     date_detected: Optional[datetime] = None
     date_resolved: Optional[datetime] = None
@@ -3467,7 +3468,7 @@ class Policy(SQLModel, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", index=True)
 
     title: str
-    content: str
+    content: Optional[str] = None
     state: PolicyState = PolicyState.DRAFT
     version: int = 1
 
