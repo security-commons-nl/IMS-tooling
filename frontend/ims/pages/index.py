@@ -239,9 +239,6 @@ def dashboard_content() -> rx.Component:
             width="100%",
         ),
 
-        # In-Control status per scope
-        _in_control_section(),
-
         # My Tasks section
         rx.cond(
             DashboardState.has_tasks,
@@ -340,6 +337,9 @@ def dashboard_content() -> rx.Component:
             width="100%",
             margin_top="24px",
         ),
+
+        # In-Control status per scope
+        _in_control_section(),
 
         # Quick actions
         rx.box(
