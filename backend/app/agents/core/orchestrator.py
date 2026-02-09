@@ -94,7 +94,7 @@ class AgentOrchestrator:
             try:
                 self.agents[name] = agent_class()
             except Exception as e:
-                print(f"Warning: Failed to initialize {name} agent: {e}")
+                logger.warning(f"Failed to initialize {name} agent: {e}")
 
     def register_agent(self, agent: BaseAgent):
         """Register an initialized agent."""

@@ -15,7 +15,8 @@ class AuthState(rx.State):
     user_json: str = rx.LocalStorage(name="ims_user")
 
     # Active tenant (persisted — no _ prefix!)
-    active_tenant_id: int = rx.LocalStorage(name="ims_tenant_id")
+    # LocalStorage always returns str; keep as str, convert in tenant_id var
+    active_tenant_id: str = rx.LocalStorage(name="ims_tenant_id")
 
     # Login form
     username: str = ""
@@ -149,9 +150,13 @@ class AuthState(rx.State):
     @rx.var
     def tenant_id(self) -> int:
         """Get the active tenant_id (from localStorage or default from login)."""
-        # If active_tenant_id was explicitly set (and non-zero), use it
-        if self.active_tenant_id and self.active_tenant_id > 0:
-            return self.active_tenant_id
+        # LocalStorage returns str; safely convert to int
+        try:
+            tid = int(self.active_tenant_id) if self.active_tenant_id else 0
+        except (ValueError, TypeError):
+            tid = 0
+        if tid > 0:
+            return tid
         # Fall back to default_tenant_id from login response
         user = self.user
         if user:
@@ -196,9 +201,9 @@ class AuthState(rx.State):
         # Store authenticated user in localStorage
         self.user_json = json.dumps(user_data)
 
-        # Set active tenant to default
+        # Set active tenant to default (store as str for LocalStorage)
         default_tid = user_data.get("default_tenant_id", 0)
-        self.active_tenant_id = default_tid or 0
+        self.active_tenant_id = str(default_tid or 0)
 
         self.is_logging_in = False
         self.username = ""
@@ -210,12 +215,12 @@ class AuthState(rx.State):
     def logout(self):
         """Log out the current user."""
         self.user_json = ""
-        self.active_tenant_id = 0
+        self.active_tenant_id = ""
         return rx.redirect("/login")
 
     def switch_tenant(self, tenant_id: str):
         """Switch to a different tenant. Triggers page reload for data refresh."""
-        self.active_tenant_id = int(tenant_id)
+        self.active_tenant_id = str(tenant_id)
         return rx.redirect(rx.State.router.page.raw_path)
 
     def set_username(self, value: str):

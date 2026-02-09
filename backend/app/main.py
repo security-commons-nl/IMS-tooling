@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from slowapi import Limiter
@@ -22,6 +23,19 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan
+)
+
+# CORS — allow Reflex frontend (same-origin in prod, localhost in dev)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://i-m-s.nl",
+        "http://localhost:3000",
+        "http://localhost:8002",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.state.limiter = limiter
