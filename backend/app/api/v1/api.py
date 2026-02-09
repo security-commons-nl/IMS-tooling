@@ -4,6 +4,7 @@ from app.api.v1.endpoints import (
     standards,
     scopes,
     risks,
+    risk_scopes,
     measures,
     controls,
     users,
@@ -67,6 +68,13 @@ api_router.include_router(
     risks.router,
     prefix="/risks",
     tags=["Risk Management"]
+)
+
+# Risk-Scope Contextualisatie
+api_router.include_router(
+    risk_scopes.router,
+    prefix="/risk-scopes",
+    tags=["Risk Scopes"]
 )
 
 # Measure Catalog (Reusable building blocks)

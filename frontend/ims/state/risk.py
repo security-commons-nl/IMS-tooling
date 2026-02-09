@@ -55,6 +55,11 @@ class RiskState(rx.State):
     all_controls: List[Dict[str, Any]] = []
     selected_control_id_to_link: Optional[str] = None
 
+    # Risk-Scope contextualisatie
+    risk_scopes: List[Dict[str, Any]] = []
+    all_scopes: List[Dict[str, Any]] = []
+    selected_scope_id_to_link: Optional[str] = None
+
     # Delete confirmation
     show_delete_dialog: bool = False
     deleting_risk_id: Optional[int] = None
@@ -216,9 +221,11 @@ class RiskState(rx.State):
 
                 self.show_form_dialog = True
 
-                # Load linked and all controls
+                # Load linked and all controls + scopes
                 await self.load_linked_controls(risk_id)
                 await self.load_all_controls()
+                await self.load_risk_scopes(risk_id)
+                await self.load_all_scopes()
                 break
 
     def close_form_dialog(self):
@@ -308,6 +315,55 @@ class RiskState(rx.State):
             await self.load_linked_controls(self.editing_risk_id)
         except Exception as e:
             self.error = f"Fout bij ontkoppelen: {str(e)}"
+
+    # ==========================================================================
+    # RISK-SCOPE LINKING METHODS
+    # ==========================================================================
+
+    async def load_risk_scopes(self, risk_id: int):
+        """Load scope contextualizations for this risk."""
+        try:
+            self.risk_scopes = await api_client.get_scopes_for_risk(risk_id)
+        except Exception:
+            self.risk_scopes = []
+
+    async def load_all_scopes(self):
+        """Load all scopes for selection."""
+        try:
+            self.all_scopes = await api_client.get_scopes()
+        except Exception:
+            self.all_scopes = []
+
+    async def link_scope(self):
+        """Link current risk to selected scope (create RiskScope)."""
+        if not self.editing_risk_id or not self.selected_scope_id_to_link:
+            return
+
+        try:
+            auth = await self.get_state(AuthState)
+            data = {
+                "risk_id": self.editing_risk_id,
+                "scope_id": int(self.selected_scope_id_to_link),
+                "tenant_id": auth.tenant_id,
+            }
+            await api_client.create_risk_scope(data)
+            self.success_message = "Risico aan scope gekoppeld"
+            await self.load_risk_scopes(self.editing_risk_id)
+            self.selected_scope_id_to_link = None
+        except Exception as e:
+            self.error = f"Fout bij koppelen aan scope: {str(e)}"
+
+    async def unlink_scope(self, risk_scope_id: int):
+        """Remove risk-scope contextualization."""
+        if not self.editing_risk_id:
+            return
+
+        try:
+            await api_client.delete_risk_scope(risk_scope_id)
+            self.success_message = "Scope-koppeling verwijderd"
+            await self.load_risk_scopes(self.editing_risk_id)
+        except Exception as e:
+            self.error = f"Fout bij ontkoppelen scope: {str(e)}"
 
     # ==========================================================================
     # CRUD METHODS

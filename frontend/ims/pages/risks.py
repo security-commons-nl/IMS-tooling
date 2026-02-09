@@ -399,6 +399,95 @@ def risk_form_dialog() -> rx.Component:
                     ),
                 ),
 
+                # Scope Contextualisatie (only in edit mode)
+                rx.cond(
+                    RiskState.is_editing,
+                    rx.vstack(
+                        rx.divider(),
+                        rx.text("Scope-contextualisatie", size="2", weight="medium"),
+                        rx.text(
+                            "Dit risico kan in meerdere scopes voorkomen met eigen scores en behandeling.",
+                            size="1", color="gray",
+                        ),
+
+                        # List of linked scopes
+                        rx.cond(
+                            RiskState.risk_scopes.length() > 0,
+                            rx.vstack(
+                                rx.foreach(
+                                    RiskState.risk_scopes,
+                                    lambda rs: rx.hstack(
+                                        rx.icon("layers", size=16, color="blue"),
+                                        rx.vstack(
+                                            rx.text(
+                                                rx.cond(
+                                                    rs["scope_id"],
+                                                    f"Scope #{rs['scope_id']}",
+                                                    "Onbekend",
+                                                ),
+                                                size="2", weight="medium",
+                                            ),
+                                            rx.text(
+                                                rx.cond(
+                                                    rs["acceptance_status"],
+                                                    rs["acceptance_status"],
+                                                    "Voorgesteld",
+                                                ),
+                                                size="1", color="gray",
+                                            ),
+                                            spacing="0",
+                                        ),
+                                        rx.spacer(),
+                                        rx.icon_button(
+                                            rx.icon("x", size=14),
+                                            variant="ghost",
+                                            size="1",
+                                            color_scheme="red",
+                                            on_click=lambda: RiskState.unlink_scope(rs["id"]),
+                                        ),
+                                        width="100%",
+                                        align_items="center",
+                                        padding="4px 8px",
+                                        background="var(--gray-a2)",
+                                        border_radius="4px",
+                                    ),
+                                ),
+                                spacing="2",
+                                width="100%",
+                            ),
+                            rx.text("Nog niet aan scopes gekoppeld.", size="1", color="gray", font_style="italic"),
+                        ),
+
+                        # Add to scope
+                        rx.hstack(
+                            rx.select.root(
+                                rx.select.trigger(placeholder="Selecteer scope..."),
+                                rx.select.content(
+                                    rx.foreach(
+                                        RiskState.all_scopes,
+                                        lambda s: rx.select.item(s["name"], value=s["id"].to_string()),
+                                    ),
+                                ),
+                                value=RiskState.selected_scope_id_to_link,
+                                on_change=RiskState.set_selected_scope_id_to_link,
+                                width="100%",
+                            ),
+                            rx.button(
+                                "Toevoegen aan scope",
+                                on_click=RiskState.link_scope,
+                                disabled=~RiskState.selected_scope_id_to_link,
+                            ),
+                            width="100%",
+                            spacing="2",
+                            margin_top="8px",
+                        ),
+
+                        spacing="3",
+                        width="100%",
+                        align_items="start",
+                    ),
+                ),
+
                 spacing="4",
                 width="100%",
             ),

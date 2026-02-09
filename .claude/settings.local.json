@@ -34,9 +34,8 @@
       "Bash(claude mcp add:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "rube",
     "prowler"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

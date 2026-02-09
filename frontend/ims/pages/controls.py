@@ -417,6 +417,10 @@ def control_form_dialog() -> rx.Component:
                     rx.vstack(
                         rx.divider(),
                         rx.text("Gekoppelde Risico's", size="2", weight="medium"),
+                        rx.text(
+                            "Tip: gebruik de Risk Scopes pagina voor scope-specifieke koppelingen.",
+                            size="1", color="gray", font_style="italic",
+                        ),
 
                         # List of linked risks
                         rx.cond(

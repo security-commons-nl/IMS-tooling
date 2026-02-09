@@ -33,8 +33,13 @@ class DecisionState(rx.State):
     deleting_id: Optional[int] = None
     deleting_title: str = ""
 
-    # Linked risks
+    # Linked risks (deprecated, scope-unaware)
     linked_risks: List[Dict[str, Any]] = []
+
+    # Scope-contextualized risk links
+    linked_risk_scopes: List[Dict[str, Any]] = []
+    all_risk_scopes: List[Dict[str, Any]] = []
+    selected_risk_scope_id_to_link: str = ""
 
     async def load_decisions(self):
         self.is_loading = True
@@ -65,6 +70,8 @@ class DecisionState(rx.State):
                 self.form_justification = d.get("justification", "") or ""
                 self.form_scope_id = str(d.get("scope_id", "")) if d.get("scope_id") else ""
                 self.show_form_dialog = True
+                # Load linked risk-scopes
+                await self.load_linked_risk_scopes(decision_id)
                 break
 
     def close_form_dialog(self):
@@ -150,3 +157,55 @@ class DecisionState(rx.State):
         except Exception as e:
             self.error = f"Fout bij verwijderen: {str(e)}"
             self.show_delete_dialog = False
+
+    # ==========================================================================
+    # RISK-SCOPE LINKING METHODS
+    # ==========================================================================
+
+    async def load_linked_risk_scopes(self, decision_id: int):
+        """Load scope-contextualized risks linked to this decision."""
+        try:
+            async with api_client._get_client() as client:
+                response = await client.get(f"/decisions/{decision_id}/risk-scopes")
+                response.raise_for_status()
+                self.linked_risk_scopes = response.json()
+        except Exception:
+            self.linked_risk_scopes = []
+
+    async def load_all_risk_scopes(self):
+        """Load all risk-scopes for selection."""
+        try:
+            self.all_risk_scopes = await api_client.get_risk_scopes()
+        except Exception:
+            self.all_risk_scopes = []
+
+    def set_selected_risk_scope_id_to_link(self, v: str):
+        self.selected_risk_scope_id_to_link = v
+
+    async def link_risk_scope(self):
+        """Link a risk-scope to the current decision."""
+        if not self.editing_id or not self.selected_risk_scope_id_to_link:
+            return
+        try:
+            await api_client.link_decision_to_risk_scope(
+                int(self.selected_risk_scope_id_to_link),
+                self.editing_id,
+            )
+            self.success_message = "Risico (scope) gekoppeld aan besluit"
+            await self.load_linked_risk_scopes(self.editing_id)
+            self.selected_risk_scope_id_to_link = ""
+        except Exception as e:
+            self.error = f"Fout bij koppelen: {str(e)}"
+
+    async def unlink_risk_scope(self, risk_scope_id: int):
+        """Unlink a risk-scope from the current decision."""
+        if not self.editing_id:
+            return
+        try:
+            await api_client.unlink_decision_from_risk_scope(
+                risk_scope_id, self.editing_id
+            )
+            self.success_message = "Risico (scope) ontkoppeld"
+            await self.load_linked_risk_scopes(self.editing_id)
+        except Exception as e:
+            self.error = f"Fout bij ontkoppelen: {str(e)}"

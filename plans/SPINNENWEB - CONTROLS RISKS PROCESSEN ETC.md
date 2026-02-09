@@ -1,1 +1,0 @@
-Je zou eigenlijk flexibel, in een scherm, op basios van een prompt of dropdowns (met tekst te filteren) relaties moeten kunnen zichtbaar maken, visueel.

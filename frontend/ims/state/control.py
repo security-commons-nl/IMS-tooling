@@ -39,6 +39,9 @@ class ControlState(rx.State):
     all_risks: List[Dict[str, Any]] = []
     selected_risk_id_to_link: str = ""
 
+    # Scope-contextualized risk linkage
+    linked_risk_scopes: List[Dict[str, Any]] = []
+
     # Delete confirmation
     show_delete_dialog: bool = False
     deleting_control_id: Optional[int] = None
@@ -217,6 +220,16 @@ class ControlState(rx.State):
             await self.load_linked_risks(self.editing_control_id)
         except Exception as e:
             self.error = f"Fout bij ontkoppelen: {str(e)}"
+
+    async def load_linked_risk_scopes(self, control_id: int):
+        """Load scope-contextualized risks linked to this control."""
+        try:
+            async with api_client._get_client() as client:
+                response = await client.get(f"/controls/{control_id}/risk-scopes")
+                response.raise_for_status()
+                self.linked_risk_scopes = response.json()
+        except Exception:
+            self.linked_risk_scopes = []
 
     # ==========================================================================
     # CRUD METHODS

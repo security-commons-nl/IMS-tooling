@@ -220,6 +220,114 @@ class APIClient:
             return response.json()
 
     # =========================================================================
+    # RISK-SCOPE CONTEXTUALISATIE
+    # =========================================================================
+
+    async def get_risk_scopes(
+        self, risk_id: Optional[int] = None, scope_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """Get risk-scope contextualizations, optionally filtered."""
+        async with self._get_client() as client:
+            params = {}
+            if risk_id is not None:
+                params["risk_id"] = risk_id
+            if scope_id is not None:
+                params["scope_id"] = scope_id
+            response = await client.get("/risk-scopes/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def get_risk_scope(self, risk_scope_id: int) -> Dict[str, Any]:
+        """Get a specific risk-scope contextualization."""
+        async with self._get_client() as client:
+            response = await client.get(f"/risk-scopes/{risk_scope_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def create_risk_scope(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new risk-scope contextualization."""
+        async with self._get_client() as client:
+            response = await client.post("/risk-scopes/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_risk_scope(self, risk_scope_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a risk-scope contextualization."""
+        async with self._get_client() as client:
+            response = await client.put(f"/risk-scopes/{risk_scope_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_risk_scope(self, risk_scope_id: int) -> Dict[str, Any]:
+        """Delete a risk-scope contextualization."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/risk-scopes/{risk_scope_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_scopes_for_risk(self, risk_id: int) -> List[Dict[str, Any]]:
+        """Get all scope contextualizations for a risk."""
+        async with self._get_client() as client:
+            response = await client.get(f"/risk-scopes/by-risk/{risk_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def get_risks_for_scope(self, scope_id: int) -> List[Dict[str, Any]]:
+        """Get all risk contextualizations for a scope."""
+        async with self._get_client() as client:
+            response = await client.get(f"/risk-scopes/by-scope/{scope_id}")
+            response.raise_for_status()
+            return response.json()
+
+    async def link_control_to_risk_scope(
+        self, risk_scope_id: int, control_id: int, mitigation_percent: int = 50
+    ) -> Dict[str, Any]:
+        """Link a control to a scope-contextualized risk."""
+        async with self._get_client() as client:
+            params = {"mitigation_percent": mitigation_percent}
+            response = await client.post(
+                f"/risk-scopes/{risk_scope_id}/controls/{control_id}", params=params
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def unlink_control_from_risk_scope(
+        self, risk_scope_id: int, control_id: int
+    ) -> Dict[str, Any]:
+        """Unlink a control from a scope-contextualized risk."""
+        async with self._get_client() as client:
+            response = await client.delete(
+                f"/risk-scopes/{risk_scope_id}/controls/{control_id}"
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def link_decision_to_risk_scope(
+        self, risk_scope_id: int, decision_id: int, notes: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Link a decision to a scope-contextualized risk."""
+        async with self._get_client() as client:
+            params = {}
+            if notes:
+                params["notes"] = notes
+            response = await client.post(
+                f"/risk-scopes/{risk_scope_id}/decisions/{decision_id}", params=params
+            )
+            response.raise_for_status()
+            return response.json()
+
+    async def unlink_decision_from_risk_scope(
+        self, risk_scope_id: int, decision_id: int
+    ) -> Dict[str, Any]:
+        """Unlink a decision from a scope-contextualized risk."""
+        async with self._get_client() as client:
+            response = await client.delete(
+                f"/risk-scopes/{risk_scope_id}/decisions/{decision_id}"
+            )
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
     # MEASURES (Catalog - reusable building blocks)
     # =========================================================================
 

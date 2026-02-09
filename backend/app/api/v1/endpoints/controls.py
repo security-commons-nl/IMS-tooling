@@ -17,10 +17,12 @@ from app.core.rbac import require_editor, get_tenant_id, get_scope_access
 from app.models.core_models import (
     Control,
     ControlRiskLink,
+    ControlRiskScopeLink,
     ControlRequirementLink,
     ControlMeasureLink,
     Measure,
     Risk,
+    RiskScope,
     Requirement,
     Status,
     User,
@@ -221,14 +223,14 @@ async def update_effectiveness(
 # CONTROL-RISK LINKAGE
 # =============================================================================
 
-@router.get("/{control_id}/risks", response_model=List[Risk])
+@router.get("/{control_id}/risks", response_model=List[Risk], deprecated=True)
 async def get_linked_risks(
     control_id: int,
     tenant_id: int = Depends(get_tenant_id),
     accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
-    """Get all risks that this control addresses."""
+    """Get all risks that this control addresses. DEPRECATED: use GET /risk-scopes/?scope_id=X for scope-aware view."""
     await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     result = await session.execute(
@@ -239,7 +241,7 @@ async def get_linked_risks(
     return result.scalars().all()
 
 
-@router.post("/{control_id}/risks/{risk_id}")
+@router.post("/{control_id}/risks/{risk_id}", deprecated=True)
 async def link_to_risk(
     control_id: int,
     risk_id: int,
@@ -249,7 +251,7 @@ async def link_to_risk(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
-    """Link this control to a risk."""
+    """Link this control to a risk. DEPRECATED: use POST /risk-scopes/{risk_scope_id}/controls/{control_id}."""
     await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     # Check if link exists
@@ -273,7 +275,7 @@ async def link_to_risk(
     return {"message": "Control linked to risk"}
 
 
-@router.delete("/{control_id}/risks/{risk_id}")
+@router.delete("/{control_id}/risks/{risk_id}", deprecated=True)
 async def unlink_from_risk(
     control_id: int,
     risk_id: int,
@@ -282,7 +284,7 @@ async def unlink_from_risk(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
-    """Remove link between this control and a risk."""
+    """Remove link between this control and a risk. DEPRECATED: use DELETE /risk-scopes/{risk_scope_id}/controls/{control_id}."""
     await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
     result = await session.execute(
         select(ControlRiskLink).where(
@@ -298,6 +300,28 @@ async def unlink_from_risk(
     await session.commit()
 
     return {"message": "Link removed"}
+
+
+@router.get("/{control_id}/risk-scopes", response_model=List[RiskScope])
+async def get_linked_risk_scopes(
+    control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
+    session: AsyncSession = Depends(get_session),
+):
+    """Get all scope-contextualized risks linked to this control."""
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
+
+    query = (
+        select(RiskScope)
+        .join(ControlRiskScopeLink, ControlRiskScopeLink.risk_scope_id == RiskScope.id)
+        .where(ControlRiskScopeLink.control_id == control_id)
+    )
+    if accessible_scopes is not None:
+        query = query.where(RiskScope.scope_id.in_(accessible_scopes))
+
+    result = await session.execute(query)
+    return result.scalars().all()
 
 
 # =============================================================================

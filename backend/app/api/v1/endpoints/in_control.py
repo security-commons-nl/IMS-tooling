@@ -17,6 +17,7 @@ from app.models.core_models import (
     InControlLevel,
     RiskLevel,
     Risk,
+    RiskScope,
     Control,
     Finding,
     CorrectiveAction,
@@ -39,23 +40,27 @@ async def _calculate_scope_level(
     session: AsyncSession, scope_id: int, tenant_id: int
 ) -> dict:
     """Calculate in-control level for a single scope based on live data."""
-    # Count open risks
+    # Count open risks (via RiskScope for scope-aware counting)
     result = await session.execute(
-        select(func.count()).select_from(Risk).where(
-            Risk.scope_id == scope_id,
-            Risk.tenant_id == tenant_id,
+        select(func.count()).select_from(RiskScope)
+        .join(Risk, RiskScope.risk_id == Risk.id)
+        .where(
+            RiskScope.scope_id == scope_id,
+            RiskScope.tenant_id == tenant_id,
             Risk.status == Status.ACTIVE,
         )
     )
     open_risks = result.scalar() or 0
 
-    # Count high/critical risks
+    # Count high/critical risks (via RiskScope)
     result = await session.execute(
-        select(func.count()).select_from(Risk).where(
-            Risk.scope_id == scope_id,
-            Risk.tenant_id == tenant_id,
+        select(func.count()).select_from(RiskScope)
+        .join(Risk, RiskScope.risk_id == Risk.id)
+        .where(
+            RiskScope.scope_id == scope_id,
+            RiskScope.tenant_id == tenant_id,
             Risk.status == Status.ACTIVE,
-            Risk.inherent_impact.in_([RiskLevel.HIGH, RiskLevel.CRITICAL]),
+            RiskScope.inherent_impact.in_([RiskLevel.HIGH, RiskLevel.CRITICAL]),
         )
     )
     high_risks = result.scalar() or 0
