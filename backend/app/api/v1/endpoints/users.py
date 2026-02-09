@@ -77,19 +77,26 @@ async def create_user(
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    db_user = await crud_user.create(session, obj_in=user)
+    # Create user + tenant membership in one transaction (prevents orphans)
+    session.add(user)
+    await session.flush()  # Get user.id without committing
 
-    # Automatically add user to the current tenant
     tenant_user = TenantUser(
-        user_id=db_user.id,
+        user_id=user.id,
         tenant_id=tenant_id,
         role=TenantRole.MEMBER,
         is_default=True,
     )
     session.add(tenant_user)
-    await session.commit()
 
-    return db_user
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="Failed to create user")
+
+    await session.refresh(user)
+    return user
 
 
 @router.get("/{user_id}", response_model=UserRead)
