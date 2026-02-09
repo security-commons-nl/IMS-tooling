@@ -239,95 +239,6 @@ def dashboard_content() -> rx.Component:
             width="100%",
         ),
 
-        # My Tasks section
-        rx.cond(
-            DashboardState.has_tasks,
-            rx.box(
-                rx.card(
-                    rx.vstack(
-                        rx.hstack(
-                            rx.icon("list-checks", size=20, color="var(--accent-9)"),
-                            rx.heading("Mijn Taken", size="4"),
-                            rx.spacer(),
-                            rx.cond(
-                                DashboardState.tasks_overdue > 0,
-                                rx.badge(
-                                    rx.fragment(DashboardState.tasks_overdue, " te laat"),
-                                    color_scheme="red", variant="solid",
-                                ),
-                            ),
-                            rx.cond(
-                                DashboardState.tasks_due_soon > 0,
-                                rx.badge(
-                                    rx.fragment(DashboardState.tasks_due_soon, " binnenkort"),
-                                    color_scheme="orange", variant="soft",
-                                ),
-                            ),
-                            width="100%",
-                            align="center",
-                        ),
-                        rx.table.root(
-                            rx.table.header(
-                                rx.table.row(
-                                    rx.table.column_header_cell("Type"),
-                                    rx.table.column_header_cell("Titel"),
-                                    rx.table.column_header_cell("Status"),
-                                    rx.table.column_header_cell("Prioriteit"),
-                                ),
-                            ),
-                            rx.table.body(
-                                rx.foreach(
-                                    DashboardState.my_tasks,
-                                    lambda task: rx.table.row(
-                                        rx.table.cell(
-                                            rx.badge(
-                                                task["type"],
-                                                variant="soft",
-                                                color_scheme=rx.cond(
-                                                    task["type"] == "Approval",
-                                                    "purple",
-                                                    rx.cond(
-                                                        task["type"] == "Corrective Action",
-                                                        "red",
-                                                        "blue",
-                                                    ),
-                                                ),
-                                                size="1",
-                                            ),
-                                        ),
-                                        rx.table.cell(rx.text(task["title"], size="2")),
-                                        rx.table.cell(rx.text(task["status"], size="2", color="gray")),
-                                        rx.table.cell(
-                                            rx.badge(
-                                                task["priority"],
-                                                variant="soft",
-                                                color_scheme=rx.cond(
-                                                    task["priority"] == "High",
-                                                    "red",
-                                                    rx.cond(
-                                                        task["priority"] == "Medium",
-                                                        "orange",
-                                                        "gray",
-                                                    ),
-                                                ),
-                                                size="1",
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ),
-                            width="100%",
-                        ),
-                        spacing="3",
-                        align_items="stretch",
-                    ),
-                    padding="20px",
-                ),
-                width="100%",
-                margin_top="24px",
-            ),
-        ),
-
         # Heatmap
         rx.box(
             rx.card(
@@ -340,43 +251,6 @@ def dashboard_content() -> rx.Component:
 
         # In-Control status per scope
         _in_control_section(),
-
-        # Quick actions
-        rx.box(
-            rx.card(
-                rx.vstack(
-                    rx.heading("Snelle Acties", size="4"),
-                    rx.flex(
-                        rx.button(
-                            rx.icon("plus", size=16),
-                            "Nieuw Risico",
-                            variant="soft",
-                            on_click=rx.redirect("/risks"),
-                        ),
-                        rx.button(
-                            rx.icon("clipboard-check", size=16),
-                            "Start Assessment",
-                            variant="soft",
-                            on_click=rx.redirect("/assessments"),
-                        ),
-                        rx.button(
-                            rx.icon("circle-alert", size=16),
-                            "Meld Incident",
-                            variant="soft",
-                            color_scheme="red",
-                            on_click=rx.redirect("/incidents"),
-                        ),
-                        wrap="wrap",
-                        gap="2",
-                    ),
-                    align_items="start",
-                    spacing="3",
-                ),
-                padding="20px",
-            ),
-            width="100%",
-            margin_top="24px",
-        ),
 
         width="100%",
         spacing="0",

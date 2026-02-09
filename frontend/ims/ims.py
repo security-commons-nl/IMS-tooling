@@ -33,6 +33,7 @@ from ims.pages.relationships import relationships_page
 from ims.pages.organization import organization_page
 from ims.pages.risk_appetite import risk_appetite_page
 from ims.pages.corrective_actions import corrective_actions_page
+from ims.pages.tasks import tasks_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -110,3 +111,4 @@ app.add_page(organization_page, route="/organization", title="Mijn Organisatie -
 app.add_page(risk_appetite_page, route="/risk-appetite", title="Risicotolerantie - IMS",
              on_load=RiskAppetiteState.load_appetite)
 app.add_page(corrective_actions_page, route="/corrective-actions", title="Verbeteracties - IMS")
+app.add_page(tasks_page, route="/tasks", title="Mijn Taken - IMS")

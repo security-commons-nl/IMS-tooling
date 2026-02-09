@@ -73,6 +73,7 @@ def _build_nav_links(link_fn):
         rx.cond(
             BaseState.menu_doen_open,
             rx.fragment(
+                link_fn("Mijn Taken", "/tasks", "list-checks"),
                 link_fn("Risico's", "/risks", "triangle-alert"),
                 link_fn("Controls", "/controls", "shield-check"),
                 link_fn("Assessments", "/assessments", "clipboard-check"),
