@@ -284,7 +284,10 @@ class RelationshipState(rx.State):
         self.prompt_text = value
 
     async def apply_prompt(self):
-        """Smart keyword filter — matches prompt text to presets or node labels."""
+        """Smart keyword filter — matches prompt text to presets or node labels.
+
+        Loads graph data inline (no event chaining) for reliable execution.
+        """
         if not self.prompt_text.strip():
             return
         query = self.prompt_text.strip().lower()
@@ -292,25 +295,20 @@ class RelationshipState(rx.State):
         # Match known preset patterns (Dutch + English)
         if any(kw in query for kw in ["zonder control", "ongedekt", "unmitigated", "no control"]):
             self.active_preset = "uncovered_risks"
-            self.clear_selection()
-            return RelationshipState.load_graph
         elif any(kw in query for kw in ["wees", "orphan", "losse control"]):
             self.active_preset = "orphan_controls"
-            self.clear_selection()
-            return RelationshipState.load_graph
         elif any(kw in query for kw in ["scope zonder", "scope coverage", "lege scope"]):
             self.active_preset = "scope_coverage"
-            self.clear_selection()
-            return RelationshipState.load_graph
         elif query in ("alles", "all", "reset", "toon alles"):
             self.active_preset = "all"
             self.filter_types = ["risk", "control", "scope", "measure", "decision", "assessment"]
-            self.clear_selection()
-            return RelationshipState.load_graph
+        else:
+            # Fallback: will filter by label substring below
+            self.active_preset = "all"
 
-        # Fallback: filter nodes by label substring match
-        self.active_preset = "all"
+        self.clear_selection()
         self.is_loading = True
+        self.error = ""
         try:
             entity_types = ",".join(self.filter_types)
             data = await api_client.get_graph_relationships(entity_types=entity_types)
@@ -318,27 +316,38 @@ class RelationshipState(rx.State):
             all_edges = data.get("edges", [])
             all_gaps = data.get("gaps", [])
 
-            # Keep nodes whose label matches the query
-            matched = [n for n in raw_nodes if query in n.get("label", "").lower()]
-            if not matched:
-                # No match — show all nodes (don't hide everything)
-                matched = raw_nodes
+            # Apply preset filter on gaps
+            if self.active_preset == "uncovered_risks":
+                gap_ids = {f"risk-{g['entity_id']}" for g in all_gaps if g.get("type") == "risk_without_control"}
+                raw_nodes = [n for n in raw_nodes if n["id"] in gap_ids or n["type"] != "risk"]
+            elif self.active_preset == "orphan_controls":
+                gap_ids = {f"control-{g['entity_id']}" for g in all_gaps if g.get("type") == "orphan_control"}
+                raw_nodes = [n for n in raw_nodes if n["id"] in gap_ids or n["type"] != "control"]
+            elif self.active_preset == "scope_coverage":
+                gap_ids = {f"scope-{g['entity_id']}" for g in all_gaps if g.get("type") == "scope_without_risks"}
+                raw_nodes = [n for n in raw_nodes if n["id"] in gap_ids or n["type"] != "scope"]
+            elif self.active_preset == "all" and query not in ("alles", "all", "reset", "toon alles"):
+                # Label substring filter (fallback)
+                matched = [n for n in raw_nodes if query in n.get("label", "").lower()]
+                if matched:
+                    # Also include nodes connected via edges
+                    matched_ids = {n["id"] for n in matched}
+                    for edge in all_edges:
+                        if edge["source"] in matched_ids:
+                            matched_ids.add(edge["target"])
+                        elif edge["target"] in matched_ids:
+                            matched_ids.add(edge["source"])
+                    raw_nodes = [n for n in raw_nodes if n["id"] in matched_ids]
 
-            # Also keep nodes connected via edges to matched nodes
-            matched_ids = {n["id"] for n in matched}
-            for edge in all_edges:
-                if edge["source"] in matched_ids:
-                    matched_ids.add(edge["target"])
-                elif edge["target"] in matched_ids:
-                    matched_ids.add(edge["source"])
-            matched = [n for n in raw_nodes if n["id"] in matched_ids]
-
-            # Filter edges
-            final_ids = {n["id"] for n in matched}
-            self.edges = [e for e in all_edges if e["source"] in final_ids and e["target"] in final_ids]
-            self.nodes = _circular_layout(matched)
+            # Filter edges to match remaining nodes
+            filtered_ids = {n["id"] for n in raw_nodes}
+            self.edges = [e for e in all_edges if e["source"] in filtered_ids and e["target"] in filtered_ids]
+            self.nodes = _circular_layout(raw_nodes)
             self.gaps = all_gaps
         except Exception as e:
             self.error = str(e)
+            self.nodes = []
+            self.edges = []
+            self.gaps = []
         finally:
             self.is_loading = False

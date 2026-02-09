@@ -11,9 +11,11 @@ Filters:
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import or_
 from sqlmodel import select
 
 from app.core.db import get_session
+from app.core.rbac import get_tenant_id, get_scope_access
 from app.models.core_models import (
     Risk,
     Control,
@@ -36,7 +38,8 @@ router = APIRouter()
 async def get_relationships(
     entity_types: str = Query("risk,control,scope,measure,decision,assessment"),
     scope_id: Optional[int] = Query(None),
-    tenant_id: int = Query(1),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Build a relationship graph of nodes and edges for visualization.
@@ -51,6 +54,17 @@ async def get_relationships(
     node_scope_map = {}  # node_id -> scope_id
     node_parent_map = {}  # scope node_id -> parent_id
 
+    def _apply_scope_filter(stmt, model_scope_attr):
+        """Apply scope access filter to a query."""
+        if accessible_scopes is not None:
+            stmt = stmt.where(
+                or_(
+                    model_scope_attr.in_(accessible_scopes),
+                    model_scope_attr.is_(None),
+                )
+            )
+        return stmt
+
     # --- Load entities as nodes (filtered on status/is_active) ---
     if "risk" in types:
         stmt = select(Risk).where(
@@ -59,6 +73,7 @@ async def get_relationships(
         )
         if scope_id:
             stmt = stmt.where(Risk.scope_id == scope_id)
+        stmt = _apply_scope_filter(stmt, Risk.scope_id)
         result = await session.execute(stmt)
         for r in result.scalars().all():
             nid = f"risk-{r.id}"
@@ -74,6 +89,7 @@ async def get_relationships(
         )
         if scope_id:
             stmt = stmt.where(Control.scope_id == scope_id)
+        stmt = _apply_scope_filter(stmt, Control.scope_id)
         result = await session.execute(stmt)
         for c in result.scalars().all():
             nid = f"control-{c.id}"
@@ -100,6 +116,8 @@ async def get_relationships(
         )
         if scope_id:
             stmt = stmt.where(Scope.id == scope_id)
+        if accessible_scopes is not None:
+            stmt = stmt.where(Scope.id.in_(accessible_scopes))
         result = await session.execute(stmt)
         for s in result.scalars().all():
             nid = f"scope-{s.id}"
@@ -115,6 +133,7 @@ async def get_relationships(
         )
         if scope_id:
             stmt = stmt.where(Decision.scope_id == scope_id)
+        stmt = _apply_scope_filter(stmt, Decision.scope_id)
         result = await session.execute(stmt)
         for d in result.scalars().all():
             nid = f"decision-{d.id}"
@@ -130,6 +149,7 @@ async def get_relationships(
         )
         if scope_id:
             stmt = stmt.where(Assessment.scope_id == scope_id)
+        stmt = _apply_scope_filter(stmt, Assessment.scope_id)
         result = await session.execute(stmt)
         for a in result.scalars().all():
             nid = f"assessment-{a.id}"
@@ -178,7 +198,7 @@ async def get_relationships(
         if scope_nid in node_ids:
             edges.append({"source": nid, "target": scope_nid, "type": "belongs_to", "label": ""})
 
-    # Scope parent → child hierarchy (from cached parent_id)
+    # Scope parent -> child hierarchy (from cached parent_id)
     for nid, pid in node_parent_map.items():
         parent_nid = f"scope-{pid}"
         if parent_nid in node_ids:

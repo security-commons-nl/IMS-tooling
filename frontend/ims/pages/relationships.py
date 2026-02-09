@@ -84,6 +84,10 @@ def filter_sidebar() -> rx.Component:
             placeholder="bijv. 'risico's zonder controls'",
             value=RelationshipState.prompt_text,
             on_change=RelationshipState.set_prompt_text,
+            on_key_down=rx.cond(
+                rx.Var.create("event.key") == "Enter",
+                RelationshipState.apply_prompt,
+            ),
             size="2",
         ),
         rx.button(
