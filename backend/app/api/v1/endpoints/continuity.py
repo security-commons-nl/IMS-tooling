@@ -6,10 +6,12 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import or_
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
+from app.core.crud import ScopedTenantCRUDBase, TenantCRUDBase
+from app.core.rbac import get_tenant_id, get_scope_access
 from app.models.core_models import (
     ContinuityPlan,
     ContinuityTest,
@@ -18,8 +20,8 @@ from app.models.core_models import (
 )
 
 router = APIRouter()
-crud_plan = CRUDBase(ContinuityPlan)
-crud_test = CRUDBase(ContinuityTest)
+crud_plan = ScopedTenantCRUDBase(ContinuityPlan)
+crud_test = TenantCRUDBase(ContinuityTest)
 
 
 # =============================================================================
@@ -30,68 +32,74 @@ crud_test = CRUDBase(ContinuityTest)
 async def list_continuity_plans(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     scope_id: Optional[int] = Query(None),
     plan_type: Optional[str] = Query(None, description="BCP, DRP, IRP, etc."),
     status: Optional[Status] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """List continuity plans."""
-    query = select(ContinuityPlan)
-
-    if tenant_id:
-        query = query.where(ContinuityPlan.tenant_id == tenant_id)
+    filters = {}
     if scope_id:
-        query = query.where(ContinuityPlan.scope_id == scope_id)
+        filters["scope_id"] = scope_id
     if plan_type:
-        query = query.where(ContinuityPlan.plan_type == plan_type)
+        filters["plan_type"] = plan_type
     if status:
-        query = query.where(ContinuityPlan.status == status)
+        filters["status"] = status
 
-    query = query.offset(skip).limit(limit)
-    result = await session.execute(query)
-    return result.scalars().all()
+    return await crud_plan.get_multi_scoped(
+        session, tenant_id, accessible_scopes,
+        skip=skip, limit=limit, filters=filters,
+    )
 
 
 @router.post("/plans/", response_model=ContinuityPlan)
 async def create_continuity_plan(
     plan: ContinuityPlan,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Create a new continuity plan."""
     plan.version = 1
     plan.status = Status.DRAFT
-    return await crud_plan.create(session, obj_in=plan)
+    return await crud_plan.create(session, obj_in=plan, tenant_id=tenant_id)
 
 
 @router.get("/plans/{plan_id}", response_model=ContinuityPlan)
 async def get_continuity_plan(
     plan_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a continuity plan by ID."""
-    return await crud_plan.get_or_404(session, plan_id)
+    return await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
 
 
 @router.patch("/plans/{plan_id}", response_model=ContinuityPlan)
 async def update_continuity_plan(
     plan_id: int,
     plan_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Update a continuity plan."""
-    db_plan = await crud_plan.get_or_404(session, plan_id)
+    db_plan = await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
     plan_update["updated_at"] = datetime.utcnow()
-    return await crud_plan.update(session, db_obj=db_plan, obj_in=plan_update)
+    return await crud_plan.update(session, db_obj=db_plan, obj_in=plan_update, tenant_id=tenant_id)
 
 
 @router.delete("/plans/{plan_id}")
 async def delete_continuity_plan(
     plan_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Delete a continuity plan (only drafts)."""
-    db_plan = await crud_plan.get_or_404(session, plan_id)
+    db_plan = await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
 
     if db_plan.status != Status.DRAFT:
         raise HTTPException(
@@ -99,7 +107,7 @@ async def delete_continuity_plan(
             detail="Only draft plans can be deleted"
         )
 
-    deleted = await crud_plan.delete(session, id=plan_id)
+    deleted = await crud_plan.delete(session, id=plan_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Plan not found")
     return {"message": "Plan deleted"}
@@ -113,10 +121,12 @@ async def delete_continuity_plan(
 async def activate_plan(
     plan_id: int,
     approved_by_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Activate a continuity plan."""
-    db_plan = await crud_plan.get_or_404(session, plan_id)
+    db_plan = await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
 
     if db_plan.status != Status.DRAFT:
         raise HTTPException(
@@ -129,30 +139,34 @@ async def activate_plan(
         "approved_by_id": approved_by_id,
         "approved_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/plans/{plan_id}/archive", response_model=ContinuityPlan)
 async def archive_plan(
     plan_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Archive a continuity plan."""
-    db_plan = await crud_plan.get_or_404(session, plan_id)
+    db_plan = await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
 
     return await crud_plan.update(session, db_obj=db_plan, obj_in={
         "status": Status.DEPRECATED,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/plans/{plan_id}/new-version", response_model=ContinuityPlan)
 async def create_new_plan_version(
     plan_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Create a new version of a continuity plan."""
-    db_plan = await crud_plan.get_or_404(session, plan_id)
+    db_plan = await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
 
     if db_plan.status != Status.ACTIVE:
         raise HTTPException(
@@ -162,7 +176,7 @@ async def create_new_plan_version(
 
     # Create new version
     new_plan = ContinuityPlan(
-        tenant_id=db_plan.tenant_id,
+        tenant_id=tenant_id,
         scope_id=db_plan.scope_id,
         title=db_plan.title,
         plan_type=db_plan.plan_type,
@@ -175,7 +189,7 @@ async def create_new_plan_version(
         owner_id=db_plan.owner_id,
     )
 
-    return await crud_plan.create(session, obj_in=new_plan)
+    return await crud_plan.create(session, obj_in=new_plan, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -184,7 +198,8 @@ async def create_new_plan_version(
 
 @router.get("/plans/due-for-review", response_model=List[ContinuityPlan])
 async def get_plans_due_for_review(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     days_ahead: int = Query(30, ge=1, le=365),
     session: AsyncSession = Depends(get_session),
 ):
@@ -192,13 +207,20 @@ async def get_plans_due_for_review(
     deadline = datetime.utcnow() + timedelta(days=days_ahead)
 
     query = select(ContinuityPlan).where(
+        ContinuityPlan.tenant_id == tenant_id,
         ContinuityPlan.status == Status.ACTIVE,
         ContinuityPlan.review_date != None,
         ContinuityPlan.review_date <= deadline,
     )
 
-    if tenant_id:
-        query = query.where(ContinuityPlan.tenant_id == tenant_id)
+    # Apply scope filtering
+    if accessible_scopes is not None:
+        query = query.where(
+            or_(
+                ContinuityPlan.scope_id.in_(accessible_scopes),
+                ContinuityPlan.scope_id.is_(None),
+            )
+        )
 
     result = await session.execute(query)
     return result.scalars().all()
@@ -208,15 +230,17 @@ async def get_plans_due_for_review(
 async def set_plan_review_date(
     plan_id: int,
     review_date: datetime,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Set the review date for a plan."""
-    db_plan = await crud_plan.get_or_404(session, plan_id)
+    db_plan = await crud_plan.get_scoped_or_404(session, plan_id, tenant_id, accessible_scopes)
 
     return await crud_plan.update(session, db_obj=db_plan, obj_in={
         "review_date": review_date,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -227,17 +251,15 @@ async def set_plan_review_date(
 async def list_continuity_tests(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     plan_id: Optional[int] = Query(None),
     test_type: Optional[str] = Query(None, description="Tabletop, Walkthrough, Full"),
     result: Optional[AuditResult] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """List continuity tests."""
-    query = select(ContinuityTest)
+    query = select(ContinuityTest).where(ContinuityTest.tenant_id == tenant_id)
 
-    if tenant_id:
-        query = query.where(ContinuityTest.tenant_id == tenant_id)
     if plan_id:
         query = query.where(ContinuityTest.plan_id == plan_id)
     if test_type:
@@ -254,44 +276,48 @@ async def list_continuity_tests(
 @router.post("/tests/", response_model=ContinuityTest)
 async def create_continuity_test(
     test: ContinuityTest,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Schedule a new continuity test."""
     # Verify plan exists
-    await crud_plan.get_or_404(session, test.plan_id)
+    await crud_plan.get_or_404(session, test.plan_id, tenant_id)
 
     test.status = Status.DRAFT
-    return await crud_test.create(session, obj_in=test)
+    return await crud_test.create(session, obj_in=test, tenant_id=tenant_id)
 
 
 @router.get("/tests/{test_id}", response_model=ContinuityTest)
 async def get_continuity_test(
     test_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a continuity test by ID."""
-    return await crud_test.get_or_404(session, test_id)
+    return await crud_test.get_or_404(session, test_id, tenant_id)
 
 
 @router.patch("/tests/{test_id}", response_model=ContinuityTest)
 async def update_continuity_test(
     test_id: int,
     test_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Update a continuity test."""
-    db_test = await crud_test.get_or_404(session, test_id)
+    db_test = await crud_test.get_or_404(session, test_id, tenant_id)
     test_update["updated_at"] = datetime.utcnow()
-    return await crud_test.update(session, db_obj=db_test, obj_in=test_update)
+    return await crud_test.update(session, db_obj=db_test, obj_in=test_update, tenant_id=tenant_id)
 
 
 @router.delete("/tests/{test_id}")
 async def delete_continuity_test(
     test_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Delete a continuity test."""
-    deleted = await crud_test.delete(session, id=test_id)
+    deleted = await crud_test.delete(session, id=test_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Test not found")
     return {"message": "Test deleted"}
@@ -304,10 +330,11 @@ async def delete_continuity_test(
 @router.post("/tests/{test_id}/start", response_model=ContinuityTest)
 async def start_test(
     test_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Start a scheduled continuity test."""
-    db_test = await crud_test.get_or_404(session, test_id)
+    db_test = await crud_test.get_or_404(session, test_id, tenant_id)
 
     if db_test.status != Status.DRAFT:
         raise HTTPException(
@@ -319,7 +346,7 @@ async def start_test(
         "status": Status.ACTIVE,
         "actual_date": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/tests/{test_id}/complete", response_model=ContinuityTest)
@@ -330,10 +357,11 @@ async def complete_test(
     lessons_learned: Optional[str] = None,
     actual_rto_achieved: Optional[int] = None,
     actual_rpo_achieved: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Complete a continuity test with results."""
-    db_test = await crud_test.get_or_404(session, test_id)
+    db_test = await crud_test.get_or_404(session, test_id, tenant_id)
 
     if db_test.status != Status.ACTIVE:
         raise HTTPException(
@@ -359,13 +387,13 @@ async def complete_test(
 
     # Update plan's last tested date
     if db_test.plan_id:
-        plan = await crud_plan.get(session, db_test.plan_id)
+        plan = await crud_plan.get(session, db_test.plan_id, tenant_id)
         if plan:
             await crud_plan.update(session, db_obj=plan, obj_in={
                 "last_tested_date": datetime.utcnow(),
-            })
+            }, tenant_id=tenant_id)
 
-    return await crud_test.update(session, db_obj=db_test, obj_in=update_data)
+    return await crud_test.update(session, db_obj=db_test, obj_in=update_data, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -375,7 +403,7 @@ async def complete_test(
 @router.get("/tests/upcoming", response_model=List[ContinuityTest])
 async def get_upcoming_tests(
     days: int = Query(30, ge=1, le=365),
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get tests scheduled within specified days."""
@@ -383,13 +411,11 @@ async def get_upcoming_tests(
     deadline = now + timedelta(days=days)
 
     query = select(ContinuityTest).where(
+        ContinuityTest.tenant_id == tenant_id,
         ContinuityTest.status == Status.DRAFT,
         ContinuityTest.scheduled_date >= now,
         ContinuityTest.scheduled_date <= deadline,
     )
-
-    if tenant_id:
-        query = query.where(ContinuityTest.tenant_id == tenant_id)
 
     query = query.order_by(ContinuityTest.scheduled_date.asc())
     result = await session.execute(query)
@@ -398,17 +424,15 @@ async def get_upcoming_tests(
 
 @router.get("/tests/overdue", response_model=List[ContinuityTest])
 async def get_overdue_tests(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get tests that are past their scheduled date but not completed."""
     query = select(ContinuityTest).where(
+        ContinuityTest.tenant_id == tenant_id,
         ContinuityTest.status == Status.DRAFT,
         ContinuityTest.scheduled_date < datetime.utcnow(),
     )
-
-    if tenant_id:
-        query = query.where(ContinuityTest.tenant_id == tenant_id)
 
     result = await session.execute(query)
     return result.scalars().all()
@@ -420,21 +444,17 @@ async def get_overdue_tests(
 
 @router.get("/dashboard", response_model=dict)
 async def get_bcms_dashboard(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get BCMS dashboard summary."""
     # Plans
-    plan_query = select(ContinuityPlan)
-    if tenant_id:
-        plan_query = plan_query.where(ContinuityPlan.tenant_id == tenant_id)
+    plan_query = select(ContinuityPlan).where(ContinuityPlan.tenant_id == tenant_id)
     plan_result = await session.execute(plan_query)
     plans = plan_result.scalars().all()
 
     # Tests
-    test_query = select(ContinuityTest)
-    if tenant_id:
-        test_query = test_query.where(ContinuityTest.tenant_id == tenant_id)
+    test_query = select(ContinuityTest).where(ContinuityTest.tenant_id == tenant_id)
     test_result = await session.execute(test_query)
     tests = test_result.scalars().all()
 

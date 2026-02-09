@@ -4,6 +4,7 @@ Assessment State - handles assessment/verification data including BIA workflow
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 # Phase definitions for the stepper
@@ -381,8 +382,11 @@ class AssessmentState(rx.State):
             self.error = "Titel is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         data = {
-            "tenant_id": 1,
+            "tenant_id": tid,
             "title": self.form_title.strip(),
             "description": self.form_description.strip() or None,
             "type": self.form_type,
@@ -523,9 +527,12 @@ class AssessmentState(rx.State):
             self.error = "Titel is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             await api_client.create_finding(aid, {
-                "tenant_id": 1,
+                "tenant_id": tid,
                 "title": self.finding_title.strip(),
                 "description": self.finding_description.strip() or "-",
                 "severity": self.finding_severity,
@@ -577,9 +584,12 @@ class AssessmentState(rx.State):
             self.error = "Beschrijving is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
-                "tenant_id": 1,
+                "tenant_id": tid,
                 "title": self.action_description.strip(),
                 "description": self.action_description.strip(),
                 "status": "Active",
@@ -627,9 +637,12 @@ class AssessmentState(rx.State):
             self.error = "Titel is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             await api_client.create_evidence({
-                "tenant_id": 1,
+                "tenant_id": tid,
                 "assessment_id": aid,
                 "title": self.evidence_title.strip(),
                 "description": self.evidence_description.strip() or None,
@@ -652,10 +665,13 @@ class AssessmentState(rx.State):
         if not aid:
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         score_int = int(score)
         try:
             await api_client.save_assessment_response(aid, {
-                "tenant_id": 1,
+                "tenant_id": tid,
                 "question_id": int(question_id),
                 "response_value": str(score_int),
                 "score": float(score_int),

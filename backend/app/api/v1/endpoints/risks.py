@@ -3,15 +3,15 @@ Risk Management Endpoints
 Handles Risks and their linkage to Controls.
 Implements the "In Control" risk management model.
 """
-from typing import List, Optional
+from typing import List, Optional, Set
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_editor
+from app.core.crud import ScopedTenantCRUDBase
+from app.core.rbac import require_editor, get_tenant_id, get_scope_access
 from app.models.core_models import (
     Risk,
     Control,
@@ -31,8 +31,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-crud_risk = CRUDBase(Risk)
-crud_control = CRUDBase(Control)
+crud_risk = ScopedTenantCRUDBase(Risk)
+crud_control = ScopedTenantCRUDBase(Control)
 
 
 # =============================================================================
@@ -43,16 +43,15 @@ crud_control = CRUDBase(Control)
 async def list_risks(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant"),
     scope_id: Optional[int] = Query(None, description="Filter by scope"),
     quadrant: Optional[AttentionQuadrant] = Query(None, description="Filter by attention quadrant"),
     risk_accepted: Optional[bool] = Query(None, description="Filter by acceptance status"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """List risks with optional filters."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if scope_id:
         filters["scope_id"] = scope_id
     if quadrant:
@@ -60,12 +59,13 @@ async def list_risks(
     if risk_accepted is not None:
         filters["risk_accepted"] = risk_accepted
 
-    return await crud_risk.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_risk.get_multi_scoped(session, tenant_id, accessible_scopes, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/", response_model=Risk)
 async def create_risk(
     risk: Risk,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -107,7 +107,7 @@ async def create_risk(
         level_to_score.get(risk.residual_impact, 1)
     )
 
-    created_risk = await crud_risk.create(session, obj_in=risk)
+    created_risk = await crud_risk.create(session, obj_in=risk, tenant_id=tenant_id)
 
     # Index in knowledge base for AI RAG
     try:
@@ -131,8 +131,9 @@ async def create_risk(
 
 @router.get("/heatmap", response_model=dict)
 async def get_risk_heatmap(
-    tenant_id: Optional[int] = None,
     scope_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -140,12 +141,10 @@ async def get_risk_heatmap(
     Returns risks grouped by quadrant with counts.
     """
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if scope_id:
         filters["scope_id"] = scope_id
 
-    risks = await crud_risk.get_multi(session, filters=filters, limit=1000)
+    risks = await crud_risk.get_multi_scoped(session, tenant_id, accessible_scopes, filters=filters, limit=1000)
 
     heatmap = {
         "MITIGATE": [],
@@ -176,14 +175,13 @@ async def get_risk_heatmap(
 @router.get("/by-quadrant/{quadrant}", response_model=List[Risk])
 async def get_risks_by_quadrant(
     quadrant: AttentionQuadrant,
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all risks in a specific attention quadrant."""
     filters = {"attention_quadrant": quadrant}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
-    return await crud_risk.get_multi(session, filters=filters, limit=500)
+    return await crud_risk.get_multi_scoped(session, tenant_id, accessible_scopes, filters=filters, limit=500)
 
 
 # =============================================================================
@@ -193,21 +191,25 @@ async def get_risks_by_quadrant(
 @router.get("/{risk_id}", response_model=Risk)
 async def get_risk(
     risk_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a risk by ID."""
-    return await crud_risk.get_or_404(session, risk_id)
+    return await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
 
 @router.patch("/{risk_id}", response_model=Risk)
 async def update_risk(
     risk_id: int,
     risk_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Update a risk."""
-    db_risk = await crud_risk.get_or_404(session, risk_id)
+    db_risk = await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
     # Recalculate scores if likelihood/impact changed
     level_to_score = {RiskLevel.LOW: 1, RiskLevel.MEDIUM: 2, RiskLevel.HIGH: 3, RiskLevel.CRITICAL: 4}
@@ -223,17 +225,20 @@ async def update_risk(
         risk_update["residual_risk_score"] = level_to_score.get(likelihood, 1) * level_to_score.get(impact, 1)
 
     risk_update["updated_at"] = datetime.utcnow()
-    return await crud_risk.update(session, db_obj=db_risk, obj_in=risk_update)
+    return await crud_risk.update(session, db_obj=db_risk, obj_in=risk_update, tenant_id=tenant_id)
 
 
 @router.delete("/{risk_id}")
 async def delete_risk(
     risk_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Delete a risk."""
-    deleted = await crud_risk.delete(session, id=risk_id)
+    await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
+    deleted = await crud_risk.delete(session, id=risk_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Risk not found")
     return {"message": "Risk deleted"}
@@ -248,35 +253,39 @@ async def accept_risk(
     risk_id: int,
     accepted_by_id: int,
     justification: str,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Accept a risk (formal risk acceptance)."""
-    db_risk = await crud_risk.get_or_404(session, risk_id)
+    db_risk = await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
     return await crud_risk.update(session, db_obj=db_risk, obj_in={
         "risk_accepted": True,
         "accepted_by_id": accepted_by_id,
         "acceptance_date": datetime.utcnow(),
         "acceptance_justification": justification,
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{risk_id}/revoke-acceptance", response_model=Risk)
 async def revoke_risk_acceptance(
     risk_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Revoke risk acceptance."""
-    db_risk = await crud_risk.get_or_404(session, risk_id)
+    db_risk = await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
     return await crud_risk.update(session, db_obj=db_risk, obj_in={
         "risk_accepted": False,
         "accepted_by_id": None,
         "acceptance_date": None,
         "acceptance_justification": None,
-    })
+    }, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -289,6 +298,8 @@ async def set_risk_quadrant(
     quadrant: AttentionQuadrant,
     mitigation_approach: Optional[MitigationApproach] = None,
     justification: Optional[str] = None,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -301,7 +312,7 @@ async def set_risk_quadrant(
     - MONITOR: Low impact, high vulnerability → watch for changes
     - ACCEPT: Low impact, low vulnerability → accept residual risk
     """
-    db_risk = await crud_risk.get_or_404(session, risk_id)
+    db_risk = await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
     updates = {
         "attention_quadrant": quadrant,
@@ -314,7 +325,7 @@ async def set_risk_quadrant(
     elif quadrant != AttentionQuadrant.MITIGATE:
         updates["mitigation_approach"] = None
 
-    return await crud_risk.update(session, db_obj=db_risk, obj_in=updates)
+    return await crud_risk.update(session, db_obj=db_risk, obj_in=updates, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -326,13 +337,15 @@ async def link_control_to_risk(
     risk_id: int,
     control_id: int,
     mitigation_percent: int = Query(50, ge=0, le=100, description="How much this control contributes to risk reduction"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Link a control to a risk."""
-    # Verify both exist
-    await crud_risk.get_or_404(session, risk_id)
-    await crud_control.get_or_404(session, control_id)
+    # Verify both exist within tenant/scope
+    await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     # Check if link already exists
     result = await session.execute(
@@ -362,10 +375,13 @@ async def link_control_to_risk(
 async def unlink_control_from_risk(
     risk_id: int,
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Remove link between control and risk."""
+    await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
     result = await session.execute(
         select(ControlRiskLink).where(
             ControlRiskLink.risk_id == risk_id,
@@ -388,10 +404,12 @@ async def unlink_control_from_risk(
 @router.get("/{risk_id}/controls", response_model=List[Control])
 async def get_risk_controls(
     risk_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all controls linked to a risk."""
-    await crud_risk.get_or_404(session, risk_id)
+    await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
     result = await session.execute(
         select(Control).join(

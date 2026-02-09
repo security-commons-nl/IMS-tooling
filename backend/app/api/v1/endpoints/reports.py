@@ -11,6 +11,7 @@ from sqlalchemy import func
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
+from app.core.rbac import get_tenant_id
 from app.models.core_models import (
     Risk,
     Measure,
@@ -39,21 +40,15 @@ router = APIRouter()
 
 @router.get("/dashboard/executive", response_model=dict)
 async def get_executive_dashboard(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get executive dashboard summary.
     High-level KPIs for management review.
     """
-    filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
-
     # Risk counts by quadrant
-    risk_query = select(Risk)
-    if tenant_id:
-        risk_query = risk_query.where(Risk.tenant_id == tenant_id)
+    risk_query = select(Risk).where(Risk.tenant_id == tenant_id)
     risks_result = await session.execute(risk_query)
     risks = risks_result.scalars().all()
 
@@ -71,9 +66,7 @@ async def get_executive_dashboard(
     )
 
     # Policy status
-    policy_query = select(Policy)
-    if tenant_id:
-        policy_query = policy_query.where(Policy.tenant_id == tenant_id)
+    policy_query = select(Policy).where(Policy.tenant_id == tenant_id)
     policies_result = await session.execute(policy_query)
     policies = policies_result.scalars().all()
 
@@ -86,9 +79,7 @@ async def get_executive_dashboard(
     }
 
     # Measure effectiveness
-    measure_query = select(Measure)
-    if tenant_id:
-        measure_query = measure_query.where(Measure.tenant_id == tenant_id)
+    measure_query = select(Measure).where(Measure.tenant_id == tenant_id)
     measures_result = await session.execute(measure_query)
     measures = measures_result.scalars().all()
 
@@ -100,18 +91,14 @@ async def get_executive_dashboard(
             avg_effectiveness = round(sum(effectiveness_values) / len(effectiveness_values), 1)
 
     # Open incidents
-    incident_query = select(Incident)
-    if tenant_id:
-        incident_query = incident_query.where(Incident.tenant_id == tenant_id)
+    incident_query = select(Incident).where(Incident.tenant_id == tenant_id)
     incidents_result = await session.execute(incident_query)
     incidents = incidents_result.scalars().all()
 
     open_incidents = sum(1 for i in incidents if i.status in [Status.DRAFT, Status.ACTIVE])
 
     # Compliance (SoA)
-    soa_query = select(ApplicabilityStatement)
-    if tenant_id:
-        soa_query = soa_query.where(ApplicabilityStatement.tenant_id == tenant_id)
+    soa_query = select(ApplicabilityStatement).where(ApplicabilityStatement.tenant_id == tenant_id)
     soa_result = await session.execute(soa_query)
     soa_entries = soa_result.scalars().all()
 
@@ -150,16 +137,14 @@ async def get_executive_dashboard(
 
 @router.get("/risks/summary", response_model=dict)
 async def get_risk_summary(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     scope_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get comprehensive risk summary report.
     """
-    query = select(Risk)
-    if tenant_id:
-        query = query.where(Risk.tenant_id == tenant_id)
+    query = select(Risk).where(Risk.tenant_id == tenant_id)
     if scope_id:
         query = query.where(Risk.scope_id == scope_id)
 
@@ -217,7 +202,7 @@ async def get_risk_summary(
 
 @router.get("/risks/heatmap-matrix", response_model=dict)
 async def get_risk_heatmap_matrix(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     scope_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
 ):
@@ -225,9 +210,7 @@ async def get_risk_heatmap_matrix(
     Get 4x4 risk matrix data for heatmap visualization.
     Returns count of risks at each likelihood/impact intersection.
     """
-    query = select(Risk)
-    if tenant_id:
-        query = query.where(Risk.tenant_id == tenant_id)
+    query = select(Risk).where(Risk.tenant_id == tenant_id)
     if scope_id:
         query = query.where(Risk.scope_id == scope_id)
 
@@ -265,15 +248,15 @@ async def get_risk_heatmap_matrix(
 
 @router.get("/compliance/overview", response_model=dict)
 async def get_compliance_overview(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get overall compliance status across all standards and scopes.
     """
-    query = select(ApplicabilityStatement)
-    if tenant_id:
-        query = query.where(ApplicabilityStatement.tenant_id == tenant_id)
+    query = select(ApplicabilityStatement).where(
+        ApplicabilityStatement.tenant_id == tenant_id,
+    )
 
     result = await session.execute(query)
     entries = result.scalars().all()
@@ -318,23 +301,19 @@ async def get_compliance_overview(
 
 @router.get("/assessments/summary", response_model=dict)
 async def get_assessment_summary(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get assessment and finding summary.
     """
     # Get assessments
-    assessment_query = select(Assessment)
-    if tenant_id:
-        assessment_query = assessment_query.where(Assessment.tenant_id == tenant_id)
+    assessment_query = select(Assessment).where(Assessment.tenant_id == tenant_id)
     assessments_result = await session.execute(assessment_query)
     assessments = assessments_result.scalars().all()
 
     # Get findings
-    finding_query = select(Finding)
-    if tenant_id:
-        finding_query = finding_query.where(Finding.tenant_id == tenant_id)
+    finding_query = select(Finding).where(Finding.tenant_id == tenant_id)
     findings_result = await session.execute(finding_query)
     findings = findings_result.scalars().all()
 
@@ -380,16 +359,14 @@ async def get_assessment_summary(
 
 @router.get("/incidents/summary", response_model=dict)
 async def get_incident_summary(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     days: int = Query(30, description="Number of days to look back"),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get incident summary and trends.
     """
-    query = select(Incident)
-    if tenant_id:
-        query = query.where(Incident.tenant_id == tenant_id)
+    query = select(Incident).where(Incident.tenant_id == tenant_id)
 
     result = await session.execute(query)
     incidents = result.scalars().all()
@@ -426,15 +403,13 @@ async def get_incident_summary(
 
 @router.get("/actions/summary", response_model=dict)
 async def get_corrective_actions_summary(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get corrective actions summary.
     """
-    query = select(CorrectiveAction)
-    if tenant_id:
-        query = query.where(CorrectiveAction.tenant_id == tenant_id)
+    query = select(CorrectiveAction).where(CorrectiveAction.tenant_id == tenant_id)
 
     result = await session.execute(query)
     actions = result.scalars().all()
@@ -464,7 +439,7 @@ async def get_corrective_actions_summary(
 
 @router.get("/trends/monthly", response_model=dict)
 async def get_monthly_trends(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     months: int = Query(6, description="Number of months to include"),
     session: AsyncSession = Depends(get_session),
 ):

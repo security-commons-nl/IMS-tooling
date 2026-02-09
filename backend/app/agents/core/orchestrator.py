@@ -1,6 +1,10 @@
+import logging
 from typing import Dict, Any, Optional, List
 from app.agents.core.base_agent import BaseAgent
+from app.agents.core.intent_router import IntentRouter, RoutingDecision
 from app.agents.domains import ALL_AGENTS
+
+logger = logging.getLogger(__name__)
 
 
 class AgentOrchestrator:
@@ -8,8 +12,9 @@ class AgentOrchestrator:
     Routes interactions to the appropriate agent based on context.
 
     Supports:
-    - Agent selection by name
-    - Context-based agent detection
+    - Intent-based routing (keyword scoring + LLM fallback)
+    - Agent selection by name (manual override)
+    - Context-based agent detection (legacy, for /detect endpoint)
     - Agent listing for UI
     """
 
@@ -70,6 +75,8 @@ class AgentOrchestrator:
         "frameworks": "compliance",
         "reports": "report",
         "controls": "compliance",
+        "relaties": "report",
+        "relationships": "report",
         "users": "admin",
         "organization": "onboarding",
         "onboarding": "onboarding",
@@ -78,6 +85,7 @@ class AgentOrchestrator:
 
     def __init__(self):
         self.agents: Dict[str, BaseAgent] = {}
+        self.intent_router = IntentRouter()
         self._register_all_agents()
 
     def _register_all_agents(self):
@@ -129,31 +137,54 @@ class AgentOrchestrator:
         # Default to risk agent
         return "risk"
 
-    async def route_request(self, message: str, context: Dict[str, Any], history: Optional[List[Dict[str, str]]] = None) -> str:
+    async def route_request(
+        self,
+        message: str,
+        context: Dict[str, Any],
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> Dict[str, Any]:
         """
-        Determine which agent should handle the request.
+        Route a message to the best agent using intent-based routing.
 
         Context can include:
-        - agent_name: Explicit agent selection
-        - page: Current page for auto-detection
-        - entity_type: Current entity type for auto-detection
-        """
-        # Get agent name from context or detect from page
-        agent_name = context.get("agent_name")
-        if not agent_name:
-            agent_name = self.detect_agent_from_context(
-                page=context.get("page"),
-                entity_type=context.get("entity_type")
-            )
+        - agent_name: Explicit agent selection (manual override)
+        - page: Current page for context boost
+        - entity_type: Current entity type for context boost
 
-        agent = self.get_agent(agent_name)
+        Returns dict with 'response', 'agent_used', 'routing_method'.
+        """
+        manual_override = context.get("agent_name")
+
+        # Use intent router
+        decision: RoutingDecision = await self.intent_router.route(
+            message=message,
+            page=context.get("page"),
+            entity_type=context.get("entity_type"),
+            manual_override=manual_override,
+        )
+
+        logger.info(
+            f"Routing: '{message[:60]}...' → {decision.agent_name} "
+            f"(method={decision.method}, confidence={decision.confidence})"
+        )
+
+        agent = self.get_agent(decision.agent_name)
         if not agent:
-            # Fallback to risk agent
             agent = self.get_agent("risk")
             if not agent:
-                return "Error: No agents available."
+                return {
+                    "response": "Error: No agents available.",
+                    "agent_used": "none",
+                    "routing_method": "error",
+                }
 
-        return await agent.chat(message, context, history)
+        response_text = await agent.chat(message, context, history)
+
+        return {
+            "response": response_text,
+            "agent_used": decision.agent_name,
+            "routing_method": decision.method,
+        }
 
 
 # Global instance

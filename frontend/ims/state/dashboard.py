@@ -40,18 +40,20 @@ class DashboardState(rx.State):
         return self.tasks_total > 0
 
     async def load_dashboard_data(self):
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
-            self.act_overdue = await api_client.get_act_overdue_summary(tenant_id=1)
+            self.act_overdue = await api_client.get_act_overdue_summary(tenant_id=tid)
         except Exception:
             self.act_overdue = {}
 
         # Load my tasks
-        auth = await self.get_state(AuthState)
         user_id = auth.user_id
         if user_id and user_id > 0:
             self.tasks_loading = True
             try:
-                data = await api_client.get_my_tasks(user_id=user_id, tenant_id=1)
+                data = await api_client.get_my_tasks(user_id=user_id, tenant_id=tid)
                 self.my_tasks = data.get("tasks", [])
                 summary = data.get("summary", {})
                 self.tasks_total = summary.get("total", 0)

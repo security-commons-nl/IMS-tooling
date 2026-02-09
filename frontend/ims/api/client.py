@@ -18,10 +18,16 @@ class APIClient:
         self.base_url = base_url
         self.timeout = httpx.Timeout(120.0)
 
-    def _get_client(self, user_id: Optional[int] = 1) -> httpx.AsyncClient:
+    def _get_client(
+        self,
+        user_id: Optional[int] = 1,
+        tenant_id: Optional[int] = None,
+    ) -> httpx.AsyncClient:
         headers = {}
         if user_id:
             headers["X-User-ID"] = str(user_id)
+        if tenant_id:
+            headers["X-Tenant-ID"] = str(tenant_id)
         return httpx.AsyncClient(
             base_url=self.base_url, timeout=self.timeout, headers=headers,
         )

@@ -8,9 +8,6 @@ from typing import Optional
 class BaseState(rx.State):
     """Base state with common functionality."""
 
-    # Current tenant context
-    current_tenant_id: int = 1
-
     # Loading states
     is_loading: bool = False
     error_message: str = ""

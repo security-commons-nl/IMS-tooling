@@ -4,6 +4,7 @@ Decision State — Besluitlog (Hiaat 1)
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class DecisionState(rx.State):
@@ -94,11 +95,14 @@ class DecisionState(rx.State):
             self.error = "Besluittekst is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         data = {
             "decision_type": self.form_decision_type,
             "decision_text": self.form_decision_text.strip(),
             "decision_maker_id": int(self.form_decision_maker_id) if self.form_decision_maker_id else 1,
-            "tenant_id": 1,
+            "tenant_id": tid,
         }
         if self.form_justification:
             data["justification"] = self.form_justification

@@ -4,6 +4,7 @@ Control State - handles context-specific control implementations
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class ControlState(rx.State):
@@ -227,6 +228,9 @@ class ControlState(rx.State):
             self.error = "Titel is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
                 "title": self.form_title.strip(),
@@ -235,7 +239,7 @@ class ControlState(rx.State):
                 "control_type": self.form_control_type,
                 "automation_level": self.form_automation_level,
                 "scope_id": int(self.form_scope_id) if self.form_scope_id and self.form_scope_id != "0" else None,
-                "tenant_id": 1,
+                "tenant_id": tid,
             }
 
             if self.is_editing and self.editing_control_id:

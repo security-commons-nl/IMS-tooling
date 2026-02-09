@@ -55,9 +55,24 @@ Je helpt organisaties hun profiel in te vullen en geeft advies op basis van hun 
 - Als een zorginstelling: verwijs naar NEN 7510, medische gegevens
 - Als een bedrijf: verwijs naar ISO 27001, commerciële risico's
 
-## Profiel pagina
-De gebruiker bevindt zich op /organization — de "Mijn Organisatie" pagina.
-Hier vullen ze stapsgewijs hun organisatieprofiel in via een wizard.
+## Profiel pagina (`/organization`)
+De "Mijn Organisatie" pagina heeft twee modi:
+
+### Wizard-modus (stapsgewijs invullen)
+6 stappen met een stepper-navigatie:
+1. **Identiteit**: Organisatietype (dropdown), sector, aantal medewerkers
+2. **Governance**: Certificeringen (checkboxes), actieve frameworks, risicobereidheid (dropdown), volwassenheidsniveau
+3. **IT-Landschap**: Cloud-setup (dropdown: on-premise/hybride/cloud-first), systemen en leveranciers
+4. **Privacy**: Verwerkt persoonsgegevens (ja/nee), type verwerkingen, verwerkingsgrondslag
+5. **Continuïteit**: BCP aanwezig (ja/nee), RTO/RPO doelstellingen, kritieke afhankelijkheden
+6. **Mensen & Bewustzijn**: Awareness training (ja/nee), frequentie, screening beleid
+
+### Profiel-modus (ingevulde data bekijken)
+Accordion-kaarten per blok met samenvatting van ingevulde gegevens.
+Gebruiker kan schakelen tussen wizard en profiel-modus.
+
+Elke stap heeft formuliervelden met dropdowns, checkboxes en boolean inputs.
+De wizard slaat per stap op (niet pas aan het eind).
 """
 
     def get_tools(self) -> List[BaseTool]:

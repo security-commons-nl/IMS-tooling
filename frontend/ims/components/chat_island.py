@@ -8,6 +8,28 @@ import reflex as rx
 from ims.state.chat import ChatState
 
 
+AGENT_DISPLAY_NAMES = {
+    "risk": "Risico Expert",
+    "measure": "Maatregelen Expert",
+    "policy": "Beleid Expert",
+    "compliance": "Compliance Expert",
+    "assessment": "Assessment Expert",
+    "incident": "Incident Expert",
+    "privacy": "Privacy Expert",
+    "bcm": "Continuïteit Expert",
+    "supplier": "Leverancier Expert",
+    "improvement": "Verbetering Expert",
+    "workflow": "Workflow Expert",
+    "planning": "Planning Expert",
+    "report": "Rapportage Expert",
+    "objectives": "Doelstellingen Expert",
+    "maturity": "Maturity Expert",
+    "admin": "Admin Expert",
+    "scope": "Scope Expert",
+    "onboarding": "Onboarding Expert",
+}
+
+
 def chat_message(msg: dict) -> rx.Component:
     """Render a single chat message."""
     is_user = msg["role"] == "user"
@@ -19,21 +41,45 @@ def chat_message(msg: dict) -> rx.Component:
                 rx.spacer(),
                 rx.fragment(),
             ),
-            rx.box(
-                rx.markdown(msg["content"]),
-                padding="12px 16px",
-                border_radius="lg",
+            rx.vstack(
+                rx.box(
+                    rx.markdown(msg["content"]),
+                    padding="12px 16px",
+                    border_radius="lg",
+                    max_width="100%",
+                    background=rx.cond(
+                        is_user,
+                        "var(--accent-9)",
+                        "var(--gray-3)",
+                    ),
+                    color=rx.cond(
+                        is_user,
+                        "white",
+                        "inherit",
+                    ),
+                ),
+                # Show routing indicator for assistant messages with auto-routing
+                rx.cond(
+                    ~is_user
+                    & (msg["routing_method"] != "manual")
+                    & (msg["routing_method"] != "")
+                    & (msg["agent"] != ""),
+                    rx.hstack(
+                        rx.icon("route", size=12, color="var(--gray-9)"),
+                        rx.text(
+                            msg["agent"],
+                            size="1",
+                            color="var(--gray-9)",
+                            font_style="italic",
+                        ),
+                        spacing="1",
+                        align="center",
+                        padding_left="4px",
+                    ),
+                    rx.fragment(),
+                ),
                 max_width="80%",
-                background=rx.cond(
-                    is_user,
-                    "var(--accent-9)",
-                    "var(--gray-3)",
-                ),
-                color=rx.cond(
-                    is_user,
-                    "white",
-                    "inherit",
-                ),
+                spacing="1",
             ),
             rx.cond(
                 is_user,

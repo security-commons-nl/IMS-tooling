@@ -4,7 +4,7 @@ Handles security/compliance controls (context-specific implementations) with eff
 
 Controls are testable implementations of Measures (catalog/library items).
 """
-from typing import List, Optional
+from typing import List, Optional, Set
 from datetime import datetime
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_editor
+from app.core.crud import ScopedTenantCRUDBase
+from app.core.rbac import require_editor, get_tenant_id, get_scope_access
 from app.models.core_models import (
     Control,
     ControlRiskLink,
@@ -28,7 +28,7 @@ from app.models.core_models import (
 from app.services.knowledge_service import knowledge_service
 
 router = APIRouter()
-crud_control = CRUDBase(Control)
+crud_control = ScopedTenantCRUDBase(Control)
 logger = logging.getLogger(__name__)
 
 
@@ -40,16 +40,15 @@ logger = logging.getLogger(__name__)
 async def list_controls(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant"),
     scope_id: Optional[int] = Query(None, description="Filter by scope"),
     status: Optional[Status] = Query(None, description="Filter by status"),
     owner_id: Optional[int] = Query(None, description="Filter by owner"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """List controls with optional filters."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if scope_id:
         filters["scope_id"] = scope_id
     if status:
@@ -57,12 +56,13 @@ async def list_controls(
     if owner_id:
         filters["owner_id"] = owner_id
 
-    return await crud_control.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_control.get_multi_scoped(session, tenant_id, accessible_scopes, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/", response_model=Control)
 async def create_control(
     control: Control,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -72,7 +72,7 @@ async def create_control(
     Also indexes in knowledge base for AI RAG.
     """
     control.status = control.status or Status.DRAFT
-    created_control = await crud_control.create(session, obj_in=control)
+    created_control = await crud_control.create(session, obj_in=control, tenant_id=tenant_id)
 
     # Index in knowledge base for AI RAG
     try:
@@ -93,33 +93,40 @@ async def create_control(
 @router.get("/{control_id}", response_model=Control)
 async def get_control(
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a control by ID."""
-    return await crud_control.get_or_404(session, control_id)
+    return await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
 
 @router.patch("/{control_id}", response_model=Control)
 async def update_control(
     control_id: int,
     control_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Update a control."""
-    db_control = await crud_control.get_or_404(session, control_id)
+    db_control = await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
     control_update["updated_at"] = datetime.utcnow()
-    return await crud_control.update(session, db_obj=db_control, obj_in=control_update)
+    return await crud_control.update(session, db_obj=db_control, obj_in=control_update, tenant_id=tenant_id)
 
 
 @router.delete("/{control_id}")
 async def delete_control(
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Delete a control."""
-    deleted = await crud_control.delete(session, id=control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
+    deleted = await crud_control.delete(session, id=control_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Control not found")
     return {"message": "Control deleted"}
@@ -132,11 +139,13 @@ async def delete_control(
 @router.post("/{control_id}/activate", response_model=Control)
 async def activate_control(
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Activate a draft control."""
-    db_control = await crud_control.get_or_404(session, control_id)
+    db_control = await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     if db_control.status != Status.DRAFT:
         raise HTTPException(
@@ -147,18 +156,20 @@ async def activate_control(
     return await crud_control.update(session, db_obj=db_control, obj_in={
         "status": Status.ACTIVE,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{control_id}/deactivate", response_model=Control)
 async def deactivate_control(
     control_id: int,
     reason: Optional[str] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Deactivate an active control."""
-    db_control = await crud_control.get_or_404(session, control_id)
+    db_control = await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     if db_control.status != Status.ACTIVE:
         raise HTTPException(
@@ -169,7 +180,7 @@ async def deactivate_control(
     return await crud_control.update(session, db_obj=db_control, obj_in={
         "status": Status.DEPRECATED,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -181,6 +192,8 @@ async def update_effectiveness(
     control_id: int,
     effectiveness_percentage: int = Query(..., ge=0, le=100, description="Effectiveness percentage (0-100)"),
     last_tested: Optional[datetime] = None,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -192,7 +205,7 @@ async def update_effectiveness(
     - Audit findings
     - Incident analysis
     """
-    db_control = await crud_control.get_or_404(session, control_id)
+    db_control = await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     update_data = {
         "effectiveness_percentage": effectiveness_percentage,
@@ -201,7 +214,7 @@ async def update_effectiveness(
     if last_tested:
         update_data["last_tested"] = last_tested
 
-    return await crud_control.update(session, db_obj=db_control, obj_in=update_data)
+    return await crud_control.update(session, db_obj=db_control, obj_in=update_data, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -211,10 +224,12 @@ async def update_effectiveness(
 @router.get("/{control_id}/risks", response_model=List[Risk])
 async def get_linked_risks(
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all risks that this control addresses."""
-    await crud_control.get_or_404(session, control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     result = await session.execute(
         select(Risk)
@@ -229,11 +244,13 @@ async def link_to_risk(
     control_id: int,
     risk_id: int,
     mitigation_percent: int = Query(50, ge=0, le=100),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Link this control to a risk."""
-    await crud_control.get_or_404(session, control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     # Check if link exists
     result = await session.execute(
@@ -260,10 +277,13 @@ async def link_to_risk(
 async def unlink_from_risk(
     control_id: int,
     risk_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Remove link between this control and a risk."""
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
     result = await session.execute(
         select(ControlRiskLink).where(
             ControlRiskLink.control_id == control_id,
@@ -287,10 +307,12 @@ async def unlink_from_risk(
 @router.get("/{control_id}/requirements", response_model=List[Requirement])
 async def get_linked_requirements(
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all requirements that this control implements."""
-    await crud_control.get_or_404(session, control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     result = await session.execute(
         select(Requirement)
@@ -305,6 +327,8 @@ async def link_to_requirement(
     control_id: int,
     requirement_id: int,
     coverage_percentage: int = Query(100, ge=0, le=100),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -313,7 +337,7 @@ async def link_to_requirement(
 
     This creates the mapping for Statement of Applicability (SoA).
     """
-    await crud_control.get_or_404(session, control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     # Check if link exists
     result = await session.execute(
@@ -340,10 +364,13 @@ async def link_to_requirement(
 async def unlink_from_requirement(
     control_id: int,
     requirement_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Remove link between this control and a requirement."""
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
     result = await session.execute(
         select(ControlRequirementLink).where(
             ControlRequirementLink.control_id == control_id,
@@ -367,10 +394,12 @@ async def unlink_from_requirement(
 @router.get("/{control_id}/measures", response_model=List[Measure])
 async def get_linked_measures(
     control_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all measures (from catalog) that this control implements."""
-    await crud_control.get_or_404(session, control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     result = await session.execute(
         select(Measure)
@@ -386,6 +415,8 @@ async def link_to_measure(
     measure_id: int,
     coverage_percentage: int = Query(100, ge=0, le=100),
     notes: Optional[str] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -395,7 +426,7 @@ async def link_to_measure(
     This establishes that this control implements the given measure
     in a specific context (scope).
     """
-    await crud_control.get_or_404(session, control_id)
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
 
     # Check if link exists
     result = await session.execute(
@@ -423,10 +454,13 @@ async def link_to_measure(
 async def unlink_from_measure(
     control_id: int,
     measure_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Remove link between this control and a measure."""
+    await crud_control.get_scoped_or_404(session, control_id, tenant_id, accessible_scopes)
     result = await session.execute(
         select(ControlMeasureLink).where(
             ControlMeasureLink.control_id == control_id,
@@ -449,7 +483,7 @@ async def unlink_from_measure(
 
 @router.get("/stats/by-status")
 async def get_controls_by_status(
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get control counts grouped by status."""
@@ -458,10 +492,7 @@ async def get_controls_by_status(
     query = select(
         Control.status,
         func.count(Control.id).label("count")
-    ).group_by(Control.status)
-
-    if tenant_id:
-        query = query.where(Control.tenant_id == tenant_id)
+    ).where(Control.tenant_id == tenant_id).group_by(Control.status)
 
     result = await session.execute(query)
     return {row.status: row.count for row in result}
@@ -469,7 +500,7 @@ async def get_controls_by_status(
 
 @router.get("/stats/effectiveness")
 async def get_effectiveness_stats(
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get effectiveness statistics for controls."""
@@ -480,10 +511,10 @@ async def get_effectiveness_stats(
         func.min(Control.effectiveness_percentage).label("minimum"),
         func.max(Control.effectiveness_percentage).label("maximum"),
         func.count(Control.id).label("total")
-    ).where(Control.effectiveness_percentage.isnot(None))
-
-    if tenant_id:
-        query = query.where(Control.tenant_id == tenant_id)
+    ).where(
+        Control.effectiveness_percentage.isnot(None),
+        Control.tenant_id == tenant_id,
+    )
 
     result = await session.execute(query)
     row = result.first()

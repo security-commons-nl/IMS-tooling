@@ -14,7 +14,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
-from app.core.rbac import require_editor
+from app.core.rbac import require_editor, get_tenant_id
 from app.models.core_models import (
     Measure,
     ControlMeasureLink,
@@ -36,27 +36,35 @@ logger = logging.getLogger(__name__)
 async def list_measures(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant (NULL = global)"),
     category: Optional[str] = Query(None, description="Filter by measure category"),
     control_type: Optional[str] = Query(None, description="Filter by control type"),
     is_active: bool = Query(True, description="Filter by active status"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     List measures from the catalog.
 
-    Global measures (tenant_id=NULL) are available to all tenants.
-    Tenant-specific measures are only available to that tenant.
+    Returns both global measures (tenant_id=NULL) and tenant-specific measures.
     """
-    filters = {"is_active": is_active}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
-    if category:
-        filters["measure_category"] = category
-    if control_type:
-        filters["control_type"] = control_type
+    from sqlalchemy import or_
 
-    return await crud_measure.get_multi(session, skip=skip, limit=limit, filters=filters)
+    query = select(Measure).where(
+        Measure.is_active == is_active,
+        or_(
+            Measure.tenant_id == tenant_id,
+            Measure.tenant_id.is_(None),
+        ),
+    )
+
+    if category:
+        query = query.where(Measure.measure_category == category)
+    if control_type:
+        query = query.where(Measure.control_type == control_type)
+
+    query = query.offset(skip).limit(limit)
+    result = await session.execute(query)
+    return result.scalars().all()
 
 
 @router.get("/global", response_model=List[Measure])
@@ -83,14 +91,19 @@ async def list_global_measures(
 @router.post("/", response_model=Measure)
 async def create_measure(
     measure: Measure,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """
     Create a new measure in the catalog.
 
-    Set tenant_id=NULL to create a global measure available to all tenants.
+    Set tenant_id=NULL in the body to create a global measure available to all tenants.
+    Otherwise, tenant_id is enforced from the authenticated context.
     """
+    # Only set tenant_id if not explicitly set to None (global measure)
+    if measure.tenant_id is not None:
+        measure.tenant_id = tenant_id
     created_measure = await crud_measure.create(session, obj_in=measure)
 
     # Index in knowledge base for AI RAG
@@ -112,21 +125,50 @@ async def create_measure(
 @router.get("/{measure_id}", response_model=Measure)
 async def get_measure(
     measure_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
-    """Get a measure from the catalog by ID."""
-    return await crud_measure.get_or_404(session, measure_id)
+    """Get a measure from the catalog by ID (must be global or belong to tenant)."""
+    from sqlalchemy import or_
+    result = await session.execute(
+        select(Measure).where(
+            Measure.id == measure_id,
+            or_(
+                Measure.tenant_id == tenant_id,
+                Measure.tenant_id.is_(None),
+            ),
+        )
+    )
+    obj = result.scalars().first()
+    if not obj:
+        raise HTTPException(status_code=404, detail=f"Measure with id {measure_id} not found")
+    return obj
 
 
 @router.patch("/{measure_id}", response_model=Measure)
 async def update_measure(
     measure_id: int,
     measure_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
-    """Update a measure in the catalog."""
-    db_measure = await crud_measure.get_or_404(session, measure_id)
+    """Update a measure in the catalog (only tenant-owned or global)."""
+    from sqlalchemy import or_
+    result = await session.execute(
+        select(Measure).where(
+            Measure.id == measure_id,
+            or_(
+                Measure.tenant_id == tenant_id,
+                Measure.tenant_id.is_(None),
+            ),
+        )
+    )
+    db_measure = result.scalars().first()
+    if not db_measure:
+        raise HTTPException(status_code=404, detail=f"Measure with id {measure_id} not found")
+    # Prevent changing tenant_id
+    measure_update.pop("tenant_id", None)
     return await crud_measure.update(session, db_obj=db_measure, obj_in=measure_update)
 
 

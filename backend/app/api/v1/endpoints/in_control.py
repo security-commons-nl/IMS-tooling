@@ -1,17 +1,17 @@
 """
-In-Control Status Endpoints — Hiaat 5
+In-Control Status Endpoints -- Hiaat 5
 Calculates and manages in-control status per scope/domain.
 """
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_configurer
+from app.core.crud import ScopedTenantCRUDBase, TenantCRUDBase
+from app.core.rbac import get_tenant_id, get_scope_access, require_configurer
 from app.models.core_models import (
     InControlAssessment,
     InControlLevel,
@@ -27,8 +27,8 @@ from app.models.core_models import (
 )
 
 router = APIRouter()
-crud_assessment = CRUDBase(InControlAssessment)
-crud_scope = CRUDBase(Scope)
+crud_assessment = ScopedTenantCRUDBase(InControlAssessment)
+crud_scope = TenantCRUDBase(Scope)
 
 
 # =============================================================================
@@ -125,49 +125,52 @@ async def _calculate_scope_level(
 async def list_in_control_assessments(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     scope_id: Optional[int] = Query(None),
     level: Optional[InControlLevel] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """List in-control assessments."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if scope_id:
         filters["scope_id"] = scope_id
     if level:
         filters["level"] = level
 
-    return await crud_assessment.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_assessment.get_multi_scoped(
+        session, tenant_id, accessible_scopes,
+        skip=skip, limit=limit, filters=filters,
+    )
 
 
 @router.post("/", response_model=InControlAssessment)
 async def create_in_control_assessment(
     assessment: InControlAssessment,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Create a new in-control assessment."""
-    return await crud_assessment.create(session, obj_in=assessment)
+    return await crud_assessment.create(session, obj_in=assessment, tenant_id=tenant_id)
 
 
 # =============================================================================
-# CALCULATED STATUS — placed before /{assessment_id} to avoid route conflicts
+# CALCULATED STATUS -- placed before /{assessment_id} to avoid route conflicts
 # =============================================================================
 
 @router.get("/calculate/{scope_id}", response_model=dict)
 async def calculate_in_control_status(
     scope_id: int,
-    tenant_id: int = Query(...),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Calculate the in-control status for a scope based on current data.
     Returns the calculated level and supporting metrics.
-    Does NOT save — use POST /in-control/ to formally record.
+    Does NOT save -- use POST /in-control/ to formally record.
     """
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
     metrics = await _calculate_scope_level(session, scope_id, tenant_id)
 
     return {
@@ -187,7 +190,8 @@ async def calculate_in_control_status(
 
 @router.get("/dashboard", response_model=List[dict])
 async def get_in_control_dashboard(
-    tenant_id: int = Query(...),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -196,12 +200,15 @@ async def get_in_control_dashboard(
     For the DT dashboard.
     """
     # Get all active scopes for this tenant
-    result = await session.execute(
-        select(Scope).where(
-            Scope.tenant_id == tenant_id,
-            Scope.is_active == True,
-        )
+    query = select(Scope).where(
+        Scope.tenant_id == tenant_id,
+        Scope.is_active == True,
     )
+    # Apply scope filtering
+    if accessible_scopes is not None:
+        query = query.where(Scope.id.in_(accessible_scopes))
+
+    result = await session.execute(query)
     scopes = result.scalars().all()
 
     dashboard = []
@@ -236,28 +243,36 @@ async def get_in_control_dashboard(
 
 
 # =============================================================================
-# INDIVIDUAL ASSESSMENT — /{assessment_id} routes placed LAST to avoid conflicts
+# INDIVIDUAL ASSESSMENT -- /{assessment_id} routes placed LAST to avoid conflicts
 # =============================================================================
 
 @router.get("/{assessment_id}", response_model=InControlAssessment)
 async def get_in_control_assessment(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get an in-control assessment by ID."""
-    return await crud_assessment.get_or_404(session, assessment_id)
+    return await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
 
 @router.post("/{assessment_id}/establish", response_model=InControlAssessment)
 async def establish_in_control(
     assessment_id: int,
     established_by_id: int = Query(..., description="DT user who establishes"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Formally establish an in-control status (DT-only)."""
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
     return await crud_assessment.update(session, db_obj=db_assessment, obj_in={
         "established_by_id": established_by_id,
         "established_date": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)

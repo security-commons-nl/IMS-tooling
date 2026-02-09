@@ -10,7 +10,7 @@ from sqlmodel import select
 
 from app.core.db import get_session
 from app.core.crud import CRUDBase
-from app.core.rbac import require_coordinator_or_admin
+from app.core.rbac import get_tenant_id, require_coordinator_or_admin
 from app.models.core_models import (
     User,
     UserRead,
@@ -34,11 +34,29 @@ async def list_users(
     skip: int = 0,
     limit: int = 100,
     is_active: bool = Query(True, description="Filter by active status"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
-    """List users with optional filters."""
-    filters = {"is_active": is_active}
-    return await crud_user.get_multi(session, skip=skip, limit=limit, filters=filters)
+    """List users belonging to the current tenant."""
+    # Get user IDs that belong to this tenant
+    result = await session.execute(
+        select(TenantUser.user_id).where(
+            TenantUser.tenant_id == tenant_id,
+            TenantUser.is_active == True,
+        )
+    )
+    tenant_user_ids = set(result.scalars().all())
+
+    if not tenant_user_ids:
+        return []
+
+    # Fetch users that are in this tenant
+    stmt = select(User).where(
+        User.id.in_(tenant_user_ids),
+        User.is_active == is_active,
+    ).offset(skip).limit(limit)
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 @router.post("/", response_model=UserRead)
@@ -150,7 +168,7 @@ async def assign_scope_role(
     user_id: int,
     scope_id: int,
     role: Role,
-    tenant_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_coordinator_or_admin),
 ):
@@ -176,6 +194,7 @@ async def assign_scope_role(
             UserScopeRole.user_id == user_id,
             UserScopeRole.scope_id == scope_id,
             UserScopeRole.role == role,
+            UserScopeRole.tenant_id == tenant_id,
         )
     )
     if result.scalars().first():
@@ -199,6 +218,7 @@ async def remove_scope_role(
     user_id: int,
     scope_id: int,
     role: Role,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_coordinator_or_admin),
 ):
@@ -208,6 +228,7 @@ async def remove_scope_role(
             UserScopeRole.user_id == user_id,
             UserScopeRole.scope_id == scope_id,
             UserScopeRole.role == role,
+            UserScopeRole.tenant_id == tenant_id,
         )
     )
     user_scope_role = result.scalars().first()
@@ -223,7 +244,7 @@ async def remove_scope_role(
 @router.get("/{user_id}/scopes", response_model=List[dict])
 async def get_user_scopes(
     user_id: int,
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all scopes a user has access to with their roles."""
@@ -231,10 +252,10 @@ async def get_user_scopes(
 
     query = select(UserScopeRole, Scope).join(
         Scope, UserScopeRole.scope_id == Scope.id
-    ).where(UserScopeRole.user_id == user_id)
-
-    if tenant_id:
-        query = query.where(UserScopeRole.tenant_id == tenant_id)
+    ).where(
+        UserScopeRole.user_id == user_id,
+        UserScopeRole.tenant_id == tenant_id,
+    )
 
     result = await session.execute(query)
     rows = result.all()
@@ -256,6 +277,7 @@ async def get_user_scopes(
 async def check_user_permissions(
     user_id: int,
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -268,6 +290,7 @@ async def check_user_permissions(
         select(UserScopeRole).where(
             UserScopeRole.user_id == user_id,
             UserScopeRole.scope_id == scope_id,
+            UserScopeRole.tenant_id == tenant_id,
         )
     )
     roles = [usr.role for usr in result.scalars().all()]

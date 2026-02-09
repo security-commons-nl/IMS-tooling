@@ -4,6 +4,7 @@ In-Control State — Hiaat 5
 import reflex as rx
 from typing import List, Dict, Any
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class InControlState(rx.State):
@@ -29,7 +30,9 @@ class InControlState(rx.State):
         self.is_loading = True
         self.error = ""
         try:
-            self.dashboard_items = await api_client.get_in_control_dashboard(tenant_id=1)
+            auth = await self.get_state(AuthState)
+            tid = auth.tenant_id
+            self.dashboard_items = await api_client.get_in_control_dashboard(tenant_id=tid)
         except Exception:
             self.dashboard_items = []
         finally:

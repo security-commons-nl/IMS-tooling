@@ -4,6 +4,7 @@ Scope State - handles scope/organization hierarchy data
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class ScopeState(rx.State):
@@ -277,12 +278,15 @@ class ScopeState(rx.State):
             self.error = "Eigenaar is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         scope_data = {
             "name": self.form_name.strip(),
             "type": self.form_type,
             "description": self.form_description.strip() or None,
             "owner": self.form_owner.strip(),
-            "tenant_id": 1,  # Default tenant for now
+            "tenant_id": tid,
         }
 
         # Parent ID

@@ -4,6 +4,7 @@ Asset State - handles asset register data (Scopes of type ASSET)
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class AssetState(rx.State):
@@ -226,6 +227,9 @@ class AssetState(rx.State):
             self.error = "Eigenaar is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
                 "name": self.form_name.strip(),
@@ -241,7 +245,7 @@ class AssetState(rx.State):
                 "confidentiality_rating": self.form_confidentiality_rating or None,
                 "rto_hours": int(self.form_rto_hours) if self.form_rto_hours else None,
                 "rpo_hours": int(self.form_rpo_hours) if self.form_rpo_hours else None,
-                "tenant_id": 1,  # Default tenant
+                "tenant_id": tid,
             }
 
             if self.is_editing and self.editing_asset_id:

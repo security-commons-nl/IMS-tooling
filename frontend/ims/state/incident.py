@@ -4,6 +4,7 @@ Incident State - handles incident management data
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class IncidentState(rx.State):
@@ -160,6 +161,9 @@ class IncidentState(rx.State):
             self.error = "Beschrijving is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
                 "title": self.form_title.strip(),
@@ -167,7 +171,7 @@ class IncidentState(rx.State):
                 "severity": self.form_severity,
                 "status": self.form_status,
                 "is_data_breach": self.form_is_data_breach,
-                "tenant_id": 1,
+                "tenant_id": tid,
             }
 
             if self.is_editing and self.editing_incident_id:

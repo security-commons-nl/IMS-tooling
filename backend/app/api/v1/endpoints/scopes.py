@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_configurer
+from app.core.crud import TenantCRUDBase
+from app.core.rbac import require_configurer, get_tenant_id
 from app.models.core_models import (
     Scope,
     ScopeType,
@@ -22,7 +22,7 @@ from app.models.core_models import (
 from datetime import datetime
 
 router = APIRouter()
-crud_scope = CRUDBase(Scope)
+crud_scope = TenantCRUDBase(Scope)
 
 
 # --- Scope CRUD ---
@@ -31,34 +31,33 @@ crud_scope = CRUDBase(Scope)
 async def list_scopes(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant"),
     scope_type: Optional[ScopeType] = Query(None, description="Filter by type"),
     parent_id: Optional[int] = Query(None, description="Filter by parent scope"),
     is_active: bool = Query(True, description="Filter by active status"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List scopes with optional filters."""
     filters = {"is_active": is_active}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if scope_type:
         filters["type"] = scope_type
     if parent_id:
         filters["parent_id"] = parent_id
 
-    return await crud_scope.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_scope.get_multi(session, tenant_id, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/", response_model=Scope)
 async def create_scope(
     scope: Scope,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Create a new scope."""
     # Validate parent exists if specified
     if scope.parent_id:
-        parent = await crud_scope.get(session, scope.parent_id)
+        parent = await crud_scope.get(session, scope.parent_id, tenant_id)
         if not parent:
             raise HTTPException(status_code=400, detail="Parent scope not found")
         # Validate hierarchy (parent must be higher level)
@@ -71,39 +70,42 @@ async def create_scope(
                     detail=f"Scope type {scope.type} cannot be child of {parent.type}"
                 )
 
-    return await crud_scope.create(session, obj_in=scope)
+    return await crud_scope.create(session, obj_in=scope, tenant_id=tenant_id)
 
 
 @router.get("/{scope_id}", response_model=Scope)
 async def get_scope(
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a scope by ID."""
-    return await crud_scope.get_or_404(session, scope_id)
+    return await crud_scope.get_or_404(session, scope_id, tenant_id)
 
 
 @router.patch("/{scope_id}", response_model=Scope)
 async def update_scope(
     scope_id: int,
     scope_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Update a scope."""
-    db_scope = await crud_scope.get_or_404(session, scope_id)
-    return await crud_scope.update(session, db_obj=db_scope, obj_in=scope_update)
+    db_scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
+    return await crud_scope.update(session, db_obj=db_scope, obj_in=scope_update, tenant_id=tenant_id)
 
 
 @router.delete("/{scope_id}")
 async def delete_scope(
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Delete a scope (soft delete - sets is_active=False)."""
-    db_scope = await crud_scope.get_or_404(session, scope_id)
-    await crud_scope.update(session, db_obj=db_scope, obj_in={"is_active": False})
+    db_scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
+    await crud_scope.update(session, db_obj=db_scope, obj_in={"is_active": False}, tenant_id=tenant_id)
     return {"message": "Scope deactivated"}
 
 
@@ -112,10 +114,11 @@ async def delete_scope(
 @router.get("/{scope_id}/children", response_model=List[Scope])
 async def get_scope_children(
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get direct children of a scope."""
-    await crud_scope.get_or_404(session, scope_id)  # Verify parent exists
+    await crud_scope.get_or_404(session, scope_id, tenant_id)  # Verify parent exists
     return await crud_scope.get_multi_by_field(session, "parent_id", scope_id)
 
 
@@ -123,10 +126,11 @@ async def get_scope_children(
 async def get_scope_tree(
     scope_id: int,
     max_depth: int = Query(5, ge=1, le=10),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get scope with full subtree."""
-    scope = await crud_scope.get_or_404(session, scope_id)
+    scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     async def build_tree(s: Scope, depth: int) -> dict:
         if depth <= 0:
@@ -152,11 +156,12 @@ async def update_scope_bia(
     rto_hours: Optional[int] = None,
     rpo_hours: Optional[int] = None,
     mtpd_hours: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Update BIA (Business Impact Analysis) ratings for a scope."""
-    db_scope = await crud_scope.get_or_404(session, scope_id)
+    db_scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     updates = {}
     if availability_rating is not None:
@@ -172,7 +177,7 @@ async def update_scope_bia(
     if mtpd_hours is not None:
         updates["mtpd_hours"] = mtpd_hours
 
-    return await crud_scope.update(session, db_obj=db_scope, obj_in=updates)
+    return await crud_scope.update(session, db_obj=db_scope, obj_in=updates, tenant_id=tenant_id)
 
 
 # --- Scope Dependencies ---
@@ -183,6 +188,7 @@ async def add_scope_dependency(
     provider_id: int,
     dependency_type: str = "operational",
     criticality: str = "medium",
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -190,9 +196,9 @@ async def add_scope_dependency(
     Add a dependency between scopes.
     scope_id depends on provider_id.
     """
-    # Verify both scopes exist
-    depender = await crud_scope.get_or_404(session, scope_id)
-    provider = await crud_scope.get_or_404(session, provider_id)
+    # Verify both scopes exist within tenant
+    depender = await crud_scope.get_or_404(session, scope_id, tenant_id)
+    provider = await crud_scope.get_or_404(session, provider_id, tenant_id)
 
     if scope_id == provider_id:
         raise HTTPException(status_code=400, detail="Scope cannot depend on itself")
@@ -247,10 +253,11 @@ async def remove_scope_dependency(
 @router.get("/{scope_id}/dependencies", response_model=List[Scope])
 async def get_scope_dependencies(
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all scopes that this scope depends on."""
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     result = await session.execute(
         select(Scope).join(
@@ -263,10 +270,11 @@ async def get_scope_dependencies(
 @router.get("/{scope_id}/dependents", response_model=List[Scope])
 async def get_scope_dependents(
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all scopes that depend on this scope."""
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     result = await session.execute(
         select(Scope).join(
@@ -286,6 +294,7 @@ async def establish_scope(
     established_by_id: int,
     validity_year: int,
     motivation: Optional[str] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -293,7 +302,7 @@ async def establish_scope(
     Formally establish a scope (DT action).
     Sets governance_status to 'Vastgesteld'.
     """
-    db_scope = await crud_scope.get_or_404(session, scope_id)
+    db_scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     return await crud_scope.update(session, db_obj=db_scope, obj_in={
         "governance_status": ScopeGovernanceStatus.ESTABLISHED,
@@ -301,12 +310,13 @@ async def establish_scope(
         "established_date": datetime.utcnow(),
         "validity_year": validity_year,
         "scope_motivation": motivation,
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{scope_id}/expire", response_model=Scope)
 async def expire_scope(
     scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -314,7 +324,7 @@ async def expire_scope(
     Mark a scope as expired.
     No new risks can be created in an expired scope.
     """
-    db_scope = await crud_scope.get_or_404(session, scope_id)
+    db_scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     if db_scope.governance_status != ScopeGovernanceStatus.ESTABLISHED:
         raise HTTPException(
@@ -324,4 +334,4 @@ async def expire_scope(
 
     return await crud_scope.update(session, db_obj=db_scope, obj_in={
         "governance_status": ScopeGovernanceStatus.EXPIRED,
-    })
+    }, tenant_id=tenant_id)

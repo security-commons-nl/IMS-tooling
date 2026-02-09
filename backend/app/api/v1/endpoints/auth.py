@@ -82,26 +82,47 @@ async def login(
         })),
     }
 
-    # Fetch tenant name from first membership
-    tenant_name = ""
+    # Fetch all tenant memberships for this user
     tu_result = await session.execute(
-        select(TenantUser).where(
+        select(TenantUser, Tenant)
+        .join(Tenant, TenantUser.tenant_id == Tenant.id)
+        .where(
             TenantUser.user_id == user.id,
             TenantUser.is_active == True,
-        ).limit(1)
+            Tenant.is_active == True,
+        )
+        .order_by(TenantUser.is_default.desc(), TenantUser.id.asc())
     )
-    tu = tu_result.scalars().first()
-    if tu:
-        t_result = await session.execute(select(Tenant).where(Tenant.id == tu.tenant_id))
-        tenant = t_result.scalars().first()
-        if tenant:
+    memberships = tu_result.all()
+
+    tenants = []
+    default_tenant_id = None
+    tenant_name = ""
+    for tu, tenant in memberships:
+        t_info = {
+            "id": tenant.id,
+            "name": tenant.display_name or tenant.name,
+            "slug": tenant.slug,
+            "is_default": tu.is_default,
+        }
+        tenants.append(t_info)
+        if tu.is_default:
+            default_tenant_id = tenant.id
             tenant_name = tenant.display_name or tenant.name
+
+    # Fallback: if no default set, use first membership
+    if not default_tenant_id and tenants:
+        default_tenant_id = tenants[0]["id"]
+        tenant_name = tenants[0]["name"]
+        tenants[0]["is_default"] = True
 
     # Return user data + RBAC info (no response_model restriction)
     user_data = UserRead.model_validate(user).model_dump()
     user_data["global_roles"] = role_names
     user_data["permissions"] = permissions
     user_data["tenant_name"] = tenant_name
+    user_data["tenants"] = tenants
+    user_data["default_tenant_id"] = default_tenant_id
 
     return user_data
 

@@ -4,6 +4,7 @@ Compliance State - Statement of Applicability (SoA) Management
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class ComplianceState(rx.State):
@@ -300,11 +301,14 @@ class ComplianceState(rx.State):
         self.init_error = ""
         self.init_success = ""
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             result = await api_client.initialize_soa_from_standard(
                 scope_id=self.init_scope_id,
                 standard_id=self.init_standard_id,
-                tenant_id=1,
+                tenant_id=tid,
             )
             created = result.get("created", 0)
             self.init_success = f"SoA geinitialiseerd: {created} entries aangemaakt"

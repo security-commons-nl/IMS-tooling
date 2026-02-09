@@ -5,6 +5,7 @@ import json
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class RiskFrameworkState(rx.State):
@@ -93,13 +94,16 @@ class RiskFrameworkState(rx.State):
             self.error = "Naam is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         data = {
             "name": self.form_name.strip(),
             "impact_definitions": self.form_impact_definitions or "{}",
             "likelihood_definitions": self.form_likelihood_definitions or "{}",
             "risk_tolerance": self.form_risk_tolerance or "{}",
             "decision_rules": self.form_decision_rules or "{}",
-            "tenant_id": 1,
+            "tenant_id": tid,
         }
 
         try:

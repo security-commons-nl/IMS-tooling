@@ -1,17 +1,17 @@
 """
-Organization Profile API — CRUD for onboarding wizard / organization profile.
+Organization Profile API -- CRUD for onboarding wizard / organization profile.
 
 One profile per tenant. Upsert pattern (create-or-update).
 """
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.rbac import get_current_user, require_configurer
+from app.core.rbac import get_current_user, get_tenant_id, require_configurer
 from app.models.core_models import OrganizationProfile, User
 
 router = APIRouter()
@@ -56,19 +56,19 @@ def _calc_completion(profile: OrganizationProfile) -> int:
 
 @router.get("/")
 async def get_organization_profile(
-    x_tenant_id: int = Header(1, alias="X-Tenant-ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Get organization profile for the current tenant."""
     result = await session.execute(
-        select(OrganizationProfile).where(OrganizationProfile.tenant_id == x_tenant_id)
+        select(OrganizationProfile).where(OrganizationProfile.tenant_id == tenant_id)
     )
     profile = result.scalars().first()
     if not profile:
         # Return empty profile structure (not yet created)
         return {
-            "tenant_id": x_tenant_id,
+            "tenant_id": tenant_id,
             "wizard_completed": False,
             "wizard_current_step": 0,
             "completion_pct": 0,
@@ -82,18 +82,18 @@ async def get_organization_profile(
 @router.put("/")
 async def upsert_organization_profile(
     payload: Dict[str, Any],
-    x_tenant_id: int = Header(1, alias="X-Tenant-ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Create or fully update organization profile."""
     result = await session.execute(
-        select(OrganizationProfile).where(OrganizationProfile.tenant_id == x_tenant_id)
+        select(OrganizationProfile).where(OrganizationProfile.tenant_id == tenant_id)
     )
     profile = result.scalars().first()
 
     if not profile:
-        profile = OrganizationProfile(tenant_id=x_tenant_id)
+        profile = OrganizationProfile(tenant_id=tenant_id)
         session.add(profile)
 
     # Update all provided fields
@@ -115,18 +115,18 @@ async def upsert_organization_profile(
 @router.patch("/")
 async def patch_organization_profile(
     payload: Dict[str, Any],
-    x_tenant_id: int = Header(1, alias="X-Tenant-ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Partial update (e.g., per wizard step)."""
     result = await session.execute(
-        select(OrganizationProfile).where(OrganizationProfile.tenant_id == x_tenant_id)
+        select(OrganizationProfile).where(OrganizationProfile.tenant_id == tenant_id)
     )
     profile = result.scalars().first()
 
     if not profile:
-        profile = OrganizationProfile(tenant_id=x_tenant_id)
+        profile = OrganizationProfile(tenant_id=tenant_id)
         session.add(profile)
 
     for key, value in payload.items():
@@ -146,13 +146,13 @@ async def patch_organization_profile(
 
 @router.get("/completion")
 async def get_profile_completion(
-    x_tenant_id: int = Header(1, alias="X-Tenant-ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """Get completion percentage for the organization profile."""
     result = await session.execute(
-        select(OrganizationProfile).where(OrganizationProfile.tenant_id == x_tenant_id)
+        select(OrganizationProfile).where(OrganizationProfile.tenant_id == tenant_id)
     )
     profile = result.scalars().first()
     if not profile:

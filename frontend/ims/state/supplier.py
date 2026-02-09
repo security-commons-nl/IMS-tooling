@@ -4,6 +4,7 @@ Supplier State - handles supplier/vendor management (Scopes of type SUPPLIER)
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class SupplierState(rx.State):
@@ -192,6 +193,9 @@ class SupplierState(rx.State):
             self.error = "Interne eigenaar is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
                 "name": self.form_name.strip(),
@@ -203,7 +207,7 @@ class SupplierState(rx.State):
                 "vendor_contact_email": self.form_vendor_contact_email.strip() or None,
                 "contract_start_date": self.form_contract_start_date or None,
                 "contract_end_date": self.form_contract_end_date or None,
-                "tenant_id": 1,
+                "tenant_id": tid,
             }
 
             if self.is_editing and self.editing_supplier_id:

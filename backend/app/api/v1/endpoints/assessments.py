@@ -7,11 +7,18 @@ from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import or_
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_oversight, require_editor, require_configurer
+from app.core.crud import ScopedTenantCRUDBase, TenantCRUDBase
+from app.core.rbac import (
+    get_tenant_id,
+    get_scope_access,
+    require_oversight,
+    require_editor,
+    require_configurer,
+)
 from app.models.core_models import (
     Assessment,
     AssessmentType,
@@ -31,13 +38,13 @@ from app.models.core_models import (
 )
 
 router = APIRouter()
-crud_assessment = CRUDBase(Assessment)
-crud_finding = CRUDBase(Finding)
-crud_evidence = CRUDBase(Evidence)
-crud_corrective_action = CRUDBase(CorrectiveAction)
-crud_question = CRUDBase(AssessmentQuestion)
-crud_response = CRUDBase(AssessmentResponse)
-crud_threshold = CRUDBase(BIAThreshold)
+crud_assessment = ScopedTenantCRUDBase(Assessment)
+crud_finding = TenantCRUDBase(Finding)
+crud_evidence = TenantCRUDBase(Evidence)
+crud_corrective_action = TenantCRUDBase(CorrectiveAction)
+crud_question = TenantCRUDBase(AssessmentQuestion)
+crud_response = TenantCRUDBase(AssessmentResponse)
+crud_threshold = TenantCRUDBase(BIAThreshold)
 
 
 # =============================================================================
@@ -48,7 +55,8 @@ crud_threshold = CRUDBase(BIAThreshold)
 async def list_assessments(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     assessment_type: Optional[AssessmentType] = Query(None),
     status: Optional[Status] = Query(None),
     scope_id: Optional[int] = Query(None),
@@ -56,8 +64,6 @@ async def list_assessments(
 ):
     """List assessments with optional filters."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if assessment_type:
         filters["type"] = assessment_type
     if status:
@@ -65,17 +71,21 @@ async def list_assessments(
     if scope_id:
         filters["scope_id"] = scope_id
 
-    return await crud_assessment.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_assessment.get_multi_scoped(
+        session, tenant_id, accessible_scopes,
+        skip=skip, limit=limit, filters=filters,
+    )
 
 
 @router.post("/", response_model=Assessment)
 async def create_assessment(
     assessment: Assessment,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Create a new assessment."""
-    return await crud_assessment.create(session, obj_in=assessment)
+    return await crud_assessment.create(session, obj_in=assessment, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -84,16 +94,15 @@ async def create_assessment(
 
 @router.get("/bia-thresholds", response_model=List[BIAThreshold])
 async def list_bia_thresholds(
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get BIA threshold configuration. Returns tenant-specific or global defaults."""
-    if tenant_id:
-        stmt = select(BIAThreshold).where(BIAThreshold.tenant_id == tenant_id).order_by(BIAThreshold.score)
-        result = await session.execute(stmt)
-        thresholds = result.scalars().all()
-        if thresholds:
-            return thresholds
+    stmt = select(BIAThreshold).where(BIAThreshold.tenant_id == tenant_id).order_by(BIAThreshold.score)
+    result = await session.execute(stmt)
+    thresholds = result.scalars().all()
+    if thresholds:
+        return thresholds
 
     # Fall back to global defaults (tenant_id IS NULL)
     stmt = select(BIAThreshold).where(BIAThreshold.tenant_id == None).order_by(BIAThreshold.score)  # noqa: E711
@@ -104,11 +113,13 @@ async def list_bia_thresholds(
 @router.post("/bia-thresholds", response_model=BIAThreshold)
 async def create_bia_threshold(
     threshold: BIAThreshold,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_oversight),
 ):
     """Create or update a BIA threshold entry."""
-    return await crud_threshold.create(session, obj_in=threshold)
+    threshold.tenant_id = tenant_id
+    return await crud_threshold.create(session, obj_in=threshold, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -117,7 +128,7 @@ async def create_bia_threshold(
 
 @router.get("/act-overdue", response_model=dict)
 async def get_act_overdue_summary(
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -126,9 +137,10 @@ async def get_act_overdue_summary(
     or no corrective actions at all.
     """
     # Get all open findings
-    stmt = select(Finding).where(Finding.status != Status.CLOSED)
-    if tenant_id:
-        stmt = stmt.where(Finding.tenant_id == tenant_id)
+    stmt = select(Finding).where(
+        Finding.status != Status.CLOSED,
+        Finding.tenant_id == tenant_id,
+    )
     result = await session.execute(stmt)
     open_findings = result.scalars().all()
 
@@ -176,32 +188,45 @@ async def get_act_overdue_summary(
 @router.get("/{assessment_id}", response_model=Assessment)
 async def get_assessment(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get an assessment by ID."""
-    return await crud_assessment.get_or_404(session, assessment_id)
+    return await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
 
 @router.patch("/{assessment_id}", response_model=Assessment)
 async def update_assessment(
     assessment_id: int,
     assessment_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Update an assessment."""
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
-    return await crud_assessment.update(session, db_obj=db_assessment, obj_in=assessment_update)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
+    return await crud_assessment.update(session, db_obj=db_assessment, obj_in=assessment_update, tenant_id=tenant_id)
 
 
 @router.delete("/{assessment_id}")
 async def delete_assessment(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Delete an assessment."""
-    deleted = await crud_assessment.delete(session, id=assessment_id)
+    await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
+    deleted = await crud_assessment.delete(session, id=assessment_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Assessment not found")
     return {"message": "Assessment deleted"}
@@ -215,6 +240,8 @@ async def delete_assessment(
 async def advance_phase(
     assessment_id: int,
     phase: str = Query(..., description="Target phase name"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -222,7 +249,9 @@ async def advance_phase(
     Advance assessment to a new phase.
     When phase is 'Afgerond' and type is BIA: triggers BIA calculation + scope writeback.
     """
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     # Validate phase value
     valid_phases = [p.value for p in AssessmentPhase]
@@ -250,17 +279,21 @@ async def advance_phase(
     elif phase == AssessmentPhase.CANCELLED.value:
         update_data["status"] = Status.CLOSED
 
-    return await crud_assessment.update(session, db_obj=db_assessment, obj_in=update_data)
+    return await crud_assessment.update(session, db_obj=db_assessment, obj_in=update_data, tenant_id=tenant_id)
 
 
 @router.post("/{assessment_id}/start", response_model=Assessment)
 async def start_assessment(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Start an assessment (set status to Active)."""
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     if db_assessment.status != Status.DRAFT:
         raise HTTPException(status_code=400, detail="Assessment must be in Draft status to start")
@@ -268,7 +301,7 @@ async def start_assessment(
     return await crud_assessment.update(session, db_obj=db_assessment, obj_in={
         "status": Status.ACTIVE,
         "start_date": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{assessment_id}/complete", response_model=Assessment)
@@ -276,11 +309,15 @@ async def complete_assessment(
     assessment_id: int,
     overall_result: AuditResult,
     executive_summary: Optional[str] = None,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Complete an assessment with results."""
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     if db_assessment.status != Status.ACTIVE:
         raise HTTPException(status_code=400, detail="Assessment must be Active to complete")
@@ -290,19 +327,28 @@ async def complete_assessment(
         "completed_date": datetime.utcnow(),
         "overall_result": overall_result,
         "executive_summary": executive_summary,
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.get("/{assessment_id}/summary", response_model=dict)
 async def get_assessment_summary(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get summary statistics for an assessment."""
-    assessment = await crud_assessment.get_or_404(session, assessment_id)
+    assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     # Get findings
-    findings = await crud_finding.get_multi_by_field(session, "assessment_id", assessment_id, limit=500)
+    stmt = select(Finding).where(
+        Finding.assessment_id == assessment_id,
+        Finding.tenant_id == tenant_id,
+    )
+    result = await session.execute(stmt)
+    findings = result.scalars().all()
 
     # Count by severity
     severity_counts = {s.value: 0 for s in FindingSeverity}
@@ -336,13 +382,17 @@ async def get_assessment_summary(
 @router.get("/{assessment_id}/questions", response_model=List[AssessmentQuestion])
 async def list_assessment_questions(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get questions relevant for an assessment.
     For BIA assessments: returns questions with category starting with 'BIA'.
     """
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     if db_assessment.type == AssessmentType.BIA:
         stmt = (
@@ -373,17 +423,28 @@ async def list_assessment_questions(
 @router.get("/{assessment_id}/responses", response_model=List[AssessmentResponse])
 async def list_assessment_responses(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all responses for an assessment."""
-    await crud_assessment.get_or_404(session, assessment_id)
-    return await crud_response.get_multi_by_field(session, "assessment_id", assessment_id, limit=500)
+    await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
+    stmt = select(AssessmentResponse).where(
+        AssessmentResponse.assessment_id == assessment_id,
+        AssessmentResponse.tenant_id == tenant_id,
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 @router.post("/{assessment_id}/responses", response_model=AssessmentResponse)
 async def save_assessment_response(
     assessment_id: int,
     response_data: dict,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -391,7 +452,9 @@ async def save_assessment_response(
     Upsert a response for a question within an assessment.
     If a response already exists for this assessment+question combo, update it.
     """
-    await crud_assessment.get_or_404(session, assessment_id)
+    await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
     question_id = response_data.get("question_id")
     if not question_id:
         raise HTTPException(status_code=400, detail="question_id is required")
@@ -401,6 +464,7 @@ async def save_assessment_response(
         select(AssessmentResponse)
         .where(AssessmentResponse.assessment_id == assessment_id)
         .where(AssessmentResponse.question_id == question_id)
+        .where(AssessmentResponse.tenant_id == tenant_id)
     )
     result = await session.execute(stmt)
     existing = result.scalars().first()
@@ -418,7 +482,7 @@ async def save_assessment_response(
     else:
         # Create new
         new_response = AssessmentResponse(
-            tenant_id=response_data.get("tenant_id", 1),
+            tenant_id=tenant_id,
             assessment_id=assessment_id,
             question_id=question_id,
             response_value=response_data.get("response_value"),
@@ -429,16 +493,20 @@ async def save_assessment_response(
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
-        return await crud_response.create(session, obj_in=new_response)
+        return await crud_response.create(session, obj_in=new_response, tenant_id=tenant_id)
 
 
 @router.get("/{assessment_id}/progress", response_model=dict)
 async def get_assessment_progress(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get progress: how many questions answered vs total."""
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     # Get question count
     if db_assessment.type == AssessmentType.BIA:
@@ -461,7 +529,10 @@ async def get_assessment_progress(
 
     # Get response count
     r_result = await session.execute(
-        select(AssessmentResponse).where(AssessmentResponse.assessment_id == assessment_id)
+        select(AssessmentResponse).where(
+            AssessmentResponse.assessment_id == assessment_id,
+            AssessmentResponse.tenant_id == tenant_id,
+        )
     )
     answered = len(r_result.scalars().all())
 
@@ -492,9 +563,12 @@ async def _get_thresholds(session: AsyncSession, tenant_id: Optional[int] = None
 async def _calculate_and_writeback_bia(session: AsyncSession, assessment: Assessment):
     """Calculate BIA scores from responses and write back to assessment + scope."""
     # Get responses
-    responses = await crud_response.get_multi_by_field(
-        session, "assessment_id", assessment.id, limit=100
+    stmt = select(AssessmentResponse).where(
+        AssessmentResponse.assessment_id == assessment.id,
+        AssessmentResponse.tenant_id == assessment.tenant_id,
     )
+    result = await session.execute(stmt)
+    responses = result.scalars().all()
     if not responses:
         return
 
@@ -577,15 +651,19 @@ async def _calculate_and_writeback_bia(session: AsyncSession, assessment: Assess
 @router.post("/{assessment_id}/calculate-bia", response_model=dict)
 async def calculate_bia(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """
     Calculate BIA scores from responses.
-    1. Fetch responses → 2. Calculate C/I/A scores → 3. RTO with modifier
-    4. Threshold lookup → 5. Snapshot on Assessment → 6. Writeback to Scope
+    1. Fetch responses -> 2. Calculate C/I/A scores -> 3. RTO with modifier
+    4. Threshold lookup -> 5. Snapshot on Assessment -> 6. Writeback to Scope
     """
-    db_assessment = await crud_assessment.get_or_404(session, assessment_id)
+    db_assessment = await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     if db_assessment.type != AssessmentType.BIA:
         raise HTTPException(status_code=400, detail="BIA berekening is alleen mogelijk voor BIA assessments")
@@ -615,12 +693,19 @@ async def list_assessment_findings(
     assessment_id: int,
     severity: Optional[FindingSeverity] = Query(None),
     status: Optional[Status] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """List findings for an assessment."""
-    await crud_assessment.get_or_404(session, assessment_id)
+    await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
-    query = select(Finding).where(Finding.assessment_id == assessment_id)
+    query = select(Finding).where(
+        Finding.assessment_id == assessment_id,
+        Finding.tenant_id == tenant_id,
+    )
     if severity:
         query = query.where(Finding.severity == severity)
     if status:
@@ -634,40 +719,47 @@ async def list_assessment_findings(
 async def create_finding(
     assessment_id: int,
     finding: Finding,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Create a finding for an assessment."""
-    await crud_assessment.get_or_404(session, assessment_id)
+    await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
 
     finding.assessment_id = assessment_id
-    return await crud_finding.create(session, obj_in=finding)
+    return await crud_finding.create(session, obj_in=finding, tenant_id=tenant_id)
 
 
 @router.get("/findings/{finding_id}", response_model=Finding)
 async def get_finding(
     finding_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a finding by ID."""
-    return await crud_finding.get_or_404(session, finding_id)
+    return await crud_finding.get_or_404(session, finding_id, tenant_id)
 
 
 @router.patch("/findings/{finding_id}", response_model=Finding)
 async def update_finding(
     finding_id: int,
     finding_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Update a finding."""
-    db_finding = await crud_finding.get_or_404(session, finding_id)
-    return await crud_finding.update(session, db_obj=db_finding, obj_in=finding_update)
+    db_finding = await crud_finding.get_or_404(session, finding_id, tenant_id)
+    return await crud_finding.update(session, db_obj=db_finding, obj_in=finding_update, tenant_id=tenant_id)
 
 
 @router.post("/findings/{finding_id}/close", response_model=Finding)
 async def close_finding(
     finding_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
@@ -676,12 +768,15 @@ async def close_finding(
     Hiaat 7 (ACT-feedbackloop): A finding cannot be closed without
     at least one completed corrective action.
     """
-    db_finding = await crud_finding.get_or_404(session, finding_id)
+    db_finding = await crud_finding.get_or_404(session, finding_id, tenant_id)
 
     # ACT-feedbackloop: check for completed corrective actions
-    actions = await crud_corrective_action.get_multi_by_field(
-        session, "finding_id", finding_id
+    stmt = select(CorrectiveAction).where(
+        CorrectiveAction.finding_id == finding_id,
+        CorrectiveAction.tenant_id == tenant_id,
     )
+    result = await session.execute(stmt)
+    actions = result.scalars().all()
     if not actions:
         raise HTTPException(
             status_code=400,
@@ -697,7 +792,7 @@ async def close_finding(
                    "Rond eerst minimaal één actie af."
         )
 
-    return await crud_finding.update(session, db_obj=db_finding, obj_in={"status": Status.CLOSED})
+    return await crud_finding.update(session, db_obj=db_finding, obj_in={"status": Status.CLOSED}, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -707,11 +802,20 @@ async def close_finding(
 @router.get("/{assessment_id}/evidence", response_model=List[Evidence])
 async def list_assessment_evidence(
     assessment_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """List evidence for an assessment."""
-    await crud_assessment.get_or_404(session, assessment_id)
-    return await crud_evidence.get_multi_by_field(session, "assessment_id", assessment_id)
+    await crud_assessment.get_scoped_or_404(
+        session, assessment_id, tenant_id, accessible_scopes,
+    )
+    stmt = select(Evidence).where(
+        Evidence.assessment_id == assessment_id,
+        Evidence.tenant_id == tenant_id,
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/evidence/", response_model=List[Evidence])
@@ -720,6 +824,7 @@ async def list_evidence(
     limit: int = 100,
     measure_id: Optional[int] = Query(None),
     assessment_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List evidence with optional filters."""
@@ -729,36 +834,39 @@ async def list_evidence(
     if assessment_id:
         filters["assessment_id"] = assessment_id
 
-    return await crud_evidence.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_evidence.get_multi(session, tenant_id, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/evidence/", response_model=Evidence)
 async def create_evidence(
     evidence: Evidence,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Create new evidence."""
-    return await crud_evidence.create(session, obj_in=evidence)
+    return await crud_evidence.create(session, obj_in=evidence, tenant_id=tenant_id)
 
 
 @router.get("/evidence/{evidence_id}", response_model=Evidence)
 async def get_evidence(
     evidence_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get evidence by ID."""
-    return await crud_evidence.get_or_404(session, evidence_id)
+    return await crud_evidence.get_or_404(session, evidence_id, tenant_id)
 
 
 @router.delete("/evidence/{evidence_id}")
 async def delete_evidence(
     evidence_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Delete evidence."""
-    deleted = await crud_evidence.delete(session, id=evidence_id)
+    deleted = await crud_evidence.delete(session, id=evidence_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Evidence not found")
     return {"message": "Evidence deleted"}
@@ -771,46 +879,55 @@ async def delete_evidence(
 @router.get("/findings/{finding_id}/corrective-actions", response_model=List[CorrectiveAction])
 async def list_finding_corrective_actions(
     finding_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List corrective actions for a finding."""
-    await crud_finding.get_or_404(session, finding_id)
-    return await crud_corrective_action.get_multi_by_field(session, "finding_id", finding_id)
+    await crud_finding.get_or_404(session, finding_id, tenant_id)
+    stmt = select(CorrectiveAction).where(
+        CorrectiveAction.finding_id == finding_id,
+        CorrectiveAction.tenant_id == tenant_id,
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 @router.post("/findings/{finding_id}/corrective-actions", response_model=CorrectiveAction)
 async def create_corrective_action(
     finding_id: int,
     corrective_action: CorrectiveAction,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Create a corrective action for a finding."""
-    await crud_finding.get_or_404(session, finding_id)
+    await crud_finding.get_or_404(session, finding_id, tenant_id)
 
     corrective_action.finding_id = finding_id
-    return await crud_corrective_action.create(session, obj_in=corrective_action)
+    return await crud_corrective_action.create(session, obj_in=corrective_action, tenant_id=tenant_id)
 
 
 @router.get("/corrective-actions/{action_id}", response_model=CorrectiveAction)
 async def get_corrective_action(
     action_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a corrective action by ID."""
-    return await crud_corrective_action.get_or_404(session, action_id)
+    return await crud_corrective_action.get_or_404(session, action_id, tenant_id)
 
 
 @router.patch("/corrective-actions/{action_id}", response_model=CorrectiveAction)
 async def update_corrective_action(
     action_id: int,
     action_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Update a corrective action."""
-    db_action = await crud_corrective_action.get_or_404(session, action_id)
-    return await crud_corrective_action.update(session, db_obj=db_action, obj_in=action_update)
+    db_action = await crud_corrective_action.get_or_404(session, action_id, tenant_id)
+    return await crud_corrective_action.update(session, db_obj=db_action, obj_in=action_update, tenant_id=tenant_id)
 
 
 @router.post("/corrective-actions/{action_id}/complete", response_model=CorrectiveAction)
@@ -818,15 +935,16 @@ async def complete_corrective_action(
     action_id: int,
     completed_by_id: int,
     completion_notes: Optional[str] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_editor),
 ):
     """Mark a corrective action as completed."""
-    db_action = await crud_corrective_action.get_or_404(session, action_id)
+    db_action = await crud_corrective_action.get_or_404(session, action_id, tenant_id)
 
     return await crud_corrective_action.update(session, db_obj=db_action, obj_in={
         "status": Status.CLOSED,
         "completed_date": datetime.utcnow(),
         "completed_by_id": completed_by_id,
         "completion_notes": completion_notes,
-    })
+    }, tenant_id=tenant_id)

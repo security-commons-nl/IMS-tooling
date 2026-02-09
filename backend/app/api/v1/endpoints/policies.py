@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_configurer
+from app.core.crud import TenantCRUDBase
+from app.core.rbac import require_configurer, get_tenant_id
 from app.models.core_models import (
     Policy,
     PolicyState,
@@ -19,7 +19,7 @@ from app.models.core_models import (
 from app.services.knowledge_service import knowledge_service
 
 router = APIRouter()
-crud_policy = CRUDBase(Policy)
+crud_policy = TenantCRUDBase(Policy)
 
 
 # =============================================================================
@@ -30,48 +30,49 @@ crud_policy = CRUDBase(Policy)
 async def list_policies(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
     state: Optional[PolicyState] = Query(None),
     scope_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List policies with optional filters."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if state:
         filters["state"] = state
     if scope_id:
         filters["scope_id"] = scope_id
 
-    return await crud_policy.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_policy.get_multi(session, tenant_id, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/", response_model=Policy)
 async def create_policy(
     policy: Policy,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Create a new policy (starts in Draft state)."""
     policy.state = PolicyState.DRAFT
     policy.version = 1
-    return await crud_policy.create(session, obj_in=policy)
+    return await crud_policy.create(session, obj_in=policy, tenant_id=tenant_id)
 
 
 @router.get("/{policy_id}", response_model=Policy)
 async def get_policy(
     policy_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a policy by ID."""
-    return await crud_policy.get_or_404(session, policy_id)
+    return await crud_policy.get_or_404(session, policy_id, tenant_id)
 
 
 @router.patch("/{policy_id}", response_model=Policy)
 async def update_policy(
     policy_id: int,
     policy_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -79,7 +80,7 @@ async def update_policy(
     Update a policy.
     Only allowed in Draft state. Other states require workflow transitions.
     """
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     # Content updates only allowed in Draft state
     if db_policy.state != PolicyState.DRAFT:
@@ -93,17 +94,18 @@ async def update_policy(
                 )
 
     policy_update["updated_at"] = datetime.utcnow()
-    return await crud_policy.update(session, db_obj=db_policy, obj_in=policy_update)
+    return await crud_policy.update(session, db_obj=db_policy, obj_in=policy_update, tenant_id=tenant_id)
 
 
 @router.delete("/{policy_id}")
 async def delete_policy(
     policy_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Delete a policy (only allowed for Draft policies)."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state != PolicyState.DRAFT:
         raise HTTPException(
@@ -111,7 +113,7 @@ async def delete_policy(
             detail="Only draft policies can be deleted. Archive published policies instead."
         )
 
-    deleted = await crud_policy.delete(session, id=policy_id)
+    deleted = await crud_policy.delete(session, id=policy_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Policy not found")
     return {"message": "Policy deleted"}
@@ -124,11 +126,12 @@ async def delete_policy(
 @router.post("/{policy_id}/submit-for-review", response_model=Policy)
 async def submit_for_review(
     policy_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Submit a draft policy for review."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state != PolicyState.DRAFT:
         raise HTTPException(
@@ -139,18 +142,19 @@ async def submit_for_review(
     return await crud_policy.update(session, db_obj=db_policy, obj_in={
         "state": PolicyState.REVIEW,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{policy_id}/approve", response_model=Policy)
 async def approve_policy(
     policy_id: int,
     approved_by_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Approve a policy that is in review."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state != PolicyState.REVIEW:
         raise HTTPException(
@@ -162,18 +166,19 @@ async def approve_policy(
         "state": PolicyState.APPROVED,
         "approved_by_id": approved_by_id,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{policy_id}/reject", response_model=Policy)
 async def reject_policy(
     policy_id: int,
     rejection_reason: str,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Reject a policy that is in review, returns it to draft state."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state != PolicyState.REVIEW:
         raise HTTPException(
@@ -184,13 +189,14 @@ async def reject_policy(
     return await crud_policy.update(session, db_obj=db_policy, obj_in={
         "state": PolicyState.DRAFT,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{policy_id}/publish", response_model=Policy)
 async def publish_policy(
     policy_id: int,
     effective_date: Optional[datetime] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -199,7 +205,7 @@ async def publish_policy(
 
     Also indexes the policy in the AI knowledge base for RAG search.
     """
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state != PolicyState.APPROVED:
         raise HTTPException(
@@ -212,7 +218,7 @@ async def publish_policy(
         "state": PolicyState.PUBLISHED,
         "effective_date": effective_date or datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
     # Index in knowledge base for AI RAG
     try:
@@ -235,11 +241,12 @@ async def publish_policy(
 @router.post("/{policy_id}/archive", response_model=Policy)
 async def archive_policy(
     policy_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Archive a published policy."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state != PolicyState.PUBLISHED:
         raise HTTPException(
@@ -251,7 +258,7 @@ async def archive_policy(
         "state": PolicyState.ARCHIVED,
         "expiration_date": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 # =============================================================================
@@ -261,6 +268,7 @@ async def archive_policy(
 @router.post("/{policy_id}/new-version", response_model=Policy)
 async def create_new_version(
     policy_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -268,7 +276,7 @@ async def create_new_version(
     Create a new version of a published policy.
     Copies the current policy and creates a new draft with incremented version.
     """
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     if db_policy.state not in [PolicyState.PUBLISHED, PolicyState.APPROVED]:
         raise HTTPException(
@@ -288,16 +296,17 @@ async def create_new_version(
         created_by_id=db_policy.created_by_id,
     )
 
-    return await crud_policy.create(session, obj_in=new_policy)
+    return await crud_policy.create(session, obj_in=new_policy, tenant_id=tenant_id)
 
 
 @router.get("/{policy_id}/versions", response_model=List[Policy])
 async def get_policy_versions(
     policy_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get all versions of a policy (by matching title and tenant)."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     result = await session.execute(
         select(Policy).where(
@@ -314,8 +323,8 @@ async def get_policy_versions(
 
 @router.get("/due-for-review", response_model=List[Policy])
 async def get_policies_due_for_review(
-    tenant_id: Optional[int] = None,
     days_ahead: int = Query(30, ge=1, le=365),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get published policies that are due for review within specified days."""
@@ -327,10 +336,8 @@ async def get_policies_due_for_review(
         Policy.state == PolicyState.PUBLISHED,
         Policy.review_date != None,
         Policy.review_date <= deadline,
+        Policy.tenant_id == tenant_id,
     )
-
-    if tenant_id:
-        query = query.where(Policy.tenant_id == tenant_id)
 
     result = await session.execute(query)
     return result.scalars().all()
@@ -340,13 +347,14 @@ async def get_policies_due_for_review(
 async def set_review_date(
     policy_id: int,
     review_date: datetime,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Set or update the review date for a policy."""
-    db_policy = await crud_policy.get_or_404(session, policy_id)
+    db_policy = await crud_policy.get_or_404(session, policy_id, tenant_id)
 
     return await crud_policy.update(session, db_obj=db_policy, obj_in={
         "review_date": review_date,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)

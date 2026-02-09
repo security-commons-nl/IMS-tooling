@@ -4,6 +4,7 @@ Policy Principle State — Beleid-trace (Hiaat 6)
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class PolicyPrincipleState(rx.State):
@@ -96,12 +97,15 @@ class PolicyPrincipleState(rx.State):
             self.error = "Beleid is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         data = {
             "code": self.form_code.strip(),
             "title": self.form_title.strip(),
             "description": self.form_description or None,
             "policy_id": int(self.form_policy_id),
-            "tenant_id": 1,
+            "tenant_id": tid,
         }
 
         try:

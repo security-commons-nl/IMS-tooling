@@ -4,6 +4,7 @@ Risk State - handles risk management data
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class RiskState(rx.State):
@@ -322,6 +323,9 @@ class RiskState(rx.State):
             self.error = "Titel is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         # Map form values to API enum values
         # RiskLevel: "LOW" -> "Low", "MEDIUM" -> "Medium", etc.
         level_form_to_api = {
@@ -343,7 +347,7 @@ class RiskState(rx.State):
             "description": self.form_description.strip(),
             "inherent_likelihood": level_form_to_api.get(self.form_inherent_likelihood, self.form_inherent_likelihood),
             "inherent_impact": level_form_to_api.get(self.form_inherent_impact, self.form_inherent_impact),
-            "tenant_id": 1,  # Default tenant for now
+            "tenant_id": tid,
         }
 
         if self.form_attention_quadrant and self.form_attention_quadrant != "NONE":

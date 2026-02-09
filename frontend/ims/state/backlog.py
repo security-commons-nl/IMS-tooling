@@ -210,11 +210,15 @@ class BacklogState(rx.State):
             self.error = "Beschrijf wat je wilt ('...wil ik...')"
             return
 
+        # Get tenant from auth
+        auth_state = await self.get_state(AuthState)
+        tid = auth_state.tenant_id
+
         # Auto-generate title from User Story
         title = f"Als {self.form_user_role}, wil ik {self.form_user_want[:50]}"
         if len(self.form_user_want) > 50:
             title += "..."
-        
+
         # Build description from user story parts
         description = f"Als {self.form_user_role}, wil ik {self.form_user_want}"
         if self.form_user_so_that.strip():
@@ -224,15 +228,14 @@ class BacklogState(rx.State):
             "title": title,
             "description": description,
             "item_type": self.form_type,
-            "tenant_id": 1,
+            "tenant_id": tid,
             # User Story fields
             "user_role": self.form_user_role,
             "user_want": self.form_user_want.strip(),
             "user_so_that": self.form_user_so_that.strip(),
         }
-        
+
         # Only admin can set priority/status
-        auth_state = await self.get_state(AuthState)
         is_admin = auth_state.is_admin
         
         if is_admin:

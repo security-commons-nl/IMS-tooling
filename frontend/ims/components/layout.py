@@ -158,9 +158,29 @@ def _sidebar_inner() -> rx.Component:
             rx.icon("shield-check", size=28, color="var(--accent-9)"),
             rx.vstack(
                 rx.text("IMS", size="5", weight="bold", line_height="1"),
+                # Tenant switcher (multi-tenant) or static name (single tenant)
                 rx.cond(
-                    AuthState.tenant_name != "",
-                    rx.text(AuthState.tenant_name, size="1", color="gray", trim="both"),
+                    AuthState.has_multiple_tenants,
+                    rx.el.select(
+                        rx.foreach(
+                            AuthState.tenants,
+                            lambda t: rx.el.option(t["name"], value=t["id"].to(str)),
+                        ),
+                        value=AuthState.tenant_id.to(str),
+                        on_change=AuthState.switch_tenant,
+                        style={
+                            "font_size": "12px",
+                            "background": "transparent",
+                            "border": "none",
+                            "color": "var(--gray-11)",
+                            "cursor": "pointer",
+                            "padding": "0",
+                        },
+                    ),
+                    rx.cond(
+                        AuthState.tenant_name != "",
+                        rx.text(AuthState.tenant_name, size="1", color="gray", trim="both"),
+                    ),
                 ),
                 spacing="0",
                 align_items="start",

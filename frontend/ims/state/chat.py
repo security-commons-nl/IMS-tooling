@@ -10,7 +10,8 @@ class ChatMessage(rx.Base):
     """A chat message."""
     role: str  # "user" or "assistant"
     content: str
-    agent: Optional[str] = None
+    agent: str = ""
+    routing_method: str = ""  # "keyword", "llm", "manual", "page_context", "default", ""
 
 
 class ChatState(rx.State):
@@ -177,19 +178,24 @@ class ChatState(rx.State):
                 for m in self.messages[:-1]
             ]
 
-            # Send to API
+            # Send to API — only pass agent_name if user manually selected one
             response = await api_client.chat_with_agent(
                 message=message,
-                agent_name=self.current_agent,
+                agent_name=self.current_agent if self._manual_override else None,
                 context=context,
                 history=history,
             )
 
-            # Add assistant response
+            # Update current agent to match what the backend actually used
+            agent_used = response.get("agent_used") or self.current_agent
+            self.current_agent = agent_used
+
+            # Add assistant response with routing info
             assistant_msg = ChatMessage(
                 role="assistant",
                 content=response.get("response", "Geen antwoord ontvangen."),
-                agent=response.get("agent_used", self.current_agent),
+                agent=agent_used,
+                routing_method=response.get("routing_method") or "",
             )
             self.messages = self.messages + [assistant_msg]
 

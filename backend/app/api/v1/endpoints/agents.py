@@ -31,6 +31,7 @@ class ChatResponse(BaseModel):
     """Response model for chat endpoint."""
     response: str
     agent_used: str
+    routing_method: Optional[str] = None  # "keyword", "llm", "manual", "page_context", "default"
     tool_calls: Optional[list] = []
 
 
@@ -97,25 +98,19 @@ async def chat_with_agent(request: ChatRequest):
     """
     context = request.context or {}
 
-    # Add explicit agent_name to context if provided
+    # Add explicit agent_name to context if provided (manual override)
     if request.agent_name:
         context["agent_name"] = request.agent_name
 
-    # Determine which agent will be used
-    agent_name = context.get("agent_name") or orchestrator.detect_agent_from_context(
-        page=context.get("page"),
-        entity_type=context.get("entity_type")
-    )
-
     try:
-        response_text = await orchestrator.route_request(request.message, context, request.history)
+        result = await orchestrator.route_request(request.message, context, request.history)
         return ChatResponse(
-            response=response_text,
-            agent_used=agent_name,
+            response=result["response"],
+            agent_used=result["agent_used"],
+            routing_method=result.get("routing_method"),
         )
     except Exception as e:
         logger.error(f"Agent chat error: {str(e)}", exc_info=True)
-        # Return a friendly error as a chat response instead of a 500
         error_type = type(e).__name__
         if "connect" in str(e).lower() or "refused" in str(e).lower() or "timeout" in str(e).lower():
             friendly = "De AI-assistent is momenteel niet bereikbaar. Controleer of de LLM-service (Ollama/Mistral) draait."
@@ -125,7 +120,8 @@ async def chat_with_agent(request: ChatRequest):
             friendly = f"Er is een fout opgetreden bij de AI-assistent: {error_type}"
         return ChatResponse(
             response=friendly,
-            agent_used=agent_name,
+            agent_used=request.agent_name or "risk",
+            routing_method="error",
         )
 
 

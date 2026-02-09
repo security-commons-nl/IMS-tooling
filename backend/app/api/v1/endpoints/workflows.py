@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
+from app.core.crud import TenantCRUDBase, CRUDBase
+from app.core.rbac import get_tenant_id
 from app.models.core_models import (
     WorkflowDefinition,
     WorkflowState,
@@ -20,10 +21,10 @@ from app.models.core_models import (
 )
 
 router = APIRouter()
-crud_definition = CRUDBase(WorkflowDefinition)
+crud_definition = TenantCRUDBase(WorkflowDefinition)
 crud_state = CRUDBase(WorkflowState)
 crud_transition = CRUDBase(WorkflowTransition)
-crud_instance = CRUDBase(WorkflowInstance)
+crud_instance = TenantCRUDBase(WorkflowInstance)
 crud_history = CRUDBase(WorkflowStepHistory)
 
 
@@ -35,17 +36,15 @@ crud_history = CRUDBase(WorkflowStepHistory)
 async def list_workflow_definitions(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant"),
+    tenant_id: int = Depends(get_tenant_id),
     entity_type: Optional[str] = Query(None, description="Filter by applicable entity type"),
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
     session: AsyncSession = Depends(get_session),
 ):
     """List workflow definitions with optional filters."""
     filters = {"is_active": is_active}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
 
-    definitions = await crud_definition.get_multi(session, skip=skip, limit=limit, filters=filters)
+    definitions = await crud_definition.get_multi(session, tenant_id, skip=skip, limit=limit, filters=filters)
 
     # Filter by entity type if specified (stored as JSON array)
     if entity_type:
@@ -61,19 +60,21 @@ async def list_workflow_definitions(
 @router.post("/definitions/", response_model=WorkflowDefinition)
 async def create_workflow_definition(
     definition: WorkflowDefinition,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Create a new workflow definition."""
-    return await crud_definition.create(session, obj_in=definition)
+    return await crud_definition.create(session, obj_in=definition, tenant_id=tenant_id)
 
 
 @router.get("/definitions/{definition_id}", response_model=WorkflowDefinition)
 async def get_workflow_definition(
     definition_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a workflow definition by ID with its states and transitions."""
-    definition = await crud_definition.get_or_404(session, definition_id)
+    definition = await crud_definition.get_or_404(session, definition_id, tenant_id)
 
     # Load states and transitions
     states_result = await session.execute(
@@ -96,25 +97,28 @@ async def get_workflow_definition(
 async def update_workflow_definition(
     definition_id: int,
     definition_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Update a workflow definition."""
-    db_definition = await crud_definition.get_or_404(session, definition_id)
+    db_definition = await crud_definition.get_or_404(session, definition_id, tenant_id)
     definition_update["updated_at"] = datetime.utcnow()
-    return await crud_definition.update(session, db_obj=db_definition, obj_in=definition_update)
+    return await crud_definition.update(session, db_obj=db_definition, obj_in=definition_update, tenant_id=tenant_id)
 
 
 @router.delete("/definitions/{definition_id}")
 async def delete_workflow_definition(
     definition_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Delete a workflow definition (soft delete by setting is_active=False)."""
-    db_definition = await crud_definition.get_or_404(session, definition_id)
+    db_definition = await crud_definition.get_or_404(session, definition_id, tenant_id)
 
     # Check if there are active instances
     active_count = await crud_instance.count(
         session,
+        tenant_id,
         filters={"workflow_id": definition_id, "status": WorkflowStatus.IN_PROGRESS}
     )
     if active_count > 0:
@@ -127,7 +131,8 @@ async def delete_workflow_definition(
     return await crud_definition.update(
         session,
         db_obj=db_definition,
-        obj_in={"is_active": False, "updated_at": datetime.utcnow()}
+        obj_in={"is_active": False, "updated_at": datetime.utcnow()},
+        tenant_id=tenant_id,
     )
 
 
@@ -138,10 +143,11 @@ async def delete_workflow_definition(
 @router.get("/definitions/{definition_id}/states/", response_model=List[WorkflowState])
 async def list_workflow_states(
     definition_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List all states in a workflow definition."""
-    await crud_definition.get_or_404(session, definition_id)
+    await crud_definition.get_or_404(session, definition_id, tenant_id)
 
     result = await session.execute(
         select(WorkflowState)
@@ -155,10 +161,11 @@ async def list_workflow_states(
 async def create_workflow_state(
     definition_id: int,
     state: WorkflowState,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Add a state to a workflow definition."""
-    await crud_definition.get_or_404(session, definition_id)
+    await crud_definition.get_or_404(session, definition_id, tenant_id)
     state.workflow_id = definition_id
     return await crud_state.create(session, obj_in=state)
 
@@ -193,10 +200,11 @@ async def delete_workflow_state(
 @router.get("/definitions/{definition_id}/transitions/", response_model=List[WorkflowTransition])
 async def list_workflow_transitions(
     definition_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List all transitions in a workflow definition."""
-    await crud_definition.get_or_404(session, definition_id)
+    await crud_definition.get_or_404(session, definition_id, tenant_id)
 
     result = await session.execute(
         select(WorkflowTransition)
@@ -209,10 +217,11 @@ async def list_workflow_transitions(
 async def create_workflow_transition(
     definition_id: int,
     transition: WorkflowTransition,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Add a transition to a workflow definition."""
-    await crud_definition.get_or_404(session, definition_id)
+    await crud_definition.get_or_404(session, definition_id, tenant_id)
 
     # Verify states exist
     await crud_state.get_or_404(session, transition.from_state_id)
@@ -253,7 +262,7 @@ async def delete_workflow_transition(
 async def list_workflow_instances(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     entity_type: Optional[str] = Query(None),
     entity_id: Optional[int] = Query(None),
     status: Optional[WorkflowStatus] = Query(None),
@@ -261,8 +270,6 @@ async def list_workflow_instances(
 ):
     """List workflow instances with optional filters."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if entity_type:
         filters["entity_type"] = entity_type
     if entity_id:
@@ -270,12 +277,13 @@ async def list_workflow_instances(
     if status:
         filters["status"] = status
 
-    return await crud_instance.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_instance.get_multi(session, tenant_id, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/instances/", response_model=WorkflowInstance)
 async def create_workflow_instance(
     instance: WorkflowInstance,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -283,7 +291,7 @@ async def create_workflow_instance(
     Automatically sets the initial state and creates first history entry.
     """
     # Validate workflow exists and get initial state
-    definition = await crud_definition.get_or_404(session, instance.workflow_id)
+    definition = await crud_definition.get_or_404(session, instance.workflow_id, tenant_id)
 
     result = await session.execute(
         select(WorkflowState)
@@ -311,7 +319,7 @@ async def create_workflow_instance(
     )
     instance.total_steps_remaining = len(all_states_result.scalars().all())
 
-    created_instance = await crud_instance.create(session, obj_in=instance)
+    created_instance = await crud_instance.create(session, obj_in=instance, tenant_id=tenant_id)
 
     # Create initial history entry
     history = WorkflowStepHistory(
@@ -330,10 +338,11 @@ async def create_workflow_instance(
 @router.get("/instances/{instance_id}", response_model=WorkflowInstance)
 async def get_workflow_instance(
     instance_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a workflow instance with its history."""
-    instance = await crud_instance.get_or_404(session, instance_id)
+    instance = await crud_instance.get_or_404(session, instance_id, tenant_id)
 
     # Load history
     history_result = await session.execute(
@@ -349,10 +358,11 @@ async def get_workflow_instance(
 @router.get("/instances/{instance_id}/available-transitions", response_model=List[WorkflowTransition])
 async def get_available_transitions(
     instance_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get available transitions from the current state."""
-    instance = await crud_instance.get_or_404(session, instance_id)
+    instance = await crud_instance.get_or_404(session, instance_id, tenant_id)
 
     result = await session.execute(
         select(WorkflowTransition)
@@ -368,12 +378,13 @@ async def execute_transition(
     transition_id: int,
     user_id: int = Query(..., description="ID of user executing the transition"),
     comment: Optional[str] = Query(None, description="Comment for this transition"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Execute a transition to move the workflow to the next state.
     """
-    instance = await crud_instance.get_or_404(session, instance_id)
+    instance = await crud_instance.get_or_404(session, instance_id, tenant_id)
     transition = await crud_transition.get_or_404(session, transition_id)
 
     # Validate transition is valid from current state
@@ -465,10 +476,11 @@ async def cancel_workflow_instance(
     instance_id: int,
     user_id: int = Query(..., description="ID of user canceling"),
     reason: Optional[str] = Query(None, description="Cancellation reason"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Cancel a workflow instance."""
-    instance = await crud_instance.get_or_404(session, instance_id)
+    instance = await crud_instance.get_or_404(session, instance_id, tenant_id)
 
     if instance.status in [WorkflowStatus.COMPLETED, WorkflowStatus.CANCELLED]:
         raise HTTPException(
@@ -494,10 +506,11 @@ async def cancel_workflow_instance(
 @router.get("/instances/{instance_id}/history", response_model=List[WorkflowStepHistory])
 async def get_workflow_history(
     instance_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get complete history for a workflow instance."""
-    await crud_instance.get_or_404(session, instance_id)
+    await crud_instance.get_or_404(session, instance_id, tenant_id)
 
     result = await session.execute(
         select(WorkflowStepHistory)
@@ -515,11 +528,13 @@ async def get_workflow_history(
 async def get_entity_workflow_instance(
     entity_type: str,
     entity_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get the active workflow instance for a specific entity."""
     result = await session.execute(
         select(WorkflowInstance)
+        .where(WorkflowInstance.tenant_id == tenant_id)
         .where(WorkflowInstance.entity_type == entity_type)
         .where(WorkflowInstance.entity_id == entity_id)
         .where(WorkflowInstance.status.in_([
@@ -532,24 +547,15 @@ async def get_entity_workflow_instance(
 
 @router.get("/stats/", response_model=dict)
 async def get_workflow_stats(
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get workflow statistics."""
-    filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
+    total = await crud_instance.count(session, tenant_id)
 
-    total = await crud_instance.count(session, filters=filters)
-
-    in_progress_filters = {**filters, "status": WorkflowStatus.IN_PROGRESS}
-    in_progress = await crud_instance.count(session, filters=in_progress_filters)
-
-    completed_filters = {**filters, "status": WorkflowStatus.COMPLETED}
-    completed = await crud_instance.count(session, filters=completed_filters)
-
-    waiting_filters = {**filters, "status": WorkflowStatus.WAITING_APPROVAL}
-    waiting = await crud_instance.count(session, filters=waiting_filters)
+    in_progress = await crud_instance.count(session, tenant_id, filters={"status": WorkflowStatus.IN_PROGRESS})
+    completed = await crud_instance.count(session, tenant_id, filters={"status": WorkflowStatus.COMPLETED})
+    waiting = await crud_instance.count(session, tenant_id, filters={"status": WorkflowStatus.WAITING_APPROVAL})
 
     return {
         "total": total,

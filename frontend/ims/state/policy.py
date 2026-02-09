@@ -5,6 +5,7 @@ import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
 from ims.components.deadline import enrich_with_multiple_deadlines
+from ims.state.auth import AuthState
 
 
 class PolicyState(rx.State):
@@ -164,13 +165,16 @@ class PolicyState(rx.State):
             self.error = "Inhoud is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
                 "title": self.form_title.strip(),
                 "content": self.form_content.strip(),
                 "version": self.form_version.strip(),
                 "state": self.form_state,
-                "tenant_id": 1,
+                "tenant_id": tid,
             }
 
             if self.is_editing and self.editing_policy_id:

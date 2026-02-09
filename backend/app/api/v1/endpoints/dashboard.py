@@ -6,7 +6,7 @@ from sqlmodel import select, or_
 from pydantic import BaseModel
 
 from app.core.db import get_session
-from app.core.rbac import get_current_user
+from app.core.rbac import get_current_user, get_tenant_id
 from app.models.core_models import (
     CorrectiveAction,
     ReviewSchedule,
@@ -40,7 +40,7 @@ class MyTasksResponse(BaseModel):
 
 @router.get("/my-tasks", response_model=MyTasksResponse)
 async def get_my_tasks(
-    tenant_id: int = Query(..., description="Tenant context (REQUIRED to prevent cross-tenant leakage)"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):

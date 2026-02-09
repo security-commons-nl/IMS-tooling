@@ -5,6 +5,7 @@ import reflex as rx
 import json
 from typing import Dict, Any, List, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 class SimulationState(rx.State):
     """State for Monte Carlo Simulation."""
@@ -95,8 +96,9 @@ class SimulationState(rx.State):
         """Load configuration from backend."""
         self.error = ""
         try:
-            # Hardcoded tenant_id=1 for now
-            data = await api_client.get_quantification_config(tenant_id=1)
+            auth = await self.get_state(AuthState)
+            tid = auth.tenant_id
+            data = await api_client.get_quantification_config(tenant_id=tid)
             self.profile_id = data.get("id")
             self.currency = data.get("currency", "EUR")
             self.iterations = data.get("iterations", 10000)
@@ -140,6 +142,9 @@ class SimulationState(rx.State):
         self.error = ""
         self.success_message = ""
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         # Construct JSON from fields
         new_conf = {
             "LOW": {"freq_min": self.low_freq_min, "freq_max": self.low_freq_max, "impact_min": self.low_imp_min, "impact_max": self.low_imp_max},
@@ -149,7 +154,7 @@ class SimulationState(rx.State):
         }
 
         payload = {
-            "tenant_id": 1,
+            "tenant_id": tid,
             "global_config": json.dumps(new_conf),
             "category_configs": self.category_configs_json, # Keep existing category configs for now
             "currency": self.currency,
@@ -171,12 +176,12 @@ class SimulationState(rx.State):
         self.results = {}
         self.histogram_data = []
 
-        # Ensure config is saved first? Or just use what's on backend.
-        # Ideally we save first if dirty, but let's assume user saved.
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
 
         try:
             payload = {
-                "tenant_id": 1,
+                "tenant_id": tid,
                 "iterations": self.iterations
             }
             data = await api_client.run_simulation(payload)

@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_admin
+from app.core.crud import TenantCRUDBase
+from app.core.rbac import require_admin, get_tenant_id
 from app.models.core_models import (
     RiskFramework,
     RiskFrameworkStatus,
@@ -18,7 +18,7 @@ from app.models.core_models import (
 )
 
 router = APIRouter()
-crud_framework = CRUDBase(RiskFramework)
+crud_framework = TenantCRUDBase(RiskFramework)
 
 
 # =============================================================================
@@ -29,34 +29,33 @@ crud_framework = CRUDBase(RiskFramework)
 async def list_risk_frameworks(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None),
     status: Optional[RiskFrameworkStatus] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """List risk frameworks."""
     filters = {}
-    if tenant_id:
-        filters["tenant_id"] = tenant_id
     if status:
         filters["status"] = status
 
-    return await crud_framework.get_multi(session, skip=skip, limit=limit, filters=filters)
+    return await crud_framework.get_multi(session, tenant_id, skip=skip, limit=limit, filters=filters)
 
 
 @router.post("/", response_model=RiskFramework)
 async def create_risk_framework(
     framework: RiskFramework,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
     """Create a new risk framework."""
-    return await crud_framework.create(session, obj_in=framework)
+    return await crud_framework.create(session, obj_in=framework, tenant_id=tenant_id)
 
 
 @router.get("/active", response_model=Optional[RiskFramework])
 async def get_active_framework(
-    tenant_id: int = Query(...),
     scope_id: Optional[int] = Query(None),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -90,21 +89,23 @@ async def get_active_framework(
 @router.get("/{framework_id}", response_model=RiskFramework)
 async def get_risk_framework(
     framework_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get a risk framework by ID."""
-    return await crud_framework.get_or_404(session, framework_id)
+    return await crud_framework.get_or_404(session, framework_id, tenant_id)
 
 
 @router.patch("/{framework_id}", response_model=RiskFramework)
 async def update_risk_framework(
     framework_id: int,
     framework_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
     """Update a risk framework (only in Draft status)."""
-    db_framework = await crud_framework.get_or_404(session, framework_id)
+    db_framework = await crud_framework.get_or_404(session, framework_id, tenant_id)
 
     if db_framework.status != RiskFrameworkStatus.DRAFT:
         # Only allow status changes for non-draft frameworks
@@ -117,23 +118,24 @@ async def update_risk_framework(
             )
 
     framework_update["updated_at"] = datetime.utcnow()
-    return await crud_framework.update(session, db_obj=db_framework, obj_in=framework_update)
+    return await crud_framework.update(session, db_obj=db_framework, obj_in=framework_update, tenant_id=tenant_id)
 
 
 @router.delete("/{framework_id}")
 async def delete_risk_framework(
     framework_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
     """Delete a risk framework (only Draft)."""
-    db_framework = await crud_framework.get_or_404(session, framework_id)
+    db_framework = await crud_framework.get_or_404(session, framework_id, tenant_id)
     if db_framework.status != RiskFrameworkStatus.DRAFT:
         raise HTTPException(
             status_code=400,
             detail="Only draft frameworks can be deleted. Archive active ones instead."
         )
-    deleted = await crud_framework.delete(session, id=framework_id)
+    deleted = await crud_framework.delete(session, id=framework_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Framework not found")
     return {"message": "Risk framework deleted"}
@@ -147,6 +149,7 @@ async def delete_risk_framework(
 async def activate_risk_framework(
     framework_id: int,
     established_by_id: int = Query(..., description="User ID (DT) who establishes the framework"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
@@ -154,7 +157,7 @@ async def activate_risk_framework(
     Activate a risk framework.
     Deactivates any other active framework for the same tenant/scope.
     """
-    db_framework = await crud_framework.get_or_404(session, framework_id)
+    db_framework = await crud_framework.get_or_404(session, framework_id, tenant_id)
 
     if db_framework.status != RiskFrameworkStatus.DRAFT:
         raise HTTPException(
@@ -182,17 +185,18 @@ async def activate_risk_framework(
         "established_by_id": established_by_id,
         "established_date": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{framework_id}/archive", response_model=RiskFramework)
 async def archive_risk_framework(
     framework_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
     """Archive a risk framework."""
-    db_framework = await crud_framework.get_or_404(session, framework_id)
+    db_framework = await crud_framework.get_or_404(session, framework_id, tenant_id)
 
     if db_framework.status != RiskFrameworkStatus.ACTIVE:
         raise HTTPException(
@@ -203,17 +207,18 @@ async def archive_risk_framework(
     return await crud_framework.update(session, db_obj=db_framework, obj_in={
         "status": RiskFrameworkStatus.ARCHIVED,
         "updated_at": datetime.utcnow(),
-    })
+    }, tenant_id=tenant_id)
 
 
 @router.post("/{framework_id}/new-version", response_model=RiskFramework)
 async def create_new_version(
     framework_id: int,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),
 ):
     """Create a new draft version of an active or archived framework."""
-    db_framework = await crud_framework.get_or_404(session, framework_id)
+    db_framework = await crud_framework.get_or_404(session, framework_id, tenant_id)
 
     new_framework = RiskFramework(
         tenant_id=db_framework.tenant_id,
@@ -227,4 +232,4 @@ async def create_new_version(
         decision_rules=db_framework.decision_rules,
     )
 
-    return await crud_framework.create(session, obj_in=new_framework)
+    return await crud_framework.create(session, obj_in=new_framework, tenant_id=tenant_id)

@@ -114,15 +114,37 @@ Formele DT-besluiten worden vastgelegd voor audit-trail:
 
 ## Risicokader
 Het risicokader definieert hoe risico's worden beoordeeld:
-- Impact- en waarschijnlijkheidsdefinities
-- Risicotolerantie
-- Besluitregels (bijv. DT-besluit verplicht bij score >= 9)
+- Impact- en waarschijnlijkheidsdefinities (als JSON)
+- Likelihood-definities (als JSON)
+- Risicotolerantie en besluitregels
+- Status: Actief, Concept, of Gearchiveerd
+- Versienummer
+
 Gebruik `get_risk_framework` om het actieve kader op te halen.
+
+In het platform kan de gebruiker op de **Risicokader-pagina** (`/risk-framework`):
+- Een nieuw risicokader aanmaken (naam, impact JSON, likelihood JSON)
+- Een bestaand kader bewerken of archiveren
+- Kader-kaarten zien met naam, versie en status-badge
 
 ## In-Control
 De in-control status toont of een scope afdoende beheerst is:
 - In control / Beperkt in control / Niet in control
 Gebruik `calculate_in_control` om de status voor een scope te berekenen.
+
+De **In-Control pagina** (`/in-control`) toont:
+- Samenvattingskaarten: aantal scopes In control / Beperkt / Niet in control
+- Per scope: naam, type, in-control level badge
+- Metric pills: open risico's, hoog/kritieke risico's, open findings, overdue acties, ontbrekende controls
+
+## Monte Carlo Simulatie
+Op de **Simulatie-pagina** (`/simulation`) kan de gebruiker risico-scenario's doorrekenen:
+- Configuratie: aantal iteraties, valuta-keuze
+- Parametertabel per risiconiveau (Low/Medium/High/Critical):
+  - Min/max frequentie
+  - Min/max impact in euro's
+- Resultaat: statistische verdeling van verwacht verlies
+Dit helpt bij het kwantificeren van risico's voor managementbeslissingen.
 
 Reageer professioneel, concreet en in het Nederlands.
 """

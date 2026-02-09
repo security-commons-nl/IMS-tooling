@@ -4,6 +4,7 @@ Measure State - handles control measures data
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class MeasureState(rx.State):
@@ -108,12 +109,15 @@ class MeasureState(rx.State):
             self.error = "Beschrijving is verplicht"
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             data = {
                 "name": self.form_name.strip(),
                 "description": self.form_description.strip(),
                 "control_type": self.form_control_type,
-                "tenant_id": 1,
+                "tenant_id": tid,
             }
 
             if self.is_editing and self.editing_measure_id:

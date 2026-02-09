@@ -7,11 +7,11 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.core.db import get_session
-from app.core.crud import CRUDBase
-from app.core.rbac import require_configurer
+from app.core.crud import ScopedTenantCRUDBase, TenantCRUDBase
+from app.core.rbac import get_tenant_id, get_scope_access, require_configurer
 from app.models.core_models import (
     ApplicabilityStatement,
     Requirement,
@@ -24,11 +24,11 @@ from app.models.core_models import (
 )
 
 router = APIRouter()
-crud_soa = CRUDBase(ApplicabilityStatement)
-crud_requirement = CRUDBase(Requirement)
-crud_standard = CRUDBase(Standard)
-crud_scope = CRUDBase(Scope)
-crud_measure = CRUDBase(Measure)
+crud_soa = ScopedTenantCRUDBase(ApplicabilityStatement)
+crud_requirement = TenantCRUDBase(Requirement)
+crud_standard = TenantCRUDBase(Standard)
+crud_scope = TenantCRUDBase(Scope)
+crud_measure = TenantCRUDBase(Measure)
 
 
 # =============================================================================
@@ -39,7 +39,8 @@ crud_measure = CRUDBase(Measure)
 async def list_applicability_statements(
     skip: int = 0,
     limit: int = 100,
-    tenant_id: Optional[int] = Query(None, description="Filter by tenant"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     scope_id: Optional[int] = Query(None, description="Filter by scope"),
     standard_id: Optional[int] = Query(None, description="Filter by standard"),
     is_applicable: Optional[bool] = Query(None, description="Filter by applicability"),
@@ -48,10 +49,19 @@ async def list_applicability_statements(
     session: AsyncSession = Depends(get_session),
 ):
     """List applicability statements with optional filters."""
-    query = select(ApplicabilityStatement)
+    query = select(ApplicabilityStatement).where(
+        ApplicabilityStatement.tenant_id == tenant_id,
+    )
 
-    if tenant_id:
-        query = query.where(ApplicabilityStatement.tenant_id == tenant_id)
+    # Scope filtering
+    if accessible_scopes is not None:
+        query = query.where(
+            or_(
+                ApplicabilityStatement.scope_id.in_(accessible_scopes),
+                ApplicabilityStatement.scope_id.is_(None),
+            )
+        )
+
     if scope_id:
         query = query.where(ApplicabilityStatement.scope_id == scope_id)
     if is_applicable is not None:
@@ -73,20 +83,21 @@ async def list_applicability_statements(
 @router.post("/", response_model=ApplicabilityStatement)
 async def create_applicability_statement(
     soa: ApplicabilityStatement,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Create a new applicability statement."""
     # Verify requirement exists
-    await crud_requirement.get_or_404(session, soa.requirement_id)
+    await crud_requirement.get_or_404(session, soa.requirement_id, tenant_id)
 
     # Verify scope exists
-    await crud_scope.get_or_404(session, soa.scope_id)
+    await crud_scope.get_or_404(session, soa.scope_id, tenant_id)
 
     # Check for duplicate
     existing = await session.execute(
         select(ApplicabilityStatement)
-        .where(ApplicabilityStatement.tenant_id == soa.tenant_id)
+        .where(ApplicabilityStatement.tenant_id == tenant_id)
         .where(ApplicabilityStatement.scope_id == soa.scope_id)
         .where(ApplicabilityStatement.requirement_id == soa.requirement_id)
     )
@@ -108,27 +119,31 @@ async def create_applicability_statement(
     else:
         soa.coverage_type = CoverageType.NOT_COVERED
 
-    return await crud_soa.create(session, obj_in=soa)
+    return await crud_soa.create(session, obj_in=soa, tenant_id=tenant_id)
 
 
 @router.get("/{soa_id}", response_model=ApplicabilityStatement)
 async def get_applicability_statement(
     soa_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
     """Get an applicability statement by ID."""
-    return await crud_soa.get_or_404(session, soa_id)
+    return await crud_soa.get_scoped_or_404(session, soa_id, tenant_id, accessible_scopes)
 
 
 @router.patch("/{soa_id}", response_model=ApplicabilityStatement)
 async def update_applicability_statement(
     soa_id: int,
     soa_update: dict,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Update an applicability statement."""
-    db_soa = await crud_soa.get_or_404(session, soa_id)
+    db_soa = await crud_soa.get_scoped_or_404(session, soa_id, tenant_id, accessible_scopes)
 
     # Update coverage type based on measure changes
     local_measure = soa_update.get("local_measure_id", db_soa.local_measure_id)
@@ -147,17 +162,20 @@ async def update_applicability_statement(
         soa_update["coverage_type"] = CoverageType.NOT_COVERED
 
     soa_update["updated_at"] = datetime.utcnow()
-    return await crud_soa.update(session, db_obj=db_soa, obj_in=soa_update)
+    return await crud_soa.update(session, db_obj=db_soa, obj_in=soa_update, tenant_id=tenant_id)
 
 
 @router.delete("/{soa_id}")
 async def delete_applicability_statement(
     soa_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Delete an applicability statement."""
-    deleted = await crud_soa.delete(session, id=soa_id)
+    await crud_soa.get_scoped_or_404(session, soa_id, tenant_id, accessible_scopes)
+    deleted = await crud_soa.delete(session, id=soa_id, tenant_id=tenant_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Applicability statement not found")
     return {"message": "Applicability statement deleted"}
@@ -171,7 +189,7 @@ async def delete_applicability_statement(
 async def initialize_soa_from_standard(
     scope_id: int,
     standard_id: int,
-    tenant_id: int = Query(..., description="Tenant ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -180,10 +198,10 @@ async def initialize_soa_from_standard(
     Creates applicability statements with default values.
     """
     # Verify scope exists
-    scope = await crud_scope.get_or_404(session, scope_id)
+    scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     # Verify standard exists
-    standard = await crud_standard.get_or_404(session, standard_id)
+    standard = await crud_standard.get_or_404(session, standard_id, tenant_id)
 
     # Get all requirements for this standard
     requirements_result = await session.execute(
@@ -244,7 +262,7 @@ async def link_measure_to_requirements(
     scope_id: int,
     measure_id: int,
     requirement_ids: List[int],
-    tenant_id: int = Query(..., description="Tenant ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
@@ -253,10 +271,10 @@ async def link_measure_to_requirements(
     Updates existing applicability statements or creates new ones.
     """
     # Verify measure exists
-    measure = await crud_measure.get_or_404(session, measure_id)
+    measure = await crud_measure.get_or_404(session, measure_id, tenant_id)
 
     # Verify scope exists
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     updated_count = 0
     created_count = 0
@@ -314,7 +332,7 @@ async def link_measure_to_requirements(
 @router.get("/scope/{scope_id}/summary", response_model=dict)
 async def get_soa_summary(
     scope_id: int,
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     standard_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
 ):
@@ -322,12 +340,13 @@ async def get_soa_summary(
     Get SoA compliance summary for a scope.
     Returns statistics on applicability and implementation status.
     """
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     # Base query
-    query = select(ApplicabilityStatement).where(ApplicabilityStatement.scope_id == scope_id)
-    if tenant_id:
-        query = query.where(ApplicabilityStatement.tenant_id == tenant_id)
+    query = select(ApplicabilityStatement).where(
+        ApplicabilityStatement.scope_id == scope_id,
+        ApplicabilityStatement.tenant_id == tenant_id,
+    )
 
     # Filter by standard if specified
     if standard_id:
@@ -378,25 +397,24 @@ async def get_soa_summary(
 @router.get("/scope/{scope_id}/gaps", response_model=List[dict])
 async def get_soa_gaps(
     scope_id: int,
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     standard_id: Optional[int] = None,
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get list of gaps (applicable requirements not yet covered).
     """
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     query = (
         select(ApplicabilityStatement, Requirement)
         .join(Requirement)
         .where(ApplicabilityStatement.scope_id == scope_id)
+        .where(ApplicabilityStatement.tenant_id == tenant_id)
         .where(ApplicabilityStatement.is_applicable == True)
         .where(ApplicabilityStatement.coverage_type == CoverageType.NOT_COVERED)
     )
 
-    if tenant_id:
-        query = query.where(ApplicabilityStatement.tenant_id == tenant_id)
     if standard_id:
         query = query.where(Requirement.standard_id == standard_id)
 
@@ -421,23 +439,21 @@ async def get_soa_gaps(
 @router.get("/scope/{scope_id}/by-standard", response_model=dict)
 async def get_soa_by_standard(
     scope_id: int,
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Get SoA entries grouped by standard.
     """
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     query = (
         select(ApplicabilityStatement, Requirement, Standard)
         .join(Requirement)
         .join(Standard)
         .where(ApplicabilityStatement.scope_id == scope_id)
+        .where(ApplicabilityStatement.tenant_id == tenant_id)
     )
-
-    if tenant_id:
-        query = query.where(ApplicabilityStatement.tenant_id == tenant_id)
 
     result = await session.execute(query)
     rows = result.all()
@@ -489,11 +505,13 @@ async def review_applicability_statement(
     soa_id: int,
     reviewer_id: int = Query(..., description="ID of the reviewing user"),
     notes: Optional[str] = Query(None, description="Review notes"),
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Mark an applicability statement as reviewed."""
-    db_soa = await crud_soa.get_or_404(session, soa_id)
+    db_soa = await crud_soa.get_scoped_or_404(session, soa_id, tenant_id, accessible_scopes)
 
     update_data = {
         "last_reviewed_at": datetime.utcnow(),
@@ -504,26 +522,25 @@ async def review_applicability_statement(
     if notes:
         update_data["implementation_notes"] = (db_soa.implementation_notes or "") + f"\n[Review] {notes}"
 
-    return await crud_soa.update(session, db_obj=db_soa, obj_in=update_data)
+    return await crud_soa.update(session, db_obj=db_soa, obj_in=update_data, tenant_id=tenant_id)
 
 
 @router.post("/scope/{scope_id}/bulk-review")
 async def bulk_review_soa(
     scope_id: int,
     reviewer_id: int = Query(..., description="ID of the reviewing user"),
-    tenant_id: Optional[int] = None,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
     """Mark all applicability statements for a scope as reviewed."""
-    await crud_scope.get_or_404(session, scope_id)
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
 
     query = (
         select(ApplicabilityStatement)
         .where(ApplicabilityStatement.scope_id == scope_id)
+        .where(ApplicabilityStatement.tenant_id == tenant_id)
     )
-    if tenant_id:
-        query = query.where(ApplicabilityStatement.tenant_id == tenant_id)
 
     result = await session.execute(query)
     statements = result.scalars().all()

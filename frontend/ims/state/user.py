@@ -4,6 +4,7 @@ User State - handles user management data
 import reflex as rx
 from typing import List, Dict, Any, Optional
 from ims.api.client import api_client
+from ims.state.auth import AuthState
 
 
 class UserState(rx.State):
@@ -237,12 +238,15 @@ class UserState(rx.State):
         if not self.role_dialog_user_id:
             return
 
+        auth = await self.get_state(AuthState)
+        tid = auth.tenant_id
+
         try:
             await api_client.assign_user_scope_role(
                 user_id=self.role_dialog_user_id,
                 scope_id=int(self.form_scope_id),
                 role=self.form_role,
-                tenant_id=1,  # Default tenant
+                tenant_id=tid,
             )
             self.success_message = "Rol toegewezen"
             self.form_scope_id = ""

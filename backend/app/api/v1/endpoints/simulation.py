@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
+from app.core.rbac import get_tenant_id
 from app.models.core_models import (
     Risk,
     RiskQuantificationProfile,
@@ -42,9 +43,7 @@ def poisson_sample(lmbda: float) -> int:
 
 @router.get("/config", response_model=RiskQuantificationProfile)
 async def get_config(
-    # TODO: Replace Query param with Depends(get_current_tenant) from auth context
-    # This is a security risk - tenant_id should come from authenticated user context
-    tenant_id: int = Query(..., description="Tenant ID"),
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Get the quantification profile for a tenant, or default if none exists."""
@@ -66,11 +65,15 @@ async def get_config(
 @router.post("/config", response_model=RiskQuantificationProfile)
 async def save_config(
     profile_in: RiskQuantificationProfile,
+    tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
     """Create or update the quantification profile."""
+    # Enforce tenant_id from auth context
+    profile_in.tenant_id = tenant_id
+
     result = await session.execute(
-        select(RiskQuantificationProfile).where(RiskQuantificationProfile.tenant_id == profile_in.tenant_id)
+        select(RiskQuantificationProfile).where(RiskQuantificationProfile.tenant_id == tenant_id)
     )
     existing_profile = result.scalars().first()
 
@@ -93,8 +96,7 @@ async def save_config(
 
 @router.post("/run", response_model=Dict[str, Any])
 async def run_simulation(
-    # TODO: Replace with Depends(get_current_tenant) from auth context
-    tenant_id: int = Query(..., description="Tenant ID"),
+    tenant_id: int = Depends(get_tenant_id),
     iterations: int = Query(default=10000, ge=100, le=100000, description="Number of iterations (max 100,000)"),
     scope_id: Optional[int] = Query(default=None, description="Filter by scope"),
     risk_ids: Optional[List[int]] = Query(default=None, description="Specific risk IDs to simulate"),
