@@ -2,9 +2,12 @@
 User Management and RBAC Endpoints
 Handles Users, UserScopeRoles, and basic authentication utilities.
 """
+import logging
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -91,9 +94,10 @@ async def create_user(
 
     try:
         await session.commit()
-    except Exception:
+    except Exception as e:
         await session.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create user")
+        logger.exception("Failed to create user: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {e}")
 
     await session.refresh(user)
     return user
