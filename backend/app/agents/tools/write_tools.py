@@ -282,7 +282,7 @@ async def create_decision(
     conditions: Optional[str] = None,
 ) -> str:
     """
-    Create a formal management decision (DT-besluit).
+    Create a formal management decision (managementbesluit).
 
     Decision types: Restrisico-acceptatie, Prioritering, Afwijking, Scopewijziging, Beleidsgoedkeuring.
     Valid until format: YYYY-MM-DD.
@@ -353,7 +353,7 @@ async def update_risk_treatment(
 
     Strategies: Vermijden, Reduceren, Overdragen, Accepteren.
     If strategy is Overdragen, transfer_party is required (e.g. verzekeraar or leverancier).
-    Hard rule: if Accepteren AND score >= 9, a DT decision is required.
+    Hard rule: if Accepteren AND score >= 9, a management decision is required.
     """
     async for session in get_session():
         result = await session.execute(select(Risk).where(Risk.id == risk_id))
@@ -386,6 +386,6 @@ async def update_risk_treatment(
         score = risk.residual_risk_score or risk.inherent_risk_score or 0
         warning = ""
         if strategy == TreatmentStrategy.ACCEPT and score >= 9:
-            warning = "\n⚠ HARD RULE: Score >= 9 + Accepteren requires a formal DT decision. Use create_decision to record it."
+            warning = "\n⚠ HARD RULE: Score >= 9 + Accepteren requires a formal management decision. Use create_decision to record it."
 
         return f"Updated risk #{risk.id} treatment strategy to {strategy.value}.{warning}"

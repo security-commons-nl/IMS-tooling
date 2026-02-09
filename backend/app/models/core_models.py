@@ -558,6 +558,14 @@ class TreatmentStrategy(str, Enum):
     ACCEPT = "Accepteren"
 
 
+class AcceptanceStatus(str, Enum):
+    """Acceptance status for scope-contextualized risk acceptance."""
+    PROPOSED = "Voorgesteld"
+    ACCEPTED = "Geaccepteerd"
+    REJECTED = "Afgewezen"
+    EXPIRED = "Verlopen"
+
+
 # =============================================================================
 # HIAAT 5: IN-CONTROL STATUS
 # =============================================================================
@@ -1282,13 +1290,29 @@ class ScopeDependency(SQLModel, table=True):
     criticality: ClassificationLevel = ClassificationLevel.INTERNAL
 
 class ControlRiskLink(SQLModel, table=True):
-    """Many-to-Many link between Control and Risk"""
+    """Many-to-Many link between Control and Risk (DEPRECATED: use ControlRiskScopeLink)"""
     risk_id: Optional[int] = Field(default=None, foreign_key="risk.id", primary_key=True)
     control_id: Optional[int] = Field(default=None, foreign_key="control.id", primary_key=True)
     mitigation_percent: int = 100
 
     risk: "Risk" = Relationship(back_populates="control_links")
     control: "Control" = Relationship(back_populates="risk_links")
+
+
+class ControlRiskScopeLink(SQLModel, table=True):
+    """Links a Control to a scope-contextualized Risk (RiskScope)."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+    control_id: int = Field(foreign_key="control.id", index=True)
+    risk_scope_id: int = Field(foreign_key="riskscope.id", index=True)
+
+    mitigation_percent: int = 100
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    control: Optional["Control"] = Relationship(back_populates="risk_scope_links")
+    risk_scope: Optional["RiskScope"] = Relationship(back_populates="control_links")
 
 
 class ControlRequirementLink(SQLModel, table=True):
@@ -1401,7 +1425,7 @@ class InitiativeObjectiveLink(SQLModel, table=True):
 
 class Decision(SQLModel, table=True):
     """
-    Formal management decision (DT-besluit).
+    Formal management decision (managementbesluit).
     Every significant risk acceptance, prioritization, or deviation
     must be recorded as an auditable decision.
     """
@@ -1411,7 +1435,7 @@ class Decision(SQLModel, table=True):
     # Core fields
     decision_type: DecisionType
     decision_text: str
-    decision_maker_id: Optional[int] = Field(default=None, foreign_key="user.id")  # DT role only
+    decision_maker_id: Optional[int] = Field(default=None, foreign_key="user.id")  # management role
     decision_date: datetime = Field(default_factory=datetime.utcnow)
 
     # Validity
@@ -1433,11 +1457,12 @@ class Decision(SQLModel, table=True):
 
     # Relationships
     risk_links: List["DecisionRiskLink"] = Relationship(back_populates="decision")
+    risk_scope_links: List["DecisionRiskScopeLink"] = Relationship(back_populates="decision")
     management_review: Optional["ManagementReview"] = Relationship(back_populates="decisions")
 
 
 class DecisionRiskLink(SQLModel, table=True):
-    """Links a Decision to one or more Risks."""
+    """Links a Decision to one or more Risks (DEPRECATED: use DecisionRiskScopeLink)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     decision_id: int = Field(foreign_key="decision.id")
     risk_id: int = Field(foreign_key="risk.id")
@@ -1446,6 +1471,21 @@ class DecisionRiskLink(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     decision: Optional["Decision"] = Relationship(back_populates="risk_links")
+
+
+class DecisionRiskScopeLink(SQLModel, table=True):
+    """Links a Decision to a scope-contextualized Risk (RiskScope)."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+    decision_id: int = Field(foreign_key="decision.id", index=True)
+    risk_scope_id: int = Field(foreign_key="riskscope.id", index=True)
+
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    decision: Optional["Decision"] = Relationship(back_populates="risk_scope_links")
+    risk_scope: Optional["RiskScope"] = Relationship(back_populates="decision_links")
 
 
 # =============================================================================
@@ -1476,7 +1516,7 @@ class RiskFramework(SQLModel, table=True):
     likelihood_definitions: str  # JSON
 
     # Risk tolerance / appetite per level
-    # {"threshold": "HIGH", "description": "Risks above HIGH require DT decision"}
+    # {"threshold": "HIGH", "description": "Risks above HIGH require management decision"}
     risk_tolerance: str  # JSON
 
     # Decision rules
@@ -1498,7 +1538,7 @@ class RiskFramework(SQLModel, table=True):
 class InControlAssessment(SQLModel, table=True):
     """
     In-control status per scope, assessed periodically.
-    Auto-calculated but must be formally established by DT.
+    Auto-calculated but must be formally established by management.
     """
     id: Optional[int] = Field(default=None, primary_key=True)
     tenant_id: int = Field(foreign_key="tenant.id", index=True)
@@ -1518,7 +1558,7 @@ class InControlAssessment(SQLModel, table=True):
     # Formal assessment
     justification: str  # Motivatie bij "in control"
     assessed_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
-    established_by_id: Optional[int] = Field(default=None, foreign_key="user.id")  # DT
+    established_by_id: Optional[int] = Field(default=None, foreign_key="user.id")  # management
     established_date: Optional[datetime] = None
 
     # Period
@@ -1684,6 +1724,7 @@ class Scope(SQLModel, table=True):
     # Relationships
     tenant: Optional[Tenant] = Relationship(back_populates="scopes")
     risks: List["Risk"] = Relationship(back_populates="scope")
+    risk_scopes: List["RiskScope"] = Relationship(back_populates="scope")
     user_roles: List["UserScopeRole"] = Relationship(back_populates="scope")
     incidents: List["Incident"] = Relationship(back_populates="scope")
     exceptions: List["Exception"] = Relationship(back_populates="scope")
@@ -1923,6 +1964,71 @@ class Risk(SQLModel, table=True):
     scope: Optional[Scope] = Relationship(back_populates="risks")
     control_links: List["ControlRiskLink"] = Relationship(back_populates="risk")
     processing_activity: Optional["ProcessingActivity"] = Relationship(back_populates="risks")
+    risk_scopes: List["RiskScope"] = Relationship(back_populates="risk")
+
+
+class RiskScope(SQLModel, table=True):
+    """
+    Contextualisatie van een generiek Risk binnen een specifieke Scope.
+    Bevat scope-specifieke scores, eigenaar, behandelstrategie en acceptatie.
+    Eenzelfde Risk kan in meerdere Scopes voorkomen met eigen context.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+
+    risk_id: int = Field(foreign_key="risk.id", index=True)
+    scope_id: int = Field(foreign_key="scope.id", index=True)
+
+    # --- Inherent Risk (per scope) ---
+    inherent_likelihood: Optional[RiskLevel] = None
+    inherent_impact: Optional[RiskLevel] = None
+    inherent_risk_score: Optional[int] = None  # 1-16
+
+    # --- Residual Risk (per scope, after controls) ---
+    residual_likelihood: Optional[RiskLevel] = None
+    residual_impact: Optional[RiskLevel] = None
+    residual_risk_score: Optional[int] = None  # 1-16
+
+    # --- Vulnerability & Control Effectiveness ---
+    vulnerability_score: Optional[int] = None  # 0-100
+    control_effectiveness_pct: Optional[int] = None  # 0-100%
+
+    # --- Attention Strategy (In Control Quadrant) ---
+    attention_quadrant: Optional[AttentionQuadrant] = None
+    ai_suggested_quadrant: Optional[AttentionQuadrant] = None
+
+    # --- Treatment ---
+    mitigation_approach: Optional[MitigationApproach] = None
+    treatment_strategy: Optional[TreatmentStrategy] = None
+    treatment_justification: Optional[str] = None
+    transfer_party: Optional[str] = None
+
+    # --- Governance per scope ---
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+
+    # --- Acceptance ---
+    acceptance_status: AcceptanceStatus = AcceptanceStatus.PROPOSED
+    accepted_by_decision_id: Optional[int] = Field(default=None, foreign_key="decision.id")
+    risk_accepted: bool = False
+    accepted_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    acceptance_date: Optional[datetime] = None
+    acceptance_justification: Optional[str] = None
+    risk_appetite_threshold: Optional[RiskLevel] = None
+
+    # --- Review ---
+    last_review_date: Optional[datetime] = None
+    next_review_date: Optional[datetime] = None
+    review_frequency_months: Optional[int] = None
+    is_critical: bool = False
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    risk: Optional[Risk] = Relationship(back_populates="risk_scopes")
+    scope: Optional["Scope"] = Relationship(back_populates="risk_scopes")
+    control_links: List["ControlRiskScopeLink"] = Relationship(back_populates="risk_scope")
+    decision_links: List["DecisionRiskScopeLink"] = Relationship(back_populates="risk_scope")
 
 
 class RiskQuantificationProfile(SQLModel, table=True):
@@ -2006,6 +2112,7 @@ class Control(SQLModel, table=True):
     # Relationships
     requirement: Optional[Requirement] = Relationship(back_populates="controls")
     risk_links: List["ControlRiskLink"] = Relationship(back_populates="control")
+    risk_scope_links: List["ControlRiskScopeLink"] = Relationship(back_populates="control")
     evidences: List["Evidence"] = Relationship(back_populates="control")
     measure_links: List["ControlMeasureLink"] = Relationship(back_populates="control")
     incident_links: List["IncidentControlLink"] = Relationship(back_populates="control")

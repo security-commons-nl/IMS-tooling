@@ -372,7 +372,7 @@ Control type: {req.control_type or 'N/A'}
 @tool
 async def get_decision(decision_id: int) -> str:
     """
-    Get detailed information about a formal management decision (DT-besluit).
+    Get detailed information about a formal management decision (managementbesluit).
     Returns decision type, text, maker, validity, and linked risks.
     """
     async for session in get_session():
@@ -439,8 +439,8 @@ async def list_decisions(
 @tool
 async def check_decision_required(risk_id: int) -> str:
     """
-    Check if a formal DT decision is required for a risk.
-    Hard rule: risk score >= 9 AND treatment=Accepteren requires a DT decision.
+    Check if a formal management decision is required for a risk.
+    Hard rule: risk score >= 9 AND treatment=Accepteren requires a management decision.
     Returns whether a decision exists or is still needed.
     """
     async for session in get_session():
@@ -461,12 +461,12 @@ async def check_decision_required(risk_id: int) -> str:
         has_decision = existing.scalars().first() is not None
 
         if not needs_decision:
-            return f"Risk #{risk_id} (score={score}, strategy={strategy}) does NOT require a DT decision."
+            return f"Risk #{risk_id} (score={score}, strategy={strategy}) does NOT require a management decision."
 
         if has_decision:
-            return f"Risk #{risk_id} (score={score}, strategy=Accepteren) REQUIRES a DT decision — and one already exists."
+            return f"Risk #{risk_id} (score={score}, strategy=Accepteren) REQUIRES a management decision — and one already exists."
 
-        return f"⚠ Risk #{risk_id} (score={score}, strategy=Accepteren) REQUIRES a DT decision — NONE found! A formal decision must be recorded."
+        return f"⚠ Risk #{risk_id} (score={score}, strategy=Accepteren) REQUIRES a management decision — NONE found! A formal decision must be recorded."
 
 
 # =============================================================================

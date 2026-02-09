@@ -14,7 +14,7 @@ def decision_form_dialog() -> rx.Component:
                 rx.cond(DecisionState.is_editing, "Besluit Bewerken", "Nieuw Besluit"),
             ),
             rx.dialog.description(
-                "Leg een formeel DT-besluit vast.", size="2", margin_bottom="16px",
+                "Leg een formeel managementbesluit vast.", size="2", margin_bottom="16px",
             ),
             rx.cond(
                 DecisionState.error != "",
@@ -284,5 +284,5 @@ def decisions_page() -> rx.Component:
     return layout(
         rx.cond(AuthState.can_configure, decisions_content(), _no_access()),
         title="Besluitlog",
-        subtitle="Formele DT-besluiten en risicoacceptaties",
+        subtitle="Formele managementbesluiten en risicoacceptaties",
     )

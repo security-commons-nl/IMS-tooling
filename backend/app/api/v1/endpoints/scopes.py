@@ -17,6 +17,7 @@ from app.models.core_models import (
     ScopeGovernanceStatus,
     ClassificationLevel,
     AssetType,
+    RiskScope,
     User,
 )
 from datetime import datetime
@@ -299,7 +300,7 @@ async def establish_scope(
     current_user: User = Depends(require_configurer),
 ):
     """
-    Formally establish a scope (DT action).
+    Formally establish a scope (management action).
     Sets governance_status to 'Vastgesteld'.
     """
     db_scope = await crud_scope.get_or_404(session, scope_id, tenant_id)
@@ -335,3 +336,25 @@ async def expire_scope(
     return await crud_scope.update(session, db_obj=db_scope, obj_in={
         "governance_status": ScopeGovernanceStatus.EXPIRED,
     }, tenant_id=tenant_id)
+
+
+# =============================================================================
+# SCOPE-RISK CONTEXTUALISATIE
+# =============================================================================
+
+@router.get("/{scope_id}/risks", response_model=List[RiskScope])
+async def get_scope_risks(
+    scope_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    session: AsyncSession = Depends(get_session),
+):
+    """Get all risk contextualizations for a specific scope."""
+    await crud_scope.get_or_404(session, scope_id, tenant_id)
+
+    result = await session.execute(
+        select(RiskScope).where(
+            RiskScope.scope_id == scope_id,
+            RiskScope.tenant_id == tenant_id,
+        )
+    )
+    return result.scalars().all()

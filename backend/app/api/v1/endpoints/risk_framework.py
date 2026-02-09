@@ -148,7 +148,7 @@ async def delete_risk_framework(
 @router.post("/{framework_id}/activate", response_model=RiskFramework)
 async def activate_risk_framework(
     framework_id: int,
-    established_by_id: int = Query(..., description="User ID (DT) who establishes the framework"),
+    established_by_id: int = Query(..., description="User ID (management) who establishes the framework"),
     tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_admin),

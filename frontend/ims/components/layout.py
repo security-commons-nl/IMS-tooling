@@ -77,11 +77,6 @@ def _build_nav_links(link_fn):
                 link_fn("Controls", "/controls", "shield-check"),
                 link_fn("Assessments", "/assessments", "clipboard-check"),
                 link_fn("Incidenten", "/incidents", "circle-alert"),
-                # Besluiten — only for Eigenaar+ (formal risk decisions)
-                rx.cond(
-                    AuthState.can_configure,
-                    link_fn("Besluiten", "/decisions", "stamp"),
-                ),
                 link_fn("In-Control", "/in-control", "gauge"),
             ),
         ),
@@ -95,6 +90,7 @@ def _build_nav_links(link_fn):
                     BaseState.menu_ontdekken_open,
                     rx.fragment(
                         link_fn("Compliance", "/compliance", "clipboard-list"),
+                        link_fn("Besluiten", "/decisions", "stamp"),
                         link_fn("Frameworks", "/frameworks", "library"),
                         link_fn("Maatregelen", "/measures", "book-open"),
                         link_fn("Uitgangspunten", "/policy-principles", "link-2"),

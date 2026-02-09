@@ -17,7 +17,9 @@ from app.models.core_models import (
     DecisionType,
     DecisionStatus,
     DecisionRiskLink,
+    DecisionRiskScopeLink,
     Risk,
+    RiskScope,
     User,
 )
 
@@ -57,7 +59,7 @@ async def create_decision(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
-    """Create a new management decision (DT-only in production)."""
+    """Create a new management decision."""
     return await crud_decision.create(session, obj_in=decision, tenant_id=tenant_id)
 
 
@@ -74,7 +76,7 @@ async def check_decision_required(
 ):
     """
     Check whether a formal decision is required for a risk.
-    Hard rule: inherent_risk_score >= 9 requires a DT decision.
+    Hard rule: inherent_risk_score >= 9 requires a management decision.
     """
     risk = await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
@@ -235,7 +237,7 @@ async def revoke_decision(
 # DECISION-RISK LINKAGE
 # =============================================================================
 
-@router.post("/{decision_id}/risks/{risk_id}")
+@router.post("/{decision_id}/risks/{risk_id}", deprecated=True)
 async def link_risk_to_decision(
     decision_id: int,
     risk_id: int,
@@ -245,7 +247,7 @@ async def link_risk_to_decision(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
-    """Link a risk to a decision."""
+    """Link a risk to a decision. DEPRECATED: use POST /risk-scopes/{risk_scope_id}/decisions/{decision_id}."""
     await crud_decision.get_scoped_or_404(session, decision_id, tenant_id, accessible_scopes)
     await crud_risk.get_scoped_or_404(session, risk_id, tenant_id, accessible_scopes)
 
@@ -269,7 +271,7 @@ async def link_risk_to_decision(
     return {"message": "Risk linked to decision"}
 
 
-@router.delete("/{decision_id}/risks/{risk_id}")
+@router.delete("/{decision_id}/risks/{risk_id}", deprecated=True)
 async def unlink_risk_from_decision(
     decision_id: int,
     risk_id: int,
@@ -278,7 +280,7 @@ async def unlink_risk_from_decision(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
-    """Unlink a risk from a decision."""
+    """Unlink a risk from a decision. DEPRECATED: use DELETE /risk-scopes/{risk_scope_id}/decisions/{decision_id}."""
     await crud_decision.get_scoped_or_404(session, decision_id, tenant_id, accessible_scopes)
     result = await session.execute(
         select(DecisionRiskLink).where(
@@ -295,14 +297,14 @@ async def unlink_risk_from_decision(
     return {"message": "Risk unlinked from decision"}
 
 
-@router.get("/{decision_id}/risks", response_model=List[Risk])
+@router.get("/{decision_id}/risks", response_model=List[Risk], deprecated=True)
 async def get_decision_risks(
     decision_id: int,
     tenant_id: int = Depends(get_tenant_id),
     accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
 ):
-    """Get all risks linked to a decision."""
+    """Get all risks linked to a decision. DEPRECATED: use GET /risk-scopes/{risk_scope_id}/decisions."""
     await crud_decision.get_scoped_or_404(session, decision_id, tenant_id, accessible_scopes)
 
     result = await session.execute(
@@ -310,4 +312,26 @@ async def get_decision_risks(
             DecisionRiskLink, Risk.id == DecisionRiskLink.risk_id
         ).where(DecisionRiskLink.decision_id == decision_id)
     )
+    return result.scalars().all()
+
+
+@router.get("/{decision_id}/risk-scopes", response_model=List[RiskScope])
+async def get_decision_risk_scopes(
+    decision_id: int,
+    tenant_id: int = Depends(get_tenant_id),
+    accessible_scopes: set[int] | None = Depends(get_scope_access),
+    session: AsyncSession = Depends(get_session),
+):
+    """Get all scope-contextualized risks linked to a decision."""
+    await crud_decision.get_scoped_or_404(session, decision_id, tenant_id, accessible_scopes)
+
+    query = (
+        select(RiskScope)
+        .join(DecisionRiskScopeLink, DecisionRiskScopeLink.risk_scope_id == RiskScope.id)
+        .where(DecisionRiskScopeLink.decision_id == decision_id)
+    )
+    if accessible_scopes is not None:
+        query = query.where(RiskScope.scope_id.in_(accessible_scopes))
+
+    result = await session.execute(query)
     return result.scalars().all()

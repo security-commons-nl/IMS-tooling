@@ -48,7 +48,7 @@ def get_methodology(methodology_name: str) -> str:
     - iso27001: ISO 27001 Information Security
     - avg: AVG/GDPR Privacy regulation
     - behandelstrategie: Risk treatment strategies (4 options + hard rule)
-    - besluitlog: Management decision log (DT-besluiten)
+    - besluitlog: Management decision log (managementbesluiten)
     - in_control_assessment: In-control assessment levels and calculation
     """
     methodologies = {
@@ -175,9 +175,9 @@ Every risk MUST have one of four treatment strategies:
 | **Accepteren** | Bewust het restrisico accepteren | Restrisico valt binnen de risicotolerantie |
 
 ### Hard Rule: Accepteren + Hoog Risico
-Als de behandelstrategie **Accepteren** is EN de risicoscore >= 9, dan is een **formeel DT-besluit** verplicht.
+Als de behandelstrategie **Accepteren** is EN de risicoscore >= 9, dan is een **formeel managementbesluit** verplicht.
 Dit besluit moet worden vastgelegd in de Besluitlog met:
-- Wie het besluit heeft genomen (DT-lid)
+- Wie het besluit heeft genomen (verantwoordelijk manager)
 - Motivatie waarom acceptatie verantwoord is
 - Eventuele voorwaarden
 - Herijkdatum (wanneer opnieuw beoordelen)
@@ -187,7 +187,7 @@ Zonder dit besluit is het risico "onbehandeld" en scoort de scope "Niet in contr
         "besluitlog": """
 ## Besluitlog (Management Decision Log)
 
-Formele besluiten van het Directie Team (DT) die worden vastgelegd voor audit-trail en verantwoording.
+Formele managementbesluiten die worden vastgelegd voor audit-trail en verantwoording.
 
 ### Besluittypen
 | Type | Beschrijving |
@@ -201,7 +201,7 @@ Formele besluiten van het Directie Team (DT) die worden vastgelegd voor audit-tr
 ### Lifecycle
 - **Actief**: Geldig en van kracht
 - **Verlopen**: Herijkdatum is verstreken — moet opnieuw worden beoordeeld
-- **Ingetrokken**: Actief ingetrokken door DT
+- **Ingetrokken**: Actief ingetrokken door management
 - **Vervangen**: Vervangen door een nieuwer besluit
 
 ### Hard Rule
@@ -228,12 +228,12 @@ De in-control status wordt bepaald op basis van:
 1. **Hoge risico's** (residual score >= 9): elke hoge risico → Niet in control
 2. **Open findings**: > 5 actieve findings → Beperkt in control
 3. **Achterstallige acties**: overdue corrective actions → invloed op niveau
-4. **Ontbrekende besluiten**: Accepteren + score >= 9 zonder DT-besluit → Niet in control
+4. **Ontbrekende besluiten**: Accepteren + score >= 9 zonder managementbesluit → Niet in control
 
 ### Formele vaststelling
-De berekende status moet formeel worden vastgesteld door het DT:
+De berekende status moet formeel worden vastgesteld door het management:
 - Assessor berekent en motiveert
-- DT stelt vast (established_by_id + established_date)
+- Management stelt vast (established_by_id + established_date)
 - Geldig tot volgende beoordelingsperiode (valid_until)
 
 De in-control status per scope is input voor de Management Review.

@@ -197,7 +197,7 @@ async def get_in_control_dashboard(
     """
     Get in-control overview for all scopes with live-calculated status.
     Falls back to stored assessment if calculation data is unavailable.
-    For the DT dashboard.
+    For the management dashboard.
     """
     # Get all active scopes for this tenant
     query = select(Scope).where(
@@ -262,13 +262,13 @@ async def get_in_control_assessment(
 @router.post("/{assessment_id}/establish", response_model=InControlAssessment)
 async def establish_in_control(
     assessment_id: int,
-    established_by_id: int = Query(..., description="DT user who establishes"),
+    established_by_id: int = Query(..., description="Management user who establishes"),
     tenant_id: int = Depends(get_tenant_id),
     accessible_scopes: set[int] | None = Depends(get_scope_access),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_configurer),
 ):
-    """Formally establish an in-control status (DT-only)."""
+    """Formally establish an in-control status (management-only)."""
     db_assessment = await crud_assessment.get_scoped_or_404(
         session, assessment_id, tenant_id, accessible_scopes,
     )

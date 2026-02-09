@@ -52,7 +52,7 @@ Niveaus: Laag (1), Gemiddeld (2), Hoog (3), Zeer Hoog (4)
 ## Bestuurlijke Scope Lifecycle (Hiaat 2)
 Elke scope heeft een governance status:
 - **Concept**: Scope is in voorbereiding
-- **Vastgesteld**: Formeel vastgesteld door DT, inclusief motivatie
+- **Vastgesteld**: Formeel vastgesteld door management, inclusief motivatie
 - **Verlopen**: Geldigheidsperiode is verstreken
 
 Velden: `governance_status`, `scope_motivation` (waarom in/uit scope),
