@@ -25,16 +25,12 @@ def sidebar_nav_link(label: str, href: str, icon: str) -> rx.Component:
             width="100%",
             padding="8px 12px",
             border_radius="md",
-            _hover={"background": "var(--gray-a3)", "text_decoration": "none", "color": "var(--gray-12)"},
+            _hover={"background": "var(--gray-a3)"},
         ),
         href=href,
         width="100%",
-        text_decoration="none",
-        color="var(--gray-12)",
-        style={
-            "text_decoration": "none !important",
-            "color": "var(--gray-12) !important",
-        },
+        underline="none",
+        high_contrast=True,
         on_click=BaseState.close_sidebar,
     )
 
