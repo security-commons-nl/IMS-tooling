@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "ims"
     SQLALCHEMY_DATABASE_URI: str | None = None
 
+    # JWT Authentication
+    JWT_SECRET: str = "CHANGE_ME_IN_PRODUCTION_use_openssl_rand_hex_32"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 480  # 8 hours
+
     # App-level DB user (non-superuser, RLS enforced)
     # If not set, falls back to POSTGRES_USER (superuser — RLS bypassed!)
     POSTGRES_APP_USER: str | None = None
@@ -101,5 +106,6 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = True
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()
