@@ -30,7 +30,7 @@ def sidebar_nav_link(label: str, href: str, icon: str) -> rx.Component:
         href=href,
         width="100%",
         text_decoration="none",
-        color="inherit",
+        color="var(--gray-12)",
         on_click=BaseState.close_sidebar,
     )
 
