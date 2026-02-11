@@ -86,5 +86,12 @@ async def get_tenant_session(
     Dependency that provides a tenant-aware database session.
 
     Combines the database session with the current tenant context.
+    Sets the PostgreSQL app.current_tenant variable for RLS.
     """
+    from sqlalchemy import text
+    
+    # Set the tenant ID for the current session (RLS enforcement)
+    # connection pooling requires this to be set for every session checkout
+    await session.execute(text(f"SET app.current_tenant = '{tenant_id}'"))
+    
     return TenantAwareSession(session, tenant_id)
