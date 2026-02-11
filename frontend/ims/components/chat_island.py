@@ -282,7 +282,7 @@ def chat_panel() -> rx.Component:
         border_radius="lg",
         box_shadow="0 10px 40px rgba(0,0,0,0.15)",
         z_index="1000",
-        display=rx.cond(ChatState.is_open, "flex", "none"),
+        # Removed display prop - controlled by parent rx.cond
     )
 
 
@@ -290,7 +290,10 @@ def chat_toggle_button() -> rx.Component:
     """Floating button to toggle chat panel."""
     return rx.box(
         rx.icon_button(
-            rx.icon("message-circle", size=24),
+            rx.icon(
+                rx.cond(ChatState.is_open, "chevron-down", "message-circle"),
+                size=24
+            ),
             size="4",
             radius="full",
             on_click=ChatState.toggle_chat,
@@ -315,6 +318,10 @@ def chat_island() -> rx.Component:
         )
     """
     return rx.fragment(
-        chat_panel(),
+        rx.cond(
+            ChatState.is_open,
+            chat_panel(),
+            rx.fragment(),
+        ),
         chat_toggle_button(),
     )
