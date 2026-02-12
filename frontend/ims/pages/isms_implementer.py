@@ -1,6 +1,6 @@
 import reflex as rx
-from ...state.isms_implementer import IsmsImplementerState
-from ...components.layout import protected_page
+from ims.state.isms_implementer import IsmsImplementerState
+from ims.components.layout import layout
 
 def step_header(step_number: int, title: str, description: str) -> rx.Component:
     """Header for each implementation step."""
@@ -235,9 +235,8 @@ def stepper_connector(step: int) -> rx.Component:
         mx=1
     )
 
-@protected_page
 def isms_implementer_page() -> rx.Component:
-    return rx.vstack(
+    return layout(rx.vstack(
         # Page Title
         rx.heading("ISMS Implementatiegids", size="xl", mb=6),
         
@@ -284,5 +283,5 @@ def isms_implementer_page() -> rx.Component:
         align_items="start",
         spacing="4",
         # Load data on mount
-        on_mount=IsmsImplementerState.load_data
-    )
+        on_mount=IsmsImplementerState.load_data,
+    ), title="ISMS Implementatie", subtitle="Stapsgewijze implementatiegids")
