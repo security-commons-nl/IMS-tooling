@@ -33,6 +33,7 @@ from app.api.v1.endpoints import (
     system,
     graph,
     organization_profile,
+    stakeholders,
 )
 
 api_router = APIRouter()
@@ -274,4 +275,11 @@ api_router.include_router(
     organization_profile.router,
     prefix="/organization-profile",
     tags=["Organization Profile"]
+)
+
+# Stakeholders (ISO 27001 §4.2)
+api_router.include_router(
+    stakeholders.router,
+    prefix="/stakeholders",
+    tags=["Context: Stakeholders"]
 )

@@ -953,6 +953,77 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
+    async def analyze_impact(self, change_description: str) -> Dict[str, Any]:
+        """Analyze impact of a change (Simulated/AI)."""
+        # Placeholder for AI agent call
+        return {
+            "risk_score": 5,
+            "impact_areas": ["Security", "Compliance"],
+            "recommendation": "Review security policy"
+        }
+
+    # =========================================================================
+    # STAKEHOLDERS (ISO 27001 §4.2)
+    # =========================================================================
+
+    async def get_stakeholders(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        tenant_id: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get list of stakeholders."""
+        async with self._get_client() as client:
+            params = {"skip": skip, "limit": limit}
+            if tenant_id:
+                params["tenant_id"] = tenant_id
+
+            response = await client.get("/stakeholders/", params=params)
+            response.raise_for_status()
+            return response.json()
+
+    async def create_stakeholder(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new stakeholder."""
+        async with self._get_client() as client:
+            response = await client.post("/stakeholders/", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def update_stakeholder(self, stakeholder_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a stakeholder."""
+        async with self._get_client() as client:
+            response = await client.put(f"/stakeholders/{stakeholder_id}", json=data)
+            response.raise_for_status()
+            return response.json()
+
+    async def delete_stakeholder(self, stakeholder_id: int) -> Dict[str, Any]:
+        """Delete a stakeholder."""
+        async with self._get_client() as client:
+            response = await client.delete(f"/stakeholders/{stakeholder_id}")
+            response.raise_for_status()
+            return response.json()
+
+    # =========================================================================
+    # ORGANIZATION PROFILE (ISO 27001 §4.1)
+    # =========================================================================
+
+    async def get_organization_profile(self) -> Optional[Dict[str, Any]]:
+        """Get organization profile (singleton per tenant)."""
+        async with self._get_client() as client:
+            try:
+                response = await client.get("/organization-profile/me")
+                response.raise_for_status()
+                return response.json()
+            except Exception:
+                return None
+
+    async def update_organization_profile(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update organization profile."""
+        async with self._get_client() as client:
+            response = await client.patch("/organization-profile/me", json=data)
+            response.raise_for_status()
+            return response.json()
+
     async def create_tenant(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new tenant."""
         async with self._get_client() as client:

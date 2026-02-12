@@ -4213,6 +4213,33 @@ class Objective(SQLModel, table=True):
     initiative_links: List["InitiativeObjectiveLink"] = Relationship(back_populates="objective")
 
 
+# =============================================================================
+# STAKEHOLDERS (ISO 27001 §4.2)
+# =============================================================================
+
+class Stakeholder(SQLModel, table=True):
+    """
+    ISO 27001 Clause 4.2: Understanding the needs and expectations of interested parties.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    tenant_id: int = Field(foreign_key="tenant.id", index=True)
+
+    name: str  # e.g. "Klanten", "Toezichthouder", "Medewerkers"
+    type: str  # "Internal", "External", "Partner"
+
+    # Needs & Expectations
+    requirements: str  # Wat verwachten ze?
+
+    # Relevance
+    relevance_level: str = "High"  # High/Medium/Low
+
+    # Link to required controls/policy (optional)
+    requirement_id: Optional[int] = Field(default=None, foreign_key="requirement.id")
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+
 class ObjectiveKPI(SQLModel, table=True):
     """
     Key Performance Indicator linked to an Objective.

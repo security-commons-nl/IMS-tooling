@@ -114,6 +114,7 @@ def _build_nav_links(link_fn):
                     BaseState.menu_inrichten_open,
                     rx.fragment(
                         link_fn("Mijn Organisatie", "/organization", "landmark"),
+                        link_fn("ISMS Implementatie", "/isms-implementer", "list-start"),
                         link_fn("Risicotolerantie", "/risk-appetite", "gauge"),
                         link_fn("Beleid", "/policies", "file-text"),
                         link_fn("Scopes", "/scopes", "git-branch"),
