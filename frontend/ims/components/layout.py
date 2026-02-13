@@ -57,7 +57,7 @@ def _section_header(label: str, is_open_var, toggle_handler):
 
 def _subsection_header(label: str, icon: str, is_open_var, toggle_handler):
     """Clickable subsection header with icon and chevron."""
-    return rx.hstack(
+    return rx.button(
         rx.icon(icon, size=20),
         rx.text(label, size="2"),
         rx.spacer(),
@@ -67,12 +67,17 @@ def _subsection_header(label: str, icon: str, is_open_var, toggle_handler):
             rx.icon("chevron-right", size=14, color="gray"),
         ),
         on_click=toggle_handler,
-        cursor="pointer",
-        padding="8px 12px",
+        variant="ghost",
         width="100%",
-        align="center",
-        _hover={"background": "var(--gray-a3)"},
+        padding="8px 12px",
+        display="flex",
+        justify_content="flex-start",
+        align_items="center",
+        gap="8px",
         border_radius="md",
+        cursor="pointer",
+        color="inherit",
+        _hover={"background": "var(--gray-a3)"},
     )
 
 
