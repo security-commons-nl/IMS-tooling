@@ -140,7 +140,7 @@ def _build_nav_links(link_fn):
                         rx.cond(
                             BaseState.menu_ims_impl_open,
                             rx.box(
-                                link_fn("ISMS Dashboard", "/isms-implementer", "list-start"),
+                                link_fn("ISMS Dashboard", "/isms-dashboard", "list-start"),
                                 link_fn("PIMS Dashboard", "/pims-dashboard", "fingerprint"),
                                 link_fn("BCMS Dashboard", "/bcms-dashboard", "shield-alert"),
                                 link_fn("AIMS Dashboard", "/aims-dashboard", "brain"),

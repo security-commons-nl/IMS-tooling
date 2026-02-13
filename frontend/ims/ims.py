@@ -120,7 +120,7 @@ app.add_page(risk_appetite_page, route="/risk-appetite", title="Risicotolerantie
 app.add_page(corrective_actions_page, route="/corrective-actions", title="Verbeteracties - IMS")
 app.add_page(tasks_page, route="/tasks", title="Mijn Taken - IMS")
 app.add_page(tenants_page, route="/tenants", title="Organisaties - IMS")
-app.add_page(isms_implementer_page, route="/isms-implementer", title="ISMS Dashboard - IMS")
+app.add_page(isms_implementer_page, route="/isms-dashboard", title="ISMS Dashboard - IMS")
 app.add_page(pims_dashboard_page, route="/pims-dashboard", title="PIMS Dashboard - IMS")
 app.add_page(bcms_dashboard_page, route="/bcms-dashboard", title="BCMS Dashboard - IMS")
 app.add_page(aims_dashboard_page, route="/aims-dashboard", title="AIMS Dashboard - IMS")
