@@ -115,25 +115,22 @@ def _build_nav_links(link_fn):
                     rx.fragment(
                         link_fn("Mijn Organisatie", "/organization", "landmark"),
                         # IMS Implementatie — collapsible sub-section
-                        rx.box(
-                            rx.hstack(
-                                rx.icon("package", size=20),
-                                rx.text("IMS Implementatie", size="2"),
-                                rx.spacer(),
-                                rx.cond(
-                                    BaseState.menu_ims_impl_open,
-                                    rx.icon("chevron-down", size=14, color="gray"),
-                                    rx.icon("chevron-right", size=14, color="gray"),
-                                ),
-                                width="100%",
-                                padding="8px 12px",
-                                border_radius="md",
-                                _hover={"background": "var(--gray-a3)"},
-                                cursor="pointer",
-                                align="center",
+                        rx.hstack(
+                            rx.icon("package", size=20),
+                            rx.text("IMS Implementatie", size="2"),
+                            rx.spacer(),
+                            rx.cond(
+                                BaseState.menu_ims_impl_open,
+                                rx.icon("chevron-down", size=14, color="gray"),
+                                rx.icon("chevron-right", size=14, color="gray"),
                             ),
                             on_click=BaseState.toggle_menu_ims_impl,
                             width="100%",
+                            padding="8px 12px",
+                            border_radius="md",
+                            _hover={"background": "var(--gray-a3)"},
+                            cursor="pointer",
+                            align="center",
                         ),
                         rx.cond(
                             BaseState.menu_ims_impl_open,
