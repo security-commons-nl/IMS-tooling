@@ -36,6 +36,9 @@ from ims.pages.corrective_actions import corrective_actions_page
 from ims.pages.tasks import tasks_page
 from ims.pages.tenants import tenants_page
 from ims.pages.isms_implementer import isms_implementer_page
+from ims.pages.pims_dashboard import pims_dashboard_page
+from ims.pages.bcms_dashboard import bcms_dashboard_page
+from ims.pages.aims_dashboard import aims_dashboard_page
 
 # Import state (to ensure it's registered)
 from ims.state.auth import AuthState
@@ -117,4 +120,7 @@ app.add_page(risk_appetite_page, route="/risk-appetite", title="Risicotolerantie
 app.add_page(corrective_actions_page, route="/corrective-actions", title="Verbeteracties - IMS")
 app.add_page(tasks_page, route="/tasks", title="Mijn Taken - IMS")
 app.add_page(tenants_page, route="/tenants", title="Organisaties - IMS")
-app.add_page(isms_implementer_page, route="/isms-implementer", title="ISMS Implementatie - IMS")
+app.add_page(isms_implementer_page, route="/isms-implementer", title="ISMS Dashboard - IMS")
+app.add_page(pims_dashboard_page, route="/pims-dashboard", title="PIMS Dashboard - IMS")
+app.add_page(bcms_dashboard_page, route="/bcms-dashboard", title="BCMS Dashboard - IMS")
+app.add_page(aims_dashboard_page, route="/aims-dashboard", title="AIMS Dashboard - IMS")
