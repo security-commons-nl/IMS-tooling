@@ -55,6 +55,27 @@ def _section_header(label: str, is_open_var, toggle_handler):
     )
 
 
+def _subsection_header(label: str, icon: str, is_open_var, toggle_handler):
+    """Clickable subsection header with icon and chevron."""
+    return rx.hstack(
+        rx.icon(icon, size=20),
+        rx.text(label, size="2"),
+        rx.spacer(),
+        rx.cond(
+            is_open_var,
+            rx.icon("chevron-down", size=14, color="gray"),
+            rx.icon("chevron-right", size=14, color="gray"),
+        ),
+        on_click=toggle_handler,
+        cursor="pointer",
+        padding="8px 12px",
+        width="100%",
+        align="center",
+        _hover={"background": "var(--gray-a3)"},
+        border_radius="md",
+    )
+
+
 def _build_nav_links(link_fn):
     """Build the full list of navigation items.
 
@@ -115,26 +136,7 @@ def _build_nav_links(link_fn):
                     rx.fragment(
                         link_fn("Mijn Organisatie", "/organization", "landmark"),
                         # IMS Implementatie — collapsible sub-section
-                        rx.el.div(
-                            rx.hstack(
-                                rx.icon("package", size=20),
-                                rx.text("IMS Implementatie", size="2"),
-                                rx.spacer(),
-                                rx.cond(
-                                    BaseState.menu_ims_impl_open,
-                                    rx.icon("chevron-down", size=14, color="gray"),
-                                    rx.icon("chevron-right", size=14, color="gray"),
-                                ),
-                                width="100%",
-                                padding="8px 12px",
-                                border_radius="md",
-                                _hover={"background": "var(--gray-a3)"},
-                                align="center",
-                            ),
-                            on_click=BaseState.toggle_menu_ims_impl,
-                            cursor="pointer",
-                            width="100%",
-                        ),
+                        _subsection_header("IMS Implementatie", "package", BaseState.menu_ims_impl_open, BaseState.toggle_menu_ims_impl),
                         rx.cond(
                             BaseState.menu_ims_impl_open,
                             rx.box(
