@@ -186,6 +186,44 @@ class IsmsImplementerState(BaseState):
             p for i, p in enumerate(self.critical_processes) if i != index
         ]
 
+    # --- Projectplan WBS Tabel ---
+    wbs_rows: List[dict] = []
+    wbs_fase: str = ""
+    wbs_stap: str = ""
+    wbs_activiteit: str = ""
+    wbs_output: str = ""
+    wbs_verantwoordelijke: str = ""
+    wbs_planning: str = ""
+    show_wbs_dialog: bool = False
+
+    def open_wbs_dialog(self):
+        self.wbs_fase = ""
+        self.wbs_stap = ""
+        self.wbs_activiteit = ""
+        self.wbs_output = ""
+        self.wbs_verantwoordelijke = ""
+        self.wbs_planning = ""
+        self.show_wbs_dialog = True
+
+    def close_wbs_dialog(self):
+        self.show_wbs_dialog = False
+
+    def add_wbs_row(self):
+        if not self.wbs_activiteit.strip():
+            return
+        self.wbs_rows = self.wbs_rows + [{
+            "fase": self.wbs_fase,
+            "stap": self.wbs_stap,
+            "activiteit": self.wbs_activiteit,
+            "output": self.wbs_output,
+            "verantwoordelijke": self.wbs_verantwoordelijke,
+            "planning": self.wbs_planning,
+        }]
+        self.show_wbs_dialog = False
+
+    def delete_wbs_row(self, index: int):
+        self.wbs_rows = [r for i, r in enumerate(self.wbs_rows) if i != index]
+
     # --- Actions for Scope ---
 
     new_scope_description: str = ""

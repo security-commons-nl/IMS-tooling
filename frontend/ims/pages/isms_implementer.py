@@ -626,18 +626,6 @@ def step_bc_content() -> rx.Component:
     )
 
 
-def _pp_table_row(
-    fase: str, stap: str, activiteit: str, output: str, verantwoordelijke: str, planning: str,
-) -> rx.Component:
-    return rx.table.row(
-        rx.table.cell(rx.text(fase, size="2")),
-        rx.table.cell(rx.text(stap, size="2")),
-        rx.table.cell(rx.text(activiteit, size="2")),
-        rx.table.cell(rx.text(output, size="2")),
-        rx.table.cell(rx.text(verantwoordelijke, size="2")),
-        rx.table.cell(rx.text(planning, size="2")),
-    )
-
 
 def step_pp_content() -> rx.Component:
     """Content for preparation step: Projectplan."""
@@ -684,22 +672,60 @@ def step_pp_content() -> rx.Component:
                         spacing="3",
                     ),
                     rx.divider(),
-                    rx.table.root(
-                        rx.table.header(
-                            rx.table.row(
-                                rx.table.column_header_cell("Fase"),
-                                rx.table.column_header_cell("Stap"),
-                                rx.table.column_header_cell("Activiteit"),
-                                rx.table.column_header_cell("Output"),
-                                rx.table.column_header_cell("Verantwoordelijke"),
-                                rx.table.column_header_cell("Planning & Deadline"),
+                    rx.cond(
+                        IsmsImplementerState.wbs_rows.length() > 0,
+                        rx.table.root(
+                            rx.table.header(
+                                rx.table.row(
+                                    rx.table.column_header_cell("Fase"),
+                                    rx.table.column_header_cell("Stap"),
+                                    rx.table.column_header_cell("Activiteit"),
+                                    rx.table.column_header_cell("Output"),
+                                    rx.table.column_header_cell("Verantwoordelijke"),
+                                    rx.table.column_header_cell("Planning & Deadline"),
+                                    rx.table.column_header_cell(""),
+                                ),
                             ),
+                            rx.table.body(
+                                rx.foreach(
+                                    IsmsImplementerState.wbs_rows,
+                                    lambda row, idx: rx.table.row(
+                                        rx.table.cell(rx.text(row["fase"], size="2")),
+                                        rx.table.cell(rx.text(row["stap"], size="2")),
+                                        rx.table.cell(rx.text(row["activiteit"], size="2")),
+                                        rx.table.cell(rx.text(row["output"], size="2")),
+                                        rx.table.cell(rx.text(row["verantwoordelijke"], size="2")),
+                                        rx.table.cell(rx.text(row["planning"], size="2")),
+                                        rx.table.cell(
+                                            rx.icon_button(
+                                                rx.icon("trash-2", size=14),
+                                                variant="ghost",
+                                                color_scheme="red",
+                                                size="1",
+                                                on_click=IsmsImplementerState.delete_wbs_row(idx),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            variant="surface",
+                            width="100%",
                         ),
-                        rx.table.body(
-                            _pp_table_row("", "", "", "", "", ""),
+                        rx.text(
+                            "Nog geen activiteiten toegevoegd.",
+                            size="2",
+                            color="var(--gray-9)",
+                            font_style="italic",
                         ),
-                        variant="surface",
-                        width="100%",
+                    ),
+                    # Toevoegen knop
+                    rx.button(
+                        rx.icon("plus", size=14),
+                        "Toevoegen",
+                        variant="soft",
+                        color_scheme="amber",
+                        size="2",
+                        on_click=IsmsImplementerState.open_wbs_dialog,
                     ),
                     spacing="4",
                     width="100%",
@@ -713,6 +739,67 @@ def step_pp_content() -> rx.Component:
             border_radius="var(--radius-3)",
             overflow="hidden",
             width="100%",
+        ),
+        # WBS toevoeg-dialog
+        rx.dialog.root(
+            rx.dialog.content(
+                rx.dialog.title("Activiteit Toevoegen"),
+                rx.dialog.description("Voeg een nieuwe rij toe aan het projectplan."),
+                rx.flex(
+                    rx.text("Fase", size="2", weight="bold"),
+                    rx.select(
+                        ["Plan", "Do", "Check", "Act"],
+                        placeholder="Selecteer fase...",
+                        value=IsmsImplementerState.wbs_fase,
+                        on_change=IsmsImplementerState.set_wbs_fase,
+                    ),
+                    rx.text("Stap", size="2", weight="bold", margin_top="12px"),
+                    rx.input(
+                        placeholder="Bijv. 1. Context",
+                        value=IsmsImplementerState.wbs_stap,
+                        on_change=IsmsImplementerState.set_wbs_stap,
+                    ),
+                    rx.text("Activiteit", size="2", weight="bold", margin_top="12px"),
+                    rx.input(
+                        placeholder="Bijv. Interne en externe analyse (SWOT)",
+                        value=IsmsImplementerState.wbs_activiteit,
+                        on_change=IsmsImplementerState.set_wbs_activiteit,
+                    ),
+                    rx.text("Output", size="2", weight="bold", margin_top="12px"),
+                    rx.input(
+                        placeholder="Bijv. SWOT-analyse",
+                        value=IsmsImplementerState.wbs_output,
+                        on_change=IsmsImplementerState.set_wbs_output,
+                    ),
+                    rx.text("Verantwoordelijke", size="2", weight="bold", margin_top="12px"),
+                    rx.input(
+                        placeholder="Bijv. CISO",
+                        value=IsmsImplementerState.wbs_verantwoordelijke,
+                        on_change=IsmsImplementerState.set_wbs_verantwoordelijke,
+                    ),
+                    rx.text("Planning & Deadline", size="2", weight="bold", margin_top="12px"),
+                    rx.input(
+                        placeholder="Bijv. Q1 2026",
+                        value=IsmsImplementerState.wbs_planning,
+                        on_change=IsmsImplementerState.set_wbs_planning,
+                    ),
+                    direction="column",
+                    spacing="2",
+                ),
+                rx.flex(
+                    rx.dialog.close(
+                        rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=IsmsImplementerState.close_wbs_dialog),
+                    ),
+                    rx.dialog.close(
+                        rx.button("Toevoegen", on_click=IsmsImplementerState.add_wbs_row),
+                    ),
+                    spacing="3",
+                    margin_top="16px",
+                    justify="end",
+                ),
+                max_width="500px",
+            ),
+            open=IsmsImplementerState.show_wbs_dialog,
         ),
         align_items="start",
         width="100%",
