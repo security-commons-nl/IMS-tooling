@@ -139,7 +139,7 @@ def hero_banner() -> rx.Component:
             rx.hstack(
                 rx.icon("shield-check", size=32, color="var(--indigo-4)"),
                 rx.heading(
-                    "Leidse IMS",
+                    "Het Leidse IMS",
                     size="7",
                     weight="bold",
                     color="white",
@@ -506,6 +506,6 @@ def leidse_ims_page() -> rx.Component:
     """Leidse IMS - Overzichtspagina."""
     return layout(
         leidse_ims_content(),
-        title="Leidse IMS",
+        title="Het Leidse IMS",
         subtitle="Integrated Management System",
     )

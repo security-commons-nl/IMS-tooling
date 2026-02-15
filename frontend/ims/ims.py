@@ -125,4 +125,4 @@ app.add_page(isms_implementer_page, route="/isms-dashboard", title="ISMS Dashboa
 app.add_page(pims_dashboard_page, route="/pims-dashboard", title="PIMS Dashboard - IMS")
 app.add_page(bcms_dashboard_page, route="/bcms-dashboard", title="BCMS Dashboard - IMS")
 app.add_page(aims_dashboard_page, route="/aims-dashboard", title="AIMS Dashboard - IMS")
-app.add_page(leidse_ims_page, route="/leidse-ims", title="Leidse IMS - IMS")
+app.add_page(leidse_ims_page, route="/leidse-ims", title="Het Leidse IMS - IMS")
