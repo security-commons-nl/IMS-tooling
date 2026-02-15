@@ -74,7 +74,31 @@ def step_1_content() -> rx.Component:
     """Content for Step 1: Context & Organisatie."""
     return rx.vstack(
         step_header(1, "Context & Organisatie", "Bepaal de interne en externe context, stakeholders en scope van het ISMS."),
-        
+
+        # Inleidende banner
+        rx.box(
+            rx.hstack(
+                rx.icon("info", size=20, color="var(--indigo-4)", flex_shrink="0"),
+                rx.text(
+                    "De fase 'context van de organisatie' omvat het uitvoeren van een "
+                    "interne en externe analyse, het identificeren en analyseren van de "
+                    "behoeften, eisen en verwachtingen van relevante belanghebbenden en "
+                    "het bepalen welke daarvan worden geadresseerd binnen het "
+                    "managementsysteem. Op basis hiervan wordt het toepassingsgebied "
+                    "(scope) van het ISMS vastgesteld.",
+                    size="2",
+                    color="var(--indigo-3)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--indigo-9), var(--indigo-11))",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
+
         # Dashboard
         context_dashboard(),
 
