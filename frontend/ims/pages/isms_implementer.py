@@ -731,6 +731,28 @@ def step_pp_content() -> rx.Component:
             overflow="hidden",
             width="100%",
         ),
+        # Visie-callout
+        rx.box(
+            rx.hstack(
+                rx.icon("sparkles", size=20, color="var(--amber-9)", flex_shrink="0"),
+                rx.text(
+                    "Dit implementatietraject transformeert informatiebeveiliging van een "
+                    "reactieve taak naar een proactief proces dat integraal onderdeel is van "
+                    "de gemeentelijke identiteit. Door de focus op leiderschap, objectieve "
+                    "meting en continue verbetering bouwen we aan een weerbare gemeente.",
+                    size="2",
+                    color="var(--gray-11)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+            border="1px solid var(--amber-a4)",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
         # WBS toevoeg-dialog
         rx.dialog.root(
             rx.dialog.content(
