@@ -672,51 +672,42 @@ def step_pp_content() -> rx.Component:
                         spacing="3",
                     ),
                     rx.divider(),
-                    rx.cond(
-                        IsmsImplementerState.wbs_rows.length() > 0,
-                        rx.table.root(
-                            rx.table.header(
-                                rx.table.row(
-                                    rx.table.column_header_cell("Fase"),
-                                    rx.table.column_header_cell("Stap"),
-                                    rx.table.column_header_cell("Activiteit"),
-                                    rx.table.column_header_cell("Output"),
-                                    rx.table.column_header_cell("Verantwoordelijke"),
-                                    rx.table.column_header_cell("Planning & Deadline"),
-                                    rx.table.column_header_cell(""),
-                                ),
+                    rx.table.root(
+                        rx.table.header(
+                            rx.table.row(
+                                rx.table.column_header_cell("Fase"),
+                                rx.table.column_header_cell("Stap"),
+                                rx.table.column_header_cell("Activiteit"),
+                                rx.table.column_header_cell("Output"),
+                                rx.table.column_header_cell("Verantwoordelijke"),
+                                rx.table.column_header_cell("Planning & Deadline"),
+                                rx.table.column_header_cell(""),
                             ),
-                            rx.table.body(
-                                rx.foreach(
-                                    IsmsImplementerState.wbs_rows,
-                                    lambda row, idx: rx.table.row(
-                                        rx.table.cell(rx.text(row["fase"], size="2")),
-                                        rx.table.cell(rx.text(row["stap"], size="2")),
-                                        rx.table.cell(rx.text(row["activiteit"], size="2")),
-                                        rx.table.cell(rx.text(row["output"], size="2")),
-                                        rx.table.cell(rx.text(row["verantwoordelijke"], size="2")),
-                                        rx.table.cell(rx.text(row["planning"], size="2")),
-                                        rx.table.cell(
-                                            rx.icon_button(
-                                                rx.icon("trash-2", size=14),
-                                                variant="ghost",
-                                                color_scheme="red",
-                                                size="1",
-                                                on_click=IsmsImplementerState.delete_wbs_row(idx),
-                                            ),
+                        ),
+                        rx.table.body(
+                            rx.foreach(
+                                IsmsImplementerState.wbs_rows,
+                                lambda row, idx: rx.table.row(
+                                    rx.table.cell(rx.text(row["fase"], size="2")),
+                                    rx.table.cell(rx.text(row["stap"], size="2")),
+                                    rx.table.cell(rx.text(row["activiteit"], size="2")),
+                                    rx.table.cell(rx.text(row["output"], size="2")),
+                                    rx.table.cell(rx.text(row["verantwoordelijke"], size="2")),
+                                    rx.table.cell(rx.text(row["planning"], size="2")),
+                                    rx.table.cell(
+                                        rx.icon_button(
+                                            rx.icon("trash-2", size=14),
+                                            variant="ghost",
+                                            color_scheme="red",
+                                            size="1",
+                                            on_click=IsmsImplementerState.delete_wbs_row(idx),
                                         ),
                                     ),
                                 ),
                             ),
-                            variant="surface",
-                            width="100%",
                         ),
-                        rx.text(
-                            "Nog geen activiteiten toegevoegd.",
-                            size="2",
-                            color="var(--gray-9)",
-                            font_style="italic",
-                        ),
+                        variant="surface",
+                        width="100%",
                     ),
                     # Toevoegen knop
                     rx.button(
