@@ -24,6 +24,14 @@ class IsmsImplementerState(BaseState):
     organization_context: List[dict] = [] # SWOT/PESTLE items
     scopes: List[dict] = []
     
+    # --- SWOT ---
+    swot_strengths: str = ""
+    swot_weaknesses: str = ""
+    swot_opportunities: str = ""
+    swot_threats: str = ""
+    swot_editing: str = ""
+    swot_edit_text: str = ""
+
     # --- Step 2 Data (Leadership) ---
     policies: List[dict] = []
     objectives: List[dict] = []
@@ -78,6 +86,38 @@ class IsmsImplementerState(BaseState):
         
     def set_step(self, step: int):
         self.active_step = step
+
+    # --- SWOT Actions ---
+
+    def open_swot_edit(self, quadrant: str):
+        """Open the edit dialog for a SWOT quadrant."""
+        self.swot_editing = quadrant
+        if quadrant == "strengths":
+            self.swot_edit_text = self.swot_strengths
+        elif quadrant == "weaknesses":
+            self.swot_edit_text = self.swot_weaknesses
+        elif quadrant == "opportunities":
+            self.swot_edit_text = self.swot_opportunities
+        elif quadrant == "threats":
+            self.swot_edit_text = self.swot_threats
+
+    def save_swot_edit(self):
+        """Save the edited SWOT text."""
+        if self.swot_editing == "strengths":
+            self.swot_strengths = self.swot_edit_text
+        elif self.swot_editing == "weaknesses":
+            self.swot_weaknesses = self.swot_edit_text
+        elif self.swot_editing == "opportunities":
+            self.swot_opportunities = self.swot_edit_text
+        elif self.swot_editing == "threats":
+            self.swot_threats = self.swot_edit_text
+        self.swot_editing = ""
+        self.swot_edit_text = ""
+
+    def close_swot_edit(self):
+        """Close the SWOT edit dialog without saving."""
+        self.swot_editing = ""
+        self.swot_edit_text = ""
 
     # --- Actions for Step 1 ---
 
@@ -184,7 +224,10 @@ class IsmsImplementerState(BaseState):
 
     @rx.var
     def has_context_issues(self) -> bool:
-        return self.organization_profile is not None
+        return self.organization_profile is not None or bool(
+            self.swot_strengths or self.swot_weaknesses
+            or self.swot_opportunities or self.swot_threats
+        )
 
     @rx.var
     def has_stakeholders(self) -> bool:

@@ -69,6 +69,140 @@ def context_dashboard() -> rx.Component:
     )
 
 
+def _swot_quadrant(
+    letter: str,
+    title: str,
+    bg: str,
+    text_color: str,
+    content: rx.Var,
+    quadrant_key: str,
+) -> rx.Component:
+    """Single clickable SWOT quadrant."""
+    return rx.box(
+        rx.vstack(
+            rx.hstack(
+                rx.text(title, size="3", weight="bold", color=text_color),
+                rx.spacer(),
+                rx.text(letter, size="7", weight="bold", color=text_color, opacity="0.25"),
+                width="100%",
+                align="start",
+            ),
+            rx.cond(
+                content != "",
+                rx.text(content, size="2", color=text_color, opacity="0.85", white_space="pre-wrap"),
+                rx.text(
+                    "Klik om in te vullen...",
+                    size="2",
+                    color=text_color,
+                    opacity="0.4",
+                    font_style="italic",
+                ),
+            ),
+            spacing="2",
+            width="100%",
+            height="100%",
+        ),
+        background=bg,
+        border_radius="var(--radius-3)",
+        padding="20px",
+        min_height="180px",
+        cursor="pointer",
+        _hover={"opacity": "0.85", "transform": "scale(1.01)"},
+        transition="all 0.15s ease",
+        on_click=lambda: IsmsImplementerState.open_swot_edit(quadrant_key),
+    )
+
+
+def swot_grid() -> rx.Component:
+    """Visual 2×2 SWOT analysis grid."""
+    return rx.vstack(
+        rx.hstack(
+            rx.icon("grid-2x2", size=20, color="var(--indigo-9)"),
+            rx.text("SWOT Analyse", size="3", weight="bold"),
+            rx.spacer(),
+            rx.text("Klik op een vak om te bewerken", size="1", color="var(--gray-9)"),
+            width="100%",
+            align="center",
+        ),
+        rx.grid(
+            _swot_quadrant(
+                "S", "Strengths", "var(--blue-a3)", "var(--blue-11)",
+                IsmsImplementerState.swot_strengths, "strengths",
+            ),
+            _swot_quadrant(
+                "W", "Weaknesses", "var(--orange-a3)", "var(--orange-11)",
+                IsmsImplementerState.swot_weaknesses, "weaknesses",
+            ),
+            _swot_quadrant(
+                "O", "Opportunities", "var(--green-a3)", "var(--green-11)",
+                IsmsImplementerState.swot_opportunities, "opportunities",
+            ),
+            _swot_quadrant(
+                "T", "Threats", "var(--red-a3)", "var(--red-11)",
+                IsmsImplementerState.swot_threats, "threats",
+            ),
+            columns="2",
+            spacing="3",
+            width="100%",
+        ),
+        spacing="3",
+        width="100%",
+    )
+
+
+def swot_edit_dialog() -> rx.Component:
+    """Dialog for editing a SWOT quadrant."""
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(
+                rx.match(
+                    IsmsImplementerState.swot_editing,
+                    ("strengths", "Strengths bewerken"),
+                    ("weaknesses", "Weaknesses bewerken"),
+                    ("opportunities", "Opportunities bewerken"),
+                    ("threats", "Threats bewerken"),
+                    "SWOT bewerken",
+                ),
+            ),
+            rx.dialog.description(
+                "Voer de items in, één per regel.",
+            ),
+            rx.text_area(
+                placeholder="Voer hier de items in...",
+                value=IsmsImplementerState.swot_edit_text,
+                on_change=IsmsImplementerState.set_swot_edit_text,
+                min_height="200px",
+                width="100%",
+                auto_focus=True,
+            ),
+            rx.flex(
+                rx.dialog.close(
+                    rx.button(
+                        "Annuleren",
+                        variant="soft",
+                        color_scheme="gray",
+                        on_click=IsmsImplementerState.close_swot_edit,
+                    ),
+                ),
+                rx.dialog.close(
+                    rx.button(
+                        "Opslaan",
+                        on_click=IsmsImplementerState.save_swot_edit,
+                    ),
+                ),
+                spacing="3",
+                margin_top="16px",
+                justify="end",
+            ),
+            max_width="500px",
+        ),
+        open=IsmsImplementerState.swot_editing != "",
+        on_open_change=lambda open: rx.cond(
+            ~open, IsmsImplementerState.close_swot_edit, None
+        ),
+    )
+
+
 def step_1_content() -> rx.Component:
     """Content for Step 1: Context & Organisatie."""
     return rx.vstack(
@@ -105,32 +239,11 @@ def step_1_content() -> rx.Component:
         rx.heading("1. Interne en externe analyse", size="4", margin_top="8px"),
         rx.text("Het uitvoeren van een interne en externe analyse.", color="gray", size="2"),
         
-        rx.card(
-            rx.vstack(
-                rx.heading("Organisatie Profiel", size="3"),
-                rx.hstack(
-                    rx.text("Sector:", weight="bold", width="80px"),
-                    rx.text(rx.cond(IsmsImplementerState.organization_profile, IsmsImplementerState.organization_profile["sector"], "-")),
-                    width="100%",
-                ),
-                rx.hstack(
-                    rx.text("Grootte:", weight="bold", width="80px"),
-                    rx.text(rx.cond(IsmsImplementerState.organization_profile, IsmsImplementerState.organization_profile["size"], "-")),
-                    width="100%",
-                ),
-                rx.separator(),
-                rx.hstack(
-                    rx.text("SWOT Analyse:", weight="bold"),
-                    rx.spacer(),
-                    rx.button("Bewerk SWOT", variant="outline", size="1", on_click=rx.window_alert("SWOT editor coming soon!")),
-                    width="100%",
-                    align="center",
-                ),
-                spacing="3",
-                width="100%",
-            ),
-            width="100%",
-        ),
+        # SWOT Analyse — visuele 2×2 grid
+        swot_grid(),
+
+        # SWOT edit dialog
+        swot_edit_dialog(),
 
         # 2. Stakeholders identificeren, analyseren en adresseren
         rx.heading("2. Stakeholders identificeren, analyseren en adresseren", size="4", margin_top="16px"),
