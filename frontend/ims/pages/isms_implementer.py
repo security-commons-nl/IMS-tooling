@@ -613,187 +613,97 @@ def step_1_content() -> rx.Component:
 
 def step_bc_content() -> rx.Component:
     """Content for preparation step: Business Case."""
-    return rx.vstack(
-        step_header(0, "Business Case", ""),
-        # Inleidende banner
-        rx.box(
-            rx.hstack(
-                rx.icon("info", size=20, color="var(--amber-4)", flex_shrink="0"),
-                rx.text(
-                    "De business case vormt de zakelijke rechtvaardiging voor het opzetten "
-                    "van een ISMS. Hierin wordt beschreven waarom informatiebeveiliging "
-                    "noodzakelijk is, welke kosten en baten worden verwacht, en hoe het "
-                    "ISMS bijdraagt aan de strategische doelen van de organisatie.",
-                    size="2",
-                    color="var(--amber-3)",
-                    line_height="1.7",
-                ),
-                spacing="3",
-                align="start",
-            ),
-            background="linear-gradient(135deg, var(--amber-9), var(--amber-11))",
-            border_radius="var(--radius-3)",
-            padding="20px 24px",
-            width="100%",
-        ),
-        rx.box(
-            rx.vstack(
-                rx.box(width="100%", height="3px", background="var(--amber-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
-                rx.vstack(
-                    rx.hstack(
-                        rx.box(
-                            rx.icon("briefcase", size=18, color="white"),
-                            background="var(--amber-9)",
-                            padding="8px",
-                            border_radius="var(--radius-2)",
-                        ),
-                        rx.text("Business Case", size="3", weight="bold"),
-                        width="100%",
-                        align="center",
-                        spacing="3",
-                    ),
-                    rx.divider(),
-                    rx.text(
-                        "De business case is nog in ontwikkeling. Hier komt een gestructureerd "
-                        "formulier voor de zakelijke rechtvaardiging van het ISMS.",
-                        size="2",
-                        color="var(--gray-10)",
-                        font_style="italic",
-                    ),
-                    spacing="4",
-                    width="100%",
-                    padding="20px",
-                ),
-                spacing="0",
-                width="100%",
-            ),
-            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
-            border="1px solid var(--gray-a4)",
-            border_radius="var(--radius-3)",
-            overflow="hidden",
-            width="100%",
-        ),
-        align_items="start",
-        width="100%",
-        spacing="5",
+    return _step_page(
+        0, "Business Case",
+        "De business case vormt de zakelijke rechtvaardiging voor het opzetten "
+        "van een ISMS. Hierin wordt beschreven waarom informatiebeveiliging "
+        "noodzakelijk is, welke kosten en baten worden verwacht, en hoe het "
+        "ISMS bijdraagt aan de strategische doelen van de organisatie.",
+        "briefcase", "amber",
+        "De business case is nog in ontwikkeling. Hier komt een gestructureerd "
+        "formulier voor de zakelijke rechtvaardiging van het ISMS.",
     )
 
 
 def step_pp_content() -> rx.Component:
     """Content for preparation step: Projectplan / Implementatieplan."""
-    return rx.vstack(
-        step_header(0, "Projectplan / Implementatieplan", ""),
-        # Inleidende banner
-        rx.box(
-            rx.hstack(
-                rx.icon("info", size=20, color="var(--amber-4)", flex_shrink="0"),
-                rx.text(
-                    "Het projectplan beschrijft hoe het ISMS wordt geïmplementeerd: de scope "
-                    "van het project, de planning, mijlpalen, benodigde resources, rollen en "
-                    "verantwoordelijkheden, en de communicatiestrategie. Dit plan is de leidraad "
-                    "voor het gehele implementatietraject.",
-                    size="2",
-                    color="var(--amber-3)",
-                    line_height="1.7",
-                ),
-                spacing="3",
-                align="start",
-            ),
-            background="linear-gradient(135deg, var(--amber-9), var(--amber-11))",
-            border_radius="var(--radius-3)",
-            padding="20px 24px",
-            width="100%",
-        ),
-        rx.box(
-            rx.vstack(
-                rx.box(width="100%", height="3px", background="var(--amber-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
-                rx.vstack(
-                    rx.hstack(
-                        rx.box(
-                            rx.icon("gantt-chart", size=18, color="white"),
-                            background="var(--amber-9)",
-                            padding="8px",
-                            border_radius="var(--radius-2)",
-                        ),
-                        rx.text("Projectplan / Implementatieplan", size="3", weight="bold"),
-                        width="100%",
-                        align="center",
-                        spacing="3",
-                    ),
-                    rx.divider(),
-                    rx.text(
-                        "Het projectplan is nog in ontwikkeling. Hier komt een overzicht van "
-                        "de planning, mijlpalen, resources en verantwoordelijkheden.",
-                        size="2",
-                        color="var(--gray-10)",
-                        font_style="italic",
-                    ),
-                    spacing="4",
-                    width="100%",
-                    padding="20px",
-                ),
-                spacing="0",
-                width="100%",
-            ),
-            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
-            border="1px solid var(--gray-a4)",
-            border_radius="var(--radius-3)",
-            overflow="hidden",
-            width="100%",
-        ),
-        align_items="start",
-        width="100%",
-        spacing="5",
+    return _step_page(
+        0, "Projectplan / Implementatieplan",
+        "Het projectplan beschrijft hoe het ISMS wordt geïmplementeerd: de scope "
+        "van het project, de planning, mijlpalen, benodigde resources, rollen en "
+        "verantwoordelijkheden, en de communicatiestrategie. Dit plan is de leidraad "
+        "voor het gehele implementatietraject.",
+        "gantt-chart", "amber",
+        "Het projectplan is nog in ontwikkeling. Hier komt een overzicht van "
+        "de planning, mijlpalen, resources en verantwoordelijkheden.",
     )
 
 
 def step_gap_content() -> rx.Component:
     """Content for Step 2: Gap-Analysis."""
+    return _step_page(
+        2, "Gap-Analysis",
+        "De gap-analyse brengt het verschil in kaart tussen de huidige situatie "
+        "en de gewenste situatie conform de eisen van ISO 27001 en BIO 2.0. "
+        "Op basis van de geïdentificeerde hiaten worden prioriteiten gesteld "
+        "en een actieplan opgesteld om de organisatie naar het gewenste "
+        "volwassenheidsniveau te brengen.",
+        "git-compare", "indigo",
+        "De gap-analyse is nog in ontwikkeling. Hier komt een overzicht van "
+        "de huidige status per ISO 27001-hoofdstuk, geïdentificeerde hiaten "
+        "en het bijbehorende actieplan.",
+    )
+
+
+def _step_page(
+    step_number: int,
+    title: str,
+    banner_text: str,
+    icon_name: str,
+    accent: str,
+    placeholder: str,
+) -> rx.Component:
+    """Reusable step page layout: header + banner + card."""
     return rx.vstack(
-        step_header(2, "Gap-Analysis"),
+        step_header(step_number, title),
         # Inleidende banner
         rx.box(
             rx.hstack(
-                rx.icon("info", size=20, color="var(--indigo-4)", flex_shrink="0"),
+                rx.icon("info", size=20, color=f"var(--{accent}-4)", flex_shrink="0"),
                 rx.text(
-                    "De gap-analyse brengt het verschil in kaart tussen de huidige situatie "
-                    "en de gewenste situatie conform de eisen van ISO 27001 en BIO 2.0. "
-                    "Op basis van de geïdentificeerde hiaten worden prioriteiten gesteld "
-                    "en een actieplan opgesteld om de organisatie naar het gewenste "
-                    "volwassenheidsniveau te brengen.",
+                    banner_text,
                     size="2",
-                    color="var(--indigo-3)",
+                    color=f"var(--{accent}-3)",
                     line_height="1.7",
                 ),
                 spacing="3",
                 align="start",
             ),
-            background="linear-gradient(135deg, var(--indigo-9), var(--indigo-11))",
+            background=f"linear-gradient(135deg, var(--{accent}-9), var(--{accent}-11))",
             border_radius="var(--radius-3)",
             padding="20px 24px",
             width="100%",
         ),
+        # Content card
         rx.box(
             rx.vstack(
-                rx.box(width="100%", height="3px", background="var(--indigo-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
+                rx.box(width="100%", height="3px", background=f"var(--{accent}-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
                 rx.vstack(
                     rx.hstack(
                         rx.box(
-                            rx.icon("git-compare", size=18, color="white"),
-                            background="var(--indigo-9)",
+                            rx.icon(icon_name, size=18, color="white"),
+                            background=f"var(--{accent}-9)",
                             padding="8px",
                             border_radius="var(--radius-2)",
                         ),
-                        rx.text("Gap-Analysis", size="3", weight="bold"),
+                        rx.text(title, size="3", weight="bold"),
                         width="100%",
                         align="center",
                         spacing="3",
                     ),
                     rx.divider(),
                     rx.text(
-                        "De gap-analyse is nog in ontwikkeling. Hier komt een overzicht van "
-                        "de huidige status per ISO 27001-hoofdstuk, geïdentificeerde hiaten "
-                        "en het bijbehorende actieplan.",
+                        placeholder,
                         size="2",
                         color="var(--gray-10)",
                         font_style="italic",
@@ -818,56 +728,69 @@ def step_gap_content() -> rx.Component:
 
 
 def step_3_content() -> rx.Component:
-    return rx.vstack(
-        step_header(3, "Leiderschap & Beleid", "Toon betrokkenheid van de directie en stel beleid vast."),
-        rx.text("Hier komt de content voor Stap 3 (Beleid, Doelstellingen)"),
-        align_items="start",
-        width="100%",
+    return _step_page(
+        3, "Leiderschap & Beleid",
+        "In deze fase wordt de betrokkenheid van de directie geborgd. Het topmanagement "
+        "stelt het informatiebeveiligingsbeleid vast, wijst rollen en verantwoordelijkheden "
+        "toe en zorgt ervoor dat de benodigde middelen beschikbaar worden gesteld.",
+        "crown", "indigo",
+        "Hier komt de content voor Stap 3 (Beleid, Doelstellingen).",
     )
 
 
 def step_4_content() -> rx.Component:
-    return rx.vstack(
-        step_header(4, "Risicomanagement", "Identificeer en analyseer risico's."),
-        rx.text("Hier komt de content voor Stap 4 (Risico's, Bedreigingen)"),
-        align_items="start",
-        width="100%",
+    return _step_page(
+        4, "Risicomanagement",
+        "Het risicomanagementproces omvat het identificeren, analyseren en evalueren van "
+        "informatiebeveiligingsrisico's. Op basis van de risicoanalyse worden passende "
+        "beheersmaatregelen geselecteerd om risico's te mitigeren tot een acceptabel niveau.",
+        "triangle-alert", "red",
+        "Hier komt de content voor Stap 4 (Risico's, Bedreigingen).",
     )
 
 
 def step_5_content() -> rx.Component:
-    return rx.vstack(
-        step_header(5, "Middelen & Bewustzijn", "Zorg voor voldoende middelen en bewustzijn."),
-        rx.text("Hier komt de content voor Stap 5"),
-        align_items="start",
-        width="100%",
+    return _step_page(
+        5, "Middelen & Bewustzijn",
+        "De organisatie moet voldoende middelen beschikbaar stellen voor het ISMS, "
+        "waaronder competent personeel, bewustwordingsprogramma's en communicatie. "
+        "Medewerkers moeten zich bewust zijn van het informatiebeveiligingsbeleid "
+        "en hun rol daarin.",
+        "graduation-cap", "blue",
+        "Hier komt de content voor Stap 5 (Middelen, Training, Bewustzijn).",
     )
 
 
 def step_6_content() -> rx.Component:
-    return rx.vstack(
-        step_header(6, "Beheersing & SoA", "Selecteer en implementeer beheersmaatregelen."),
-        rx.text("Hier komt de content voor Stap 6"),
-        align_items="start",
-        width="100%",
+    return _step_page(
+        6, "Beheersing & SoA",
+        "In deze fase worden de beheersmaatregelen uit Annex A van ISO 27001 beoordeeld "
+        "en geïmplementeerd. De Verklaring van Toepasselijkheid (SoA) documenteert welke "
+        "maatregelen van toepassing zijn, waarom, en hoe ze zijn geïmplementeerd.",
+        "shield-check", "green",
+        "Hier komt de content voor Stap 6 (Beheersmaatregelen, SoA).",
     )
 
 
 def step_7_content() -> rx.Component:
-    return rx.vstack(
-        step_header(7, "Evaluatie & Audit", "Monitor en evalueer de prestaties van het ISMS."),
-        rx.text("Hier komt de content voor Stap 7"),
-        align_items="start",
-        width="100%",
+    return _step_page(
+        7, "Evaluatie & Audit",
+        "De prestaties van het ISMS worden gemonitord, gemeten, geanalyseerd en "
+        "geëvalueerd. Interne audits en directiebeoordelingen worden uitgevoerd om "
+        "vast te stellen of het ISMS effectief is en voldoet aan de gestelde eisen.",
+        "clipboard-check", "orange",
+        "Hier komt de content voor Stap 7 (Monitoring, Interne Audits, Directiebeoordeling).",
     )
 
 
 def step_8_content() -> rx.Component:
-    return rx.vstack(
-        step_header(8, "Verbetering (CAPA)", "Corrigeer afwijkingen en verbeter continu."),
-        rx.text("Hier komt de content voor Stap 8"),
-        align_items="start",
-        width="100%",
+    return _step_page(
+        8, "Verbetering (CAPA)",
+        "Op basis van de bevindingen uit audits, incidenten en evaluaties worden "
+        "corrigerende maatregelen genomen en verbeteringen doorgevoerd. Het ISMS "
+        "wordt continu verbeterd om de effectiviteit en geschiktheid te waarborgen.",
+        "refresh-cw", "red",
+        "Hier komt de content voor Stap 8 (Corrigerende Acties, Continue Verbetering).",
     )
 
 
