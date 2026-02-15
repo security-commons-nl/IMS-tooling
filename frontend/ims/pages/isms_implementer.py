@@ -747,19 +747,80 @@ def step_pp_content() -> rx.Component:
     )
 
 
-def step_2_content() -> rx.Component:
+def step_gap_content() -> rx.Component:
+    """Content for Step 2: Gap-Analysis."""
     return rx.vstack(
-        step_header(2, "Leiderschap & Beleid", "Toon betrokkenheid van de directie en stel beleid vast."),
-        rx.text("Hier komt de content voor Stap 2 (Beleid, Doelstellingen)"),
+        step_header(2, "Gap-Analysis"),
+        # Inleidende banner
+        rx.box(
+            rx.hstack(
+                rx.icon("info", size=20, color="var(--indigo-4)", flex_shrink="0"),
+                rx.text(
+                    "De gap-analyse brengt het verschil in kaart tussen de huidige situatie "
+                    "en de gewenste situatie conform de eisen van ISO 27001 en BIO 2.0. "
+                    "Op basis van de geïdentificeerde hiaten worden prioriteiten gesteld "
+                    "en een actieplan opgesteld om de organisatie naar het gewenste "
+                    "volwassenheidsniveau te brengen.",
+                    size="2",
+                    color="var(--indigo-3)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--indigo-9), var(--indigo-11))",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
+        rx.box(
+            rx.vstack(
+                rx.box(width="100%", height="3px", background="var(--indigo-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
+                rx.vstack(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("git-compare", size=18, color="white"),
+                            background="var(--indigo-9)",
+                            padding="8px",
+                            border_radius="var(--radius-2)",
+                        ),
+                        rx.text("Gap-Analysis", size="3", weight="bold"),
+                        width="100%",
+                        align="center",
+                        spacing="3",
+                    ),
+                    rx.divider(),
+                    rx.text(
+                        "De gap-analyse is nog in ontwikkeling. Hier komt een overzicht van "
+                        "de huidige status per ISO 27001-hoofdstuk, geïdentificeerde hiaten "
+                        "en het bijbehorende actieplan.",
+                        size="2",
+                        color="var(--gray-10)",
+                        font_style="italic",
+                    ),
+                    spacing="4",
+                    width="100%",
+                    padding="20px",
+                ),
+                spacing="0",
+                width="100%",
+            ),
+            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+            border="1px solid var(--gray-a4)",
+            border_radius="var(--radius-3)",
+            overflow="hidden",
+            width="100%",
+        ),
         align_items="start",
         width="100%",
+        spacing="5",
     )
 
 
 def step_3_content() -> rx.Component:
     return rx.vstack(
-        step_header(3, "Risicomanagement", "Identificeer en analyseer risico's."),
-        rx.text("Hier komt de content voor Stap 3 (Risico's, Bedreigingen)"),
+        step_header(3, "Leiderschap & Beleid", "Toon betrokkenheid van de directie en stel beleid vast."),
+        rx.text("Hier komt de content voor Stap 3 (Beleid, Doelstellingen)"),
         align_items="start",
         width="100%",
     )
@@ -767,8 +828,8 @@ def step_3_content() -> rx.Component:
 
 def step_4_content() -> rx.Component:
     return rx.vstack(
-        step_header(4, "Middelen & Bewustzijn", "Zorg voor voldoende middelen en bewustzijn."),
-        rx.text("Hier komt de content voor Stap 4"),
+        step_header(4, "Risicomanagement", "Identificeer en analyseer risico's."),
+        rx.text("Hier komt de content voor Stap 4 (Risico's, Bedreigingen)"),
         align_items="start",
         width="100%",
     )
@@ -776,7 +837,7 @@ def step_4_content() -> rx.Component:
 
 def step_5_content() -> rx.Component:
     return rx.vstack(
-        step_header(5, "Beheersing & SoA", "Selecteer en implementeer beheersmaatregelen."),
+        step_header(5, "Middelen & Bewustzijn", "Zorg voor voldoende middelen en bewustzijn."),
         rx.text("Hier komt de content voor Stap 5"),
         align_items="start",
         width="100%",
@@ -785,7 +846,7 @@ def step_5_content() -> rx.Component:
 
 def step_6_content() -> rx.Component:
     return rx.vstack(
-        step_header(6, "Evaluatie & Audit", "Monitor en evalueer de prestaties van het ISMS."),
+        step_header(6, "Beheersing & SoA", "Selecteer en implementeer beheersmaatregelen."),
         rx.text("Hier komt de content voor Stap 6"),
         align_items="start",
         width="100%",
@@ -794,8 +855,17 @@ def step_6_content() -> rx.Component:
 
 def step_7_content() -> rx.Component:
     return rx.vstack(
-        step_header(7, "Verbetering (CAPA)", "Corrigeer afwijkingen en verbeter continu."),
+        step_header(7, "Evaluatie & Audit", "Monitor en evalueer de prestaties van het ISMS."),
         rx.text("Hier komt de content voor Stap 7"),
+        align_items="start",
+        width="100%",
+    )
+
+
+def step_8_content() -> rx.Component:
+    return rx.vstack(
+        step_header(8, "Verbetering (CAPA)", "Corrigeer afwijkingen en verbeter continu."),
+        rx.text("Hier komt de content voor Stap 8"),
         align_items="start",
         width="100%",
     )
@@ -891,17 +961,19 @@ def isms_implementer_page() -> rx.Component:
                     # ISMS steps (accent/indigo)
                     stepper_item(1, "Context"),
                     stepper_connector(1),
-                    stepper_item(2, "Leiderschap"),
+                    stepper_item(2, "Gap-Analysis"),
                     stepper_connector(2),
-                    stepper_item(3, "Planning"),
+                    stepper_item(3, "Leiderschap"),
                     stepper_connector(3),
-                    stepper_item(4, "Ondersteuning"),
+                    stepper_item(4, "Planning"),
                     stepper_connector(4),
-                    stepper_item(5, "Uitvoering"),
+                    stepper_item(5, "Ondersteuning"),
                     stepper_connector(5),
-                    stepper_item(6, "Evaluatie"),
+                    stepper_item(6, "Uitvoering"),
                     stepper_connector(6),
-                    stepper_item(7, "Verbetering"),
+                    stepper_item(7, "Evaluatie"),
+                    stepper_connector(7),
+                    stepper_item(8, "Verbetering"),
                     width="100%",
                     align="center",
                 ),
@@ -915,12 +987,13 @@ def isms_implementer_page() -> rx.Component:
                 rx.cond(IsmsImplementerState.active_step == -1, step_bc_content()),
                 rx.cond(IsmsImplementerState.active_step == 0, step_pp_content()),
                 rx.cond(IsmsImplementerState.active_step == 1, step_1_content()),
-                rx.cond(IsmsImplementerState.active_step == 2, step_2_content()),
+                rx.cond(IsmsImplementerState.active_step == 2, step_gap_content()),
                 rx.cond(IsmsImplementerState.active_step == 3, step_3_content()),
                 rx.cond(IsmsImplementerState.active_step == 4, step_4_content()),
                 rx.cond(IsmsImplementerState.active_step == 5, step_5_content()),
                 rx.cond(IsmsImplementerState.active_step == 6, step_6_content()),
                 rx.cond(IsmsImplementerState.active_step == 7, step_7_content()),
+                rx.cond(IsmsImplementerState.active_step == 8, step_8_content()),
                 width="100%",
             ),
 
