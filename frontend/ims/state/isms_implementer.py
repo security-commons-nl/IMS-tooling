@@ -187,7 +187,16 @@ class IsmsImplementerState(BaseState):
         ]
 
     # --- Projectplan WBS Tabel ---
-    wbs_rows: List[dict] = []
+    wbs_rows: List[dict] = [
+        {
+            "fase": "Define and establish",
+            "stap": "Business Case",
+            "activiteit": "Het opstellen van een business case voor de implementatie van het ISMS. Het beheer van het ISMS, dat na de implementatie volgt, valt buiten de scope.",
+            "output": "",
+            "verantwoordelijke": "CISO",
+            "planning": "Q2 2026",
+        },
+    ]
     wbs_fase: str = ""
     wbs_stap: str = ""
     wbs_activiteit: str = ""
