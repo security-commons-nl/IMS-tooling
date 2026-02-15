@@ -69,13 +69,13 @@ def context_dashboard() -> rx.Component:
     )
 
 
-def _swot_quadrant(
+def _swot_quadrant_box(
     letter: str,
     title: str,
     bg: str,
     text_color: str,
     content: rx.Var,
-    quadrant_key: str,
+    on_click_handler,
 ) -> rx.Component:
     """Single clickable SWOT quadrant."""
     return rx.box(
@@ -109,7 +109,7 @@ def _swot_quadrant(
         cursor="pointer",
         _hover={"opacity": "0.85", "transform": "scale(1.01)"},
         transition="all 0.15s ease",
-        on_click=lambda: IsmsImplementerState.open_swot_edit(quadrant_key),
+        on_click=on_click_handler,
     )
 
 
@@ -125,21 +125,25 @@ def swot_grid() -> rx.Component:
             align="center",
         ),
         rx.grid(
-            _swot_quadrant(
+            _swot_quadrant_box(
                 "S", "Strengths", "var(--blue-a3)", "var(--blue-11)",
-                IsmsImplementerState.swot_strengths, "strengths",
+                IsmsImplementerState.swot_strengths,
+                IsmsImplementerState.open_swot_edit("strengths"),
             ),
-            _swot_quadrant(
+            _swot_quadrant_box(
                 "W", "Weaknesses", "var(--orange-a3)", "var(--orange-11)",
-                IsmsImplementerState.swot_weaknesses, "weaknesses",
+                IsmsImplementerState.swot_weaknesses,
+                IsmsImplementerState.open_swot_edit("weaknesses"),
             ),
-            _swot_quadrant(
+            _swot_quadrant_box(
                 "O", "Opportunities", "var(--green-a3)", "var(--green-11)",
-                IsmsImplementerState.swot_opportunities, "opportunities",
+                IsmsImplementerState.swot_opportunities,
+                IsmsImplementerState.open_swot_edit("opportunities"),
             ),
-            _swot_quadrant(
+            _swot_quadrant_box(
                 "T", "Threats", "var(--red-a3)", "var(--red-11)",
-                IsmsImplementerState.swot_threats, "threats",
+                IsmsImplementerState.swot_threats,
+                IsmsImplementerState.open_swot_edit("threats"),
             ),
             columns="2",
             spacing="3",
@@ -197,9 +201,6 @@ def swot_edit_dialog() -> rx.Component:
             max_width="500px",
         ),
         open=IsmsImplementerState.swot_editing != "",
-        on_open_change=lambda open: rx.cond(
-            ~open, IsmsImplementerState.close_swot_edit, None
-        ),
     )
 
 
