@@ -611,6 +611,142 @@ def step_1_content() -> rx.Component:
     )
 
 
+def step_bc_content() -> rx.Component:
+    """Content for preparation step: Business Case."""
+    return rx.vstack(
+        step_header(0, "Business Case", ""),
+        # Inleidende banner
+        rx.box(
+            rx.hstack(
+                rx.icon("info", size=20, color="var(--amber-4)", flex_shrink="0"),
+                rx.text(
+                    "De business case vormt de zakelijke rechtvaardiging voor het opzetten "
+                    "van een ISMS. Hierin wordt beschreven waarom informatiebeveiliging "
+                    "noodzakelijk is, welke kosten en baten worden verwacht, en hoe het "
+                    "ISMS bijdraagt aan de strategische doelen van de organisatie.",
+                    size="2",
+                    color="var(--amber-3)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--amber-9), var(--amber-11))",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
+        rx.box(
+            rx.vstack(
+                rx.box(width="100%", height="3px", background="var(--amber-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
+                rx.vstack(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("briefcase", size=18, color="white"),
+                            background="var(--amber-9)",
+                            padding="8px",
+                            border_radius="var(--radius-2)",
+                        ),
+                        rx.text("Business Case", size="3", weight="bold"),
+                        width="100%",
+                        align="center",
+                        spacing="3",
+                    ),
+                    rx.divider(),
+                    rx.text(
+                        "De business case is nog in ontwikkeling. Hier komt een gestructureerd "
+                        "formulier voor de zakelijke rechtvaardiging van het ISMS.",
+                        size="2",
+                        color="var(--gray-10)",
+                        font_style="italic",
+                    ),
+                    spacing="4",
+                    width="100%",
+                    padding="20px",
+                ),
+                spacing="0",
+                width="100%",
+            ),
+            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+            border="1px solid var(--gray-a4)",
+            border_radius="var(--radius-3)",
+            overflow="hidden",
+            width="100%",
+        ),
+        align_items="start",
+        width="100%",
+        spacing="5",
+    )
+
+
+def step_pp_content() -> rx.Component:
+    """Content for preparation step: Projectplan / Implementatieplan."""
+    return rx.vstack(
+        step_header(0, "Projectplan / Implementatieplan", ""),
+        # Inleidende banner
+        rx.box(
+            rx.hstack(
+                rx.icon("info", size=20, color="var(--amber-4)", flex_shrink="0"),
+                rx.text(
+                    "Het projectplan beschrijft hoe het ISMS wordt geïmplementeerd: de scope "
+                    "van het project, de planning, mijlpalen, benodigde resources, rollen en "
+                    "verantwoordelijkheden, en de communicatiestrategie. Dit plan is de leidraad "
+                    "voor het gehele implementatietraject.",
+                    size="2",
+                    color="var(--amber-3)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--amber-9), var(--amber-11))",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
+        rx.box(
+            rx.vstack(
+                rx.box(width="100%", height="3px", background="var(--amber-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
+                rx.vstack(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("gantt-chart", size=18, color="white"),
+                            background="var(--amber-9)",
+                            padding="8px",
+                            border_radius="var(--radius-2)",
+                        ),
+                        rx.text("Projectplan / Implementatieplan", size="3", weight="bold"),
+                        width="100%",
+                        align="center",
+                        spacing="3",
+                    ),
+                    rx.divider(),
+                    rx.text(
+                        "Het projectplan is nog in ontwikkeling. Hier komt een overzicht van "
+                        "de planning, mijlpalen, resources en verantwoordelijkheden.",
+                        size="2",
+                        color="var(--gray-10)",
+                        font_style="italic",
+                    ),
+                    spacing="4",
+                    width="100%",
+                    padding="20px",
+                ),
+                spacing="0",
+                width="100%",
+            ),
+            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+            border="1px solid var(--gray-a4)",
+            border_radius="var(--radius-3)",
+            overflow="hidden",
+            width="100%",
+        ),
+        align_items="start",
+        width="100%",
+        spacing="5",
+    )
+
+
 def step_2_content() -> rx.Component:
     return rx.vstack(
         step_header(2, "Leiderschap & Beleid", "Toon betrokkenheid van de directie en stel beleid vast."),
@@ -665,10 +801,11 @@ def step_7_content() -> rx.Component:
     )
 
 
-def stepper_item(step: int, title: str) -> rx.Component:
+def stepper_item(step: int, title: str, label: str = "", color: str = "accent") -> rx.Component:
     """A single item in the stepper navigation."""
     is_active = IsmsImplementerState.active_step == step
     is_completed = IsmsImplementerState.active_step > step
+    display_label = label if label else str(step)
 
     return rx.vstack(
         rx.box(
@@ -676,7 +813,7 @@ def stepper_item(step: int, title: str) -> rx.Component:
                 is_completed,
                 rx.icon("check", color="white", size=16),
                 rx.text(
-                    str(step),
+                    display_label,
                     color=rx.cond(is_active, "white", "var(--gray-9)"),
                     weight="bold",
                     size="2",
@@ -684,7 +821,7 @@ def stepper_item(step: int, title: str) -> rx.Component:
             ),
             background=rx.cond(
                 is_active,
-                "var(--accent-9)",
+                f"var(--{color}-9)",
                 rx.cond(is_completed, "var(--green-9)", "var(--gray-a4)"),
             ),
             width="32px",
@@ -695,13 +832,13 @@ def stepper_item(step: int, title: str) -> rx.Component:
             justify_content="center",
             cursor="pointer",
             _hover={"opacity": "0.8"},
-            on_click=lambda: IsmsImplementerState.set_step(step),
+            on_click=IsmsImplementerState.set_step(step),
         ),
         rx.text(
             title,
             size="1",
             align="center",
-            color=rx.cond(is_active, "var(--accent-11)", "var(--gray-11)"),
+            color=rx.cond(is_active, f"var(--{color}-11)", "var(--gray-11)"),
             weight=rx.cond(is_active, "bold", "regular"),
         ),
         align="center",
@@ -721,31 +858,62 @@ def stepper_connector(step: int) -> rx.Component:
     )
 
 
+def stepper_divider() -> rx.Component:
+    """Visual separator between preparation and ISMS steps."""
+    return rx.box(
+        width="2px",
+        height="48px",
+        background="var(--gray-a6)",
+        margin_x="8px",
+        border_radius="1px",
+    )
+
+
 def isms_implementer_page() -> rx.Component:
     return layout(
         rx.vstack(
-            # Horizontal Stepper
-            rx.hstack(
-                stepper_item(1, "Context"),
-                stepper_connector(1),
-                stepper_item(2, "Leiderschap"),
-                stepper_connector(2),
-                stepper_item(3, "Planning"),
-                stepper_connector(3),
-                stepper_item(4, "Ondersteuning"),
-                stepper_connector(4),
-                stepper_item(5, "Uitvoering"),
-                stepper_connector(5),
-                stepper_item(6, "Evaluatie"),
-                stepper_connector(6),
-                stepper_item(7, "Verbetering"),
+            # Horizontal Stepper with preparation + ISMS sections
+            rx.vstack(
+                # Phase labels
+                rx.hstack(
+                    rx.badge("Voorbereiding", color_scheme="amber", variant="soft", size="1"),
+                    rx.spacer(),
+                    rx.badge("ISMS Implementatie (ISO 27001)", color_scheme="indigo", variant="soft", size="1"),
+                    width="100%",
+                ),
+                rx.hstack(
+                    # Preparation steps (amber)
+                    stepper_item(-1, "Business Case", "BC", "amber"),
+                    stepper_connector(-1),
+                    stepper_item(0, "Projectplan", "PP", "amber"),
+                    # Visual divider
+                    stepper_divider(),
+                    # ISMS steps (accent/indigo)
+                    stepper_item(1, "Context"),
+                    stepper_connector(1),
+                    stepper_item(2, "Leiderschap"),
+                    stepper_connector(2),
+                    stepper_item(3, "Planning"),
+                    stepper_connector(3),
+                    stepper_item(4, "Ondersteuning"),
+                    stepper_connector(4),
+                    stepper_item(5, "Uitvoering"),
+                    stepper_connector(5),
+                    stepper_item(6, "Evaluatie"),
+                    stepper_connector(6),
+                    stepper_item(7, "Verbetering"),
+                    width="100%",
+                    align="center",
+                ),
+                spacing="2",
                 width="100%",
-                align="center",
                 margin_bottom="32px",
             ),
 
             # Main Content Area
             rx.box(
+                rx.cond(IsmsImplementerState.active_step == -1, step_bc_content()),
+                rx.cond(IsmsImplementerState.active_step == 0, step_pp_content()),
                 rx.cond(IsmsImplementerState.active_step == 1, step_1_content()),
                 rx.cond(IsmsImplementerState.active_step == 2, step_2_content()),
                 rx.cond(IsmsImplementerState.active_step == 3, step_3_content()),

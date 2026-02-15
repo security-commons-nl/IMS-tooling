@@ -11,8 +11,8 @@ class IsmsImplementerState(BaseState):
     Manages the 7-step process and data for each step.
     """
     
-    # UI Control
-    active_step: int = 1
+    # UI Control (-1=Business Case, 0=Projectplan, 1-7=ISMS stappen)
+    active_step: int = -1
     
     # Data Loading
     is_loading: bool = False
