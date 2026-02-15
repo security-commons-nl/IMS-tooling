@@ -3,8 +3,8 @@
 ## Connection Details
 
 - **IP**: `77.42.66.251`
-- **SSH Port**: `22`
-- **Username**: `root`
+- **SSH Port**: `2222`
+- **Username**: `ims` (sudo, NOPASSWD)
 - **SSH Key Path**: `C:\Users\shgst\.ssh\id_ims`
 - **SSH Alias**: `ims-admin` (interactive) / `hetzner-ims` (non-interactive)
 - **Project Path**: `/opt/IMS`

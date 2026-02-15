@@ -3,11 +3,11 @@
 ## Connection
 
 - **Public IP**: `77.42.66.251`
-- **SSH Port**: `22`
-- **Username**: `root`
+- **SSH Port**: `2222`
+- **Username**: `ims` (sudo, NOPASSWD)
 - **SSH Key Path**: `C:\Users\shgst\.ssh\id_ims`
 
-> **Note:** Server deelt IP `77.42.66.251` met `bedrijfsvoering-admin` (user `bas`). Gebruik aparte SSH aliases.
+> **Note:** Root login is uitgeschakeld. Gebruik user `ims` met sudo.
 
 ## Connect
 
@@ -70,8 +70,8 @@ curl -s -X POST -H "Authorization: Bearer $env:HETZNER_API_KEY" https://api.hetz
 
 | User | SSH Command | Doel |
 |------|------------|------|
-| `root` (admin) | `ssh ims-admin` | Volledige servertoegang |
-| `webhostiq` (Vasilis) | `ssh webhostiq@77.42.66.251` | Deployment & git push |
+| `ims` (admin) | `ssh ims-admin` | Volledige servertoegang (sudo) |
+| `webhostiq` (Vasilis) | `ssh -p 2222 webhostiq@77.42.66.251` | Deployment & git push |
 
 ### webhostiq (Vasilis Theocharis)
 
@@ -82,7 +82,7 @@ curl -s -X POST -H "Authorization: Bearer $env:HETZNER_API_KEY" https://api.hetz
 
 ```bash
 # Vasilis verbindt met:
-ssh webhostiq@77.42.66.251
+ssh -p 2222 webhostiq@77.42.66.251
 ```
 
 > **TODO**: Git repo toegang configureren voor webhostiq (bijv. shared group op `/opt/IMS`)
@@ -98,15 +98,15 @@ ssh webhostiq@77.42.66.251
 | **OS** | Ubuntu 24.04 LTS |
 | **Location** | *(nog invullen)* |
 
-## Security Hardening (TODO)
+## Security Hardening
 
-- [ ] Non-root user `ims` with sudo + SSH key
-- [ ] `PermitRootLogin no`
-- [ ] `PasswordAuthentication no`
-- [ ] `PubkeyAuthentication yes`
-- [ ] SSH poort wijzigen naar non-standard
-- [ ] UFW: default deny, allow 22 (of custom), 80, 443
-- [ ] Fail2ban active (sshd jail)
+- [x] Non-root user `ims` with sudo (NOPASSWD) + SSH key
+- [x] `PermitRootLogin no`
+- [x] `PasswordAuthentication no`
+- [x] `PubkeyAuthentication yes`
+- [x] SSH poort gewijzigd naar `2222`
+- [x] UFW: default deny, allow 2222/tcp, 80, 443
+- [x] Fail2ban active (sshd jail, port 2222, banaction=ufw, ignoreip=188.90.139.89)
 - [x] Docker installeren
 - [ ] Tailscale VPN *(optioneel, overweeg voor fase 2)*
 
