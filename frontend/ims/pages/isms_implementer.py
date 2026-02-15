@@ -612,17 +612,102 @@ def step_1_content() -> rx.Component:
     )
 
 
+def _bc_section(icon: str, title: str, description: str) -> rx.Component:
+    """Single Business Case section card."""
+    return rx.hstack(
+        rx.box(
+            rx.icon(icon, size=16, color="var(--amber-9)"),
+            padding="8px",
+            background="var(--amber-a3)",
+            border_radius="var(--radius-2)",
+            flex_shrink="0",
+        ),
+        rx.vstack(
+            rx.text(title, size="2", weight="bold"),
+            rx.text(description, size="2", color="var(--gray-10)", line_height="1.6"),
+            spacing="1",
+            align_items="start",
+        ),
+        width="100%",
+        align="start",
+        spacing="3",
+        padding="12px",
+        background="var(--gray-a2)",
+        border_radius="var(--radius-2)",
+    )
+
+
 def step_bc_content() -> rx.Component:
     """Content for preparation step: Business Case."""
-    return _step_page(
-        0, "Business Case",
-        "De business case vormt de zakelijke rechtvaardiging voor het opzetten "
-        "van een ISMS. Hierin wordt beschreven waarom informatiebeveiliging "
-        "noodzakelijk is, welke kosten en baten worden verwacht, en hoe het "
-        "ISMS bijdraagt aan de strategische doelen van de organisatie.",
-        "briefcase", "amber",
-        "De business case is nog in ontwikkeling. Hier komt een gestructureerd "
-        "formulier voor de zakelijke rechtvaardiging van het ISMS.",
+    return rx.vstack(
+        step_header(0, "Business Case"),
+        # Banner
+        rx.box(
+            rx.hstack(
+                rx.icon("info", size=20, color="var(--amber-4)", flex_shrink="0"),
+                rx.text(
+                    "De business case vormt de zakelijke rechtvaardiging voor het opzetten "
+                    "van een ISMS. Hierin wordt beschreven waarom informatiebeveiliging "
+                    "noodzakelijk is, welke kosten en baten worden verwacht, en hoe het "
+                    "ISMS bijdraagt aan de strategische doelen van de organisatie.",
+                    size="2",
+                    color="var(--amber-3)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--amber-9), var(--amber-11))",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
+        # Elementen card
+        rx.box(
+            rx.vstack(
+                rx.box(width="100%", height="3px", background="var(--amber-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
+                rx.vstack(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("briefcase", size=18, color="white"),
+                            background="var(--amber-9)",
+                            padding="8px",
+                            border_radius="var(--radius-2)",
+                        ),
+                        rx.text("Elementen van de Business Case", size="3", weight="bold"),
+                        width="100%",
+                        align="center",
+                        spacing="3",
+                    ),
+                    rx.divider(),
+                    _bc_section("globe", "Omgeving", "Beschrijving van de interne en externe context waarin de organisatie opereert en die aanleiding geeft tot de behoefte aan een ISMS."),
+                    _bc_section("target", "Doel en doelstellingen", "Het overkoepelende doel van het ISMS en de specifieke, meetbare doelstellingen die ermee worden nagestreefd."),
+                    _bc_section("file-text", "Projectsamenvatting", "Een beknopt overzicht van het implementatieproject: wat wordt er gedaan, voor wie en waarom."),
+                    _bc_section("trophy", "Verwachte voordelen", "De verwachte baten van het ISMS, zoals verbeterde beveiliging, compliance, vertrouwen van stakeholders en risicoreductie."),
+                    _bc_section("scan", "Voorlopige scope", "Een eerste afbakening van het toepassingsgebied: welke processen, afdelingen en systemen vallen binnen het ISMS."),
+                    _bc_section("check-circle", "Kritische succesfactoren", "Voorwaarden die bepalend zijn voor het slagen van het project, zoals draagvlak van de directie en beschikbaarheid van middelen."),
+                    _bc_section("gantt-chart", "Projectplan", "Een globaal overzicht van de aanpak, fasen en activiteiten die nodig zijn om het ISMS te implementeren."),
+                    _bc_section("calendar", "Deadlines en mijlpalen", "De belangrijkste tijdsgebonden momenten en oplevermomenten gedurende het implementatietraject."),
+                    _bc_section("users", "Rollen en verantwoordelijkheden", "Wie is betrokken bij het project en welke rol en verantwoordelijkheid heeft elke betrokkene."),
+                    _bc_section("cpu", "Middelen", "De benodigde resources: personeel, tooling, externe ondersteuning en overige faciliteiten."),
+                    _bc_section("wallet", "Budget", "De financiële raming voor het implementatietraject, inclusief interne en externe kosten."),
+                    _bc_section("alert-triangle", "Beperkingen", "Randvoorwaarden en beperkingen die van invloed zijn op het project, zoals tijd, capaciteit of organisatorische restricties."),
+                    spacing="3",
+                    width="100%",
+                    padding="20px",
+                ),
+                spacing="0",
+                width="100%",
+            ),
+            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+            border="1px solid var(--gray-a4)",
+            border_radius="var(--radius-3)",
+            overflow="hidden",
+            width="100%",
+        ),
+        align_items="start",
+        width="100%",
+        spacing="5",
     )
 
 
