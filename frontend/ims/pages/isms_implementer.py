@@ -248,7 +248,7 @@ def step_1_content() -> rx.Component:
 
         # 2. Stakeholders identificeren, analyseren en adresseren
         rx.heading("2. Stakeholders identificeren, analyseren en adresseren", size="4", margin_top="16px"),
-        rx.text("Het identificeren en analyseren van de behoeften, eisen en verwachtingen van relevante belanghebbenden en het bepalen welke daarvan worden geadresseerd binnen het managementsysteem.", color="gray", size="2"),
+        rx.text("Het identificeren en analyseren van de behoeften, eisen en verwachtingen van relevante belanghebbenden en het bepalen welke daarvan binnen het managementsysteem worden geadresseerd. Onderstaande tabel wordt gebruikt om in één oogopslag inzichtelijk te maken hoe met de verschillende stakeholders wordt omgegaan.", color="gray", size="2"),
 
         # Stakeholder List
         rx.table.root(
