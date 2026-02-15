@@ -20,7 +20,6 @@ def context_dashboard() -> rx.Component:
         rx.hstack(
             rx.vstack(
                 rx.heading("Fase Voortgang", size="4"),
-                rx.text("Overzicht van vereiste activiteiten.", color="gray", size="2"),
                 rx.box(
                     rx.progress(value=IsmsImplementerState.context_progress, width="100%", height="8px"),
                     rx.hstack(
