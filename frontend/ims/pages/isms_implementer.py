@@ -40,17 +40,17 @@ def context_dashboard() -> rx.Component:
                 rx.heading("Activiteiten", size="3", margin_bottom="8px"),
                 rx.hstack(
                     rx.icon("circle-check", color=rx.cond(IsmsImplementerState.has_context_issues, "var(--green-9)", "var(--gray-8)"), size=20),
-                    rx.text("1. Identificeer Context & Issues", size="2", color=rx.cond(IsmsImplementerState.has_context_issues, "var(--gray-12)", "var(--gray-10)")),
+                    rx.text("1. Interne en externe analyse", size="2", color=rx.cond(IsmsImplementerState.has_context_issues, "var(--gray-12)", "var(--gray-10)")),
                     align="center",
                 ),
                 rx.hstack(
                     rx.icon("circle-check", color=rx.cond(IsmsImplementerState.has_stakeholders, "var(--green-9)", "var(--gray-8)"), size=20),
-                    rx.text("2. Relevante Belanghebbenden", size="2", color=rx.cond(IsmsImplementerState.has_stakeholders, "var(--gray-12)", "var(--gray-10)")),
+                    rx.text("2. Stakeholders identificeren, analyseren en adresseren", size="2", color=rx.cond(IsmsImplementerState.has_stakeholders, "var(--gray-12)", "var(--gray-10)")),
                     align="center",
                 ),
                 rx.hstack(
                     rx.icon("circle-check", color=rx.cond(IsmsImplementerState.has_scope, "var(--green-9)", "var(--gray-8)"), size=20),
-                    rx.text("3. Reikwijdte (Scope) Definiëren", size="2", color=rx.cond(IsmsImplementerState.has_scope, "var(--gray-12)", "var(--gray-10)")),
+                    rx.text("3. Vaststellen toepassingsgebied (scope)", size="2", color=rx.cond(IsmsImplementerState.has_scope, "var(--gray-12)", "var(--gray-10)")),
                     align="center",
                 ),
                 align_items="start",
