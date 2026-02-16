@@ -1266,9 +1266,11 @@ def _step_page(
 def step_3_content() -> rx.Component:
     return _step_page(
         3, "Leiderschap & Beleid",
-        "In deze fase wordt de betrokkenheid van de directie geborgd. Het topmanagement "
-        "stelt het informatiebeveiligingsbeleid vast, wijst rollen en verantwoordelijkheden "
-        "toe en zorgt ervoor dat de benodigde middelen beschikbaar worden gesteld.",
+        "De fase 'leiderschap' omvat het tonen van commitment door het topmanagement via het "
+        "vaststellen van een informatiebeveiligingsbeleid en meetbare doelstellingen die aansluiten "
+        "bij de organisatiestrategie. Tevens worden binnen deze fase rollen en verantwoordelijkheden "
+        "toegewezen, de benodigde middelen beschikbaar gesteld en de integratie van ISMS-eisen in "
+        "de bedrijfsprocessen geborgd.",
         "crown", "indigo",
         "Hier komt de content voor Stap 3 (Beleid, Doelstellingen).",
     )
