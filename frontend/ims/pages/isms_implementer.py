@@ -803,12 +803,8 @@ def bmc_edit_dialog() -> rx.Component:
                 auto_focus=True,
             ),
             rx.flex(
-                rx.dialog.close(
-                    rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=IsmsImplementerState.close_bmc_edit),
-                ),
-                rx.dialog.close(
-                    rx.button("Opslaan", on_click=IsmsImplementerState.save_bmc_edit),
-                ),
+                rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=IsmsImplementerState.close_bmc_edit),
+                rx.button("Opslaan", on_click=IsmsImplementerState.save_bmc_edit),
                 spacing="3",
                 margin_top="16px",
                 justify="end",
@@ -816,6 +812,7 @@ def bmc_edit_dialog() -> rx.Component:
             max_width="550px",
         ),
         open=IsmsImplementerState.bmc_editing != "",
+        on_open_change=IsmsImplementerState.set_bmc_dialog_open,
     )
 
 

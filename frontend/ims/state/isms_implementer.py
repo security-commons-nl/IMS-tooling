@@ -327,6 +327,11 @@ class IsmsImplementerState(BaseState):
         self.bmc_editing = ""
         self.bmc_edit_text = ""
 
+    def set_bmc_dialog_open(self, is_open: bool):
+        if not is_open:
+            self.bmc_editing = ""
+            self.bmc_edit_text = ""
+
     # --- Projectplan WBS Tabel ---
     wbs_rows: List[dict] = [
         {
