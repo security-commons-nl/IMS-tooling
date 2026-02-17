@@ -1554,13 +1554,18 @@ def beleid_mindmap() -> rx.Component:
     S = IsmsImplementerState
 
     # SVG connecting lines from center (50%, 48%) to each node
-    svg_lines = rx.el.svg(
-        rx.el.line(x1="50%", y1="48%", x2="50%", y2="10%", stroke="var(--indigo-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
-        rx.el.line(x1="50%", y1="48%", x2="82%", y2="26%", stroke="var(--blue-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
-        rx.el.line(x1="50%", y1="48%", x2="82%", y2="72%", stroke="var(--violet-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
-        rx.el.line(x1="50%", y1="48%", x2="50%", y2="90%", stroke="var(--red-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
-        rx.el.line(x1="50%", y1="48%", x2="18%", y2="72%", stroke="var(--amber-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
-        rx.el.line(x1="50%", y1="48%", x2="18%", y2="26%", stroke="var(--green-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+    # Wrapped in rx.box so CSS properties (position, pointer_events) apply correctly
+    svg_lines = rx.box(
+        rx.el.svg(
+            rx.el.line(x1="50%", y1="48%", x2="50%", y2="10%", stroke="var(--indigo-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+            rx.el.line(x1="50%", y1="48%", x2="82%", y2="26%", stroke="var(--blue-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+            rx.el.line(x1="50%", y1="48%", x2="82%", y2="72%", stroke="var(--violet-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+            rx.el.line(x1="50%", y1="48%", x2="50%", y2="90%", stroke="var(--red-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+            rx.el.line(x1="50%", y1="48%", x2="18%", y2="72%", stroke="var(--amber-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+            rx.el.line(x1="50%", y1="48%", x2="18%", y2="26%", stroke="var(--green-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+            width="100%",
+            height="100%",
+        ),
         position="absolute",
         top="0",
         left="0",
