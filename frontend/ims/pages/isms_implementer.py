@@ -1436,6 +1436,274 @@ def beleid_edit_dialog() -> rx.Component:
     )
 
 
+def _mindmap_node(
+    key: str, label: str, icon: str,
+    left: str, top: str, accent: str,
+) -> rx.Component:
+    """A single mindmap branch node."""
+    S = IsmsImplementerState
+    is_active = S.mindmap_active == key
+    return rx.box(
+        rx.vstack(
+            rx.box(
+                rx.icon(icon, size=18, color="white"),
+                width="44px",
+                height="44px",
+                background=rx.cond(is_active, f"var(--{accent}-9)", f"var(--{accent}-a7)"),
+                border_radius="50%",
+                display="flex",
+                align_items="center",
+                justify_content="center",
+                transition="all 0.3s ease",
+                box_shadow=rx.cond(is_active, f"0 0 20px var(--{accent}-a6)", "none"),
+            ),
+            rx.text(
+                label,
+                size="1",
+                weight=rx.cond(is_active, "bold", "medium"),
+                color=rx.cond(is_active, f"var(--{accent}-11)", "var(--gray-11)"),
+                text_align="center",
+                white_space="pre-wrap",
+            ),
+            align="center",
+            spacing="1",
+        ),
+        position="absolute",
+        left=left,
+        top=top,
+        transform="translate(-50%, -50%)",
+        cursor="pointer",
+        z_index="2",
+        _hover={"transform": "translate(-50%, -50%) scale(1.12)"},
+        transition="transform 0.2s ease",
+        on_click=S.toggle_mindmap_node(key),
+    )
+
+
+def _mindmap_text_content(content_var: rx.Var, key: str) -> rx.Component:
+    """Expanded text content for a mindmap section."""
+    return rx.vstack(
+        rx.text(
+            content_var,
+            size="2",
+            color="var(--gray-11)",
+            line_height="1.7",
+            white_space="pre-wrap",
+        ),
+        rx.button(
+            rx.icon("pencil", size=14),
+            "Bewerken",
+            variant="soft",
+            size="2",
+            on_click=IsmsImplementerState.open_beleid_edit(key),
+        ),
+        spacing="3",
+        width="100%",
+    )
+
+
+def _mindmap_role_row(
+    icon: str, title: str, key: str, line_num: str, accent: str,
+) -> rx.Component:
+    """A single clickable role row in the mindmap roles view."""
+    return rx.hstack(
+        rx.badge(f"L{line_num}", color_scheme=accent, variant="soft", size="1"),
+        rx.icon(icon, size=14, color=f"var(--{accent}-9)", flex_shrink="0"),
+        rx.text(title, size="2", weight="medium"),
+        rx.spacer(),
+        rx.icon("pencil", size=12, color="var(--gray-9)"),
+        width="100%",
+        align="center",
+        spacing="2",
+        padding="8px 12px",
+        background="var(--gray-a2)",
+        border_radius="var(--radius-2)",
+        cursor="pointer",
+        _hover={"background": f"var(--{accent}-a3)"},
+        transition="all 0.15s ease",
+        on_click=IsmsImplementerState.open_beleid_edit(key),
+    )
+
+
+def _mindmap_roles_content() -> rx.Component:
+    """Expanded roles content for the mindmap."""
+    return rx.vstack(
+        rx.hstack(
+            rx.badge("Lijn 1", color_scheme="blue", variant="soft", size="1"),
+            rx.text("Uitvoering", size="1", color="var(--gray-10)"),
+            rx.badge("Lijn 2", color_scheme="amber", variant="soft", size="1"),
+            rx.text("Ondersteuning", size="1", color="var(--gray-10)"),
+            spacing="2",
+            align="center",
+            flex_wrap="wrap",
+        ),
+        _mindmap_role_row("landmark", "College van B&W", "rol_college", "1", "blue"),
+        _mindmap_role_row("crown", "Directeuren", "rol_directeuren", "1", "blue"),
+        _mindmap_role_row("briefcase", "Afdelingsmanagers", "rol_afdelingsmanagers", "1", "blue"),
+        _mindmap_role_row("shield", "CISO", "rol_ciso", "2", "amber"),
+        _mindmap_role_row("users", "IB-team", "rol_ibteam", "2", "amber"),
+        _mindmap_role_row("database", "Proceseigenaren", "rol_proceseigenaren", "1", "blue"),
+        _mindmap_role_row("user", "Alle medewerkers", "rol_medewerkers", "1", "blue"),
+        spacing="2",
+        width="100%",
+    )
+
+
+def beleid_mindmap() -> rx.Component:
+    """Interactive mindmap visualization of the Informatiebeveiligingsbeleid."""
+    S = IsmsImplementerState
+
+    # SVG connecting lines from center (50%, 48%) to each node
+    svg_lines = rx.el.svg(
+        rx.el.line(x1="50%", y1="48%", x2="50%", y2="10%", stroke="var(--indigo-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+        rx.el.line(x1="50%", y1="48%", x2="82%", y2="26%", stroke="var(--blue-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+        rx.el.line(x1="50%", y1="48%", x2="82%", y2="72%", stroke="var(--violet-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+        rx.el.line(x1="50%", y1="48%", x2="50%", y2="90%", stroke="var(--red-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+        rx.el.line(x1="50%", y1="48%", x2="18%", y2="72%", stroke="var(--amber-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+        rx.el.line(x1="50%", y1="48%", x2="18%", y2="26%", stroke="var(--green-6)", stroke_width="2", stroke_dasharray="6,4", opacity="0.5"),
+        position="absolute",
+        top="0",
+        left="0",
+        width="100%",
+        height="100%",
+        pointer_events="none",
+        z_index="1",
+    )
+
+    # Center node
+    center_node = rx.box(
+        rx.vstack(
+            rx.icon("shield", size=24, color="white"),
+            rx.text("Informatie-", size="1", weight="bold", color="white", line_height="1.1", text_align="center"),
+            rx.text("beveiligings-", size="1", weight="bold", color="white", line_height="1.1", text_align="center"),
+            rx.text("beleid", size="1", weight="bold", color="white", line_height="1.1", text_align="center"),
+            align="center",
+            spacing="0",
+        ),
+        background="linear-gradient(135deg, var(--indigo-9), var(--indigo-11))",
+        border_radius="50%",
+        width="130px",
+        height="130px",
+        display="flex",
+        align_items="center",
+        justify_content="center",
+        position="absolute",
+        left="50%",
+        top="48%",
+        transform="translate(-50%, -50%)",
+        z_index="2",
+        box_shadow="0 4px 24px var(--indigo-a5)",
+    )
+
+    # Branch nodes (hexagonal layout)
+    branch_nodes = [
+        _mindmap_node("inleiding", "Inleiding", "book-open", "50%", "10%", "indigo"),
+        _mindmap_node("reikwijdte", "Reikwijdte", "scan", "82%", "26%", "blue"),
+        _mindmap_node("strategie", "Strategie\n& Doelen", "target", "82%", "72%", "violet"),
+        _mindmap_node("risicomanagement", "Risico-\nmanagement", "shield-alert", "50%", "90%", "red"),
+        _mindmap_node("rollen", "Rollen", "users", "18%", "72%", "amber"),
+        _mindmap_node("naleving", "Naleving", "clipboard-check", "18%", "26%", "green"),
+    ]
+
+    # Visual mindmap area
+    visual_area = rx.box(
+        svg_lines,
+        center_node,
+        *branch_nodes,
+        position="relative",
+        width="100%",
+        height="420px",
+        min_height="420px",
+    )
+
+    # Expanded content area (shown when a node is clicked)
+    expanded_content = rx.cond(
+        S.mindmap_active != "",
+        rx.box(
+            rx.vstack(
+                rx.hstack(
+                    rx.match(
+                        S.mindmap_active,
+                        ("inleiding", rx.hstack(rx.icon("book-open", size=16, color="var(--indigo-9)"), rx.text("Inleiding & Context", size="3", weight="bold"), spacing="2", align="center")),
+                        ("reikwijdte", rx.hstack(rx.icon("scan", size=16, color="var(--blue-9)"), rx.text("Reikwijdte", size="3", weight="bold"), spacing="2", align="center")),
+                        ("strategie", rx.hstack(rx.icon("target", size=16, color="var(--violet-9)"), rx.text("Strategie & Doelen", size="3", weight="bold"), spacing="2", align="center")),
+                        ("risicomanagement", rx.hstack(rx.icon("shield-alert", size=16, color="var(--red-9)"), rx.text("Risicomanagement", size="3", weight="bold"), spacing="2", align="center")),
+                        ("rollen", rx.hstack(rx.icon("users", size=16, color="var(--amber-9)"), rx.text("Rollen & Verantwoordelijkheden", size="3", weight="bold"), spacing="2", align="center")),
+                        ("naleving", rx.hstack(rx.icon("clipboard-check", size=16, color="var(--green-9)"), rx.text("Naleving", size="3", weight="bold"), spacing="2", align="center")),
+                        rx.fragment(),
+                    ),
+                    rx.spacer(),
+                    rx.icon_button(
+                        rx.icon("x", size=14),
+                        variant="ghost",
+                        color_scheme="gray",
+                        size="1",
+                        on_click=S.close_mindmap_node,
+                    ),
+                    width="100%",
+                    align="center",
+                ),
+                rx.divider(),
+                rx.match(
+                    S.mindmap_active,
+                    ("inleiding", _mindmap_text_content(S.beleid_inleiding, "inleiding")),
+                    ("reikwijdte", _mindmap_text_content(S.beleid_reikwijdte, "reikwijdte")),
+                    ("strategie", _mindmap_text_content(S.beleid_strategie, "strategie")),
+                    ("risicomanagement", _mindmap_text_content(S.beleid_risicomanagement, "risicomanagement")),
+                    ("rollen", _mindmap_roles_content()),
+                    ("naleving", _mindmap_text_content(S.beleid_naleving, "naleving")),
+                    rx.fragment(),
+                ),
+                spacing="3",
+                width="100%",
+            ),
+            padding="20px",
+            background="var(--gray-a2)",
+            border_top="1px solid var(--gray-a4)",
+        ),
+    )
+
+    return rx.box(
+        rx.vstack(
+            rx.box(
+                width="100%",
+                height="3px",
+                background="linear-gradient(90deg, var(--indigo-9), var(--blue-9), var(--violet-9), var(--red-9), var(--amber-9), var(--green-9))",
+                border_radius="var(--radius-3) var(--radius-3) 0 0",
+            ),
+            rx.vstack(
+                rx.hstack(
+                    rx.box(
+                        rx.icon("brain", size=18, color="white"),
+                        background="var(--indigo-9)",
+                        padding="8px",
+                        border_radius="var(--radius-2)",
+                    ),
+                    rx.text("Mindmap Informatiebeveiligingsbeleid", size="3", weight="bold"),
+                    rx.spacer(),
+                    rx.text("Klik op een onderdeel om de inhoud te bekijken", size="1", color="var(--gray-9)"),
+                    width="100%",
+                    align="center",
+                    spacing="3",
+                ),
+                rx.divider(),
+                visual_area,
+                spacing="4",
+                width="100%",
+                padding="20px",
+            ),
+            expanded_content,
+            spacing="0",
+            width="100%",
+        ),
+        background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+        border="1px solid var(--gray-a4)",
+        border_radius="var(--radius-3)",
+        overflow="hidden",
+        width="100%",
+    )
+
+
 def step_3_content() -> rx.Component:
     S = IsmsImplementerState
     return rx.vstack(
@@ -1474,6 +1742,9 @@ def step_3_content() -> rx.Component:
             padding="20px 24px",
             width="100%",
         ),
+
+        # ── Mindmap ──
+        beleid_mindmap(),
 
         # ── Beleid metadata ──
         rx.box(

@@ -648,6 +648,18 @@ class IsmsImplementerState(BaseState):
         "• Formeel uitzonderingsproces beschikbaar via het informatiebeveiligingsteam"
     )
 
+    # Mindmap state
+    mindmap_active: str = ""
+
+    def toggle_mindmap_node(self, key: str):
+        if self.mindmap_active == key:
+            self.mindmap_active = ""
+        else:
+            self.mindmap_active = key
+
+    def close_mindmap_node(self):
+        self.mindmap_active = ""
+
     # Beleid edit state
     beleid_editing: str = ""
     beleid_edit_text: str = ""
