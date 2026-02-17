@@ -1308,22 +1308,293 @@ def _step_page(
     )
 
 
+def _beleid_section(icon: str, title: str, content: rx.Var, key: str, accent: str = "indigo") -> rx.Component:
+    """Clickable policy section card."""
+    return rx.box(
+        rx.hstack(
+            rx.box(
+                rx.icon(icon, size=16, color="white"),
+                background=f"var(--{accent}-9)",
+                padding="6px",
+                border_radius="var(--radius-2)",
+                flex_shrink="0",
+            ),
+            rx.vstack(
+                rx.text(title, size="2", weight="bold"),
+                rx.text(content, size="2", color="var(--gray-10)", line_height="1.6", white_space="pre-wrap"),
+                spacing="1",
+                align_items="start",
+                width="100%",
+            ),
+            width="100%",
+            align="start",
+            spacing="3",
+        ),
+        padding="14px",
+        background="var(--gray-a2)",
+        border_radius="var(--radius-2)",
+        cursor="pointer",
+        _hover={"background": f"var(--{accent}-a3)", "border_color": f"var(--{accent}-a5)"},
+        border="1px solid transparent",
+        transition="all 0.15s ease",
+        on_click=IsmsImplementerState.open_beleid_edit(key),
+        width="100%",
+    )
+
+
+def _role_card(icon: str, title: str, content: rx.Var, key: str, line: str = "1") -> rx.Component:
+    """Role card for Three Lines of Defence view."""
+    line_colors = {"1": "blue", "2": "amber", "3": "red"}
+    accent = line_colors.get(line, "gray")
+    return rx.box(
+        rx.vstack(
+            rx.hstack(
+                rx.box(
+                    rx.icon(icon, size=16, color="white"),
+                    background=f"var(--{accent}-9)",
+                    padding="6px",
+                    border_radius="var(--radius-2)",
+                    flex_shrink="0",
+                ),
+                rx.text(title, size="2", weight="bold"),
+                rx.spacer(),
+                rx.badge(
+                    f"Lijn {line}",
+                    color_scheme=accent,
+                    variant="soft",
+                    size="1",
+                ),
+                width="100%",
+                align="center",
+                spacing="2",
+            ),
+            rx.text(content, size="1", color="var(--gray-10)", line_height="1.5", white_space="pre-wrap"),
+            spacing="2",
+            width="100%",
+        ),
+        padding="14px",
+        background="var(--gray-a2)",
+        border_radius="var(--radius-2)",
+        cursor="pointer",
+        _hover={"background": f"var(--{accent}-a3)", "border_color": f"var(--{accent}-a5)"},
+        border="1px solid transparent",
+        transition="all 0.15s ease",
+        on_click=IsmsImplementerState.open_beleid_edit(key),
+        width="100%",
+    )
+
+
+def beleid_edit_dialog() -> rx.Component:
+    """Dialog for editing a policy section."""
+    return rx.dialog.root(
+        rx.dialog.content(
+            rx.dialog.title(
+                rx.match(
+                    IsmsImplementerState.beleid_editing,
+                    ("inleiding", "Inleiding bewerken"),
+                    ("reikwijdte", "Reikwijdte bewerken"),
+                    ("strategie", "Strategie & Doelen bewerken"),
+                    ("risicomanagement", "Risicomanagement bewerken"),
+                    ("rol_college", "College van B&W bewerken"),
+                    ("rol_directeuren", "Directeuren bewerken"),
+                    ("rol_afdelingsmanagers", "Afdelingsmanagers bewerken"),
+                    ("rol_ciso", "CISO bewerken"),
+                    ("rol_ibteam", "IB-team bewerken"),
+                    ("rol_proceseigenaren", "Proceseigenaren bewerken"),
+                    ("rol_medewerkers", "Alle medewerkers bewerken"),
+                    ("naleving", "Naleving bewerken"),
+                    ("versie", "Versie bewerken"),
+                    ("datum", "Datum bewerken"),
+                    ("status", "Status bewerken"),
+                    ("gemeenten", "Gemeenten bewerken"),
+                    "Beleid bewerken",
+                ),
+            ),
+            rx.dialog.description("Pas de inhoud aan. Gebruik bullet points (•) voor opsommingen."),
+            rx.text_area(
+                value=IsmsImplementerState.beleid_edit_text,
+                on_change=IsmsImplementerState.set_beleid_edit_text,
+                min_height="250px",
+                width="100%",
+                auto_focus=True,
+            ),
+            rx.flex(
+                rx.dialog.close(
+                    rx.button("Annuleren", variant="soft", color_scheme="gray", on_click=IsmsImplementerState.close_beleid_edit),
+                ),
+                rx.dialog.close(
+                    rx.button("Opslaan", on_click=IsmsImplementerState.save_beleid_edit),
+                ),
+                spacing="3",
+                margin_top="16px",
+                justify="end",
+            ),
+            max_width="600px",
+        ),
+        open=IsmsImplementerState.beleid_editing != "",
+        on_open_change=IsmsImplementerState.handle_beleid_dialog_change,
+    )
+
+
 def step_3_content() -> rx.Component:
-    return _step_page(
-        3, "Leiderschap & Beleid",
-        "De fase 'leiderschap' omvat het tonen van commitment door het topmanagement via het "
-        "vaststellen van een informatiebeveiligingsbeleid en meetbare doelstellingen die aansluiten "
-        "bij de organisatiestrategie. Tevens worden binnen deze fase rollen en verantwoordelijkheden "
-        "toegewezen, de benodigde middelen beschikbaar gesteld en de integratie van ISMS-eisen in "
-        "de bedrijfsprocessen geborgd.",
-        "crown", "indigo",
-        "Hier komt de content voor Stap 3 (Beleid, Doelstellingen).",
-        progress_var=IsmsImplementerState.leadership_progress,
-        activities=[
-            ("1. Informatiebeveiligingsbeleid vaststellen", IsmsImplementerState.has_policy),
-            ("2. Rollen en verantwoordelijkheden toewijzen", IsmsImplementerState.has_roles_assigned),
-            ("3. Doelstellingen definiëren", IsmsImplementerState.has_objectives),
-        ],
+    S = IsmsImplementerState
+    return rx.vstack(
+        step_header(3, "Leiderschap & Beleid"),
+
+        # Dashboard
+        phase_dashboard(
+            "indigo",
+            S.leadership_progress,
+            [
+                ("1. Informatiebeveiligingsbeleid vaststellen", S.has_policy),
+                ("2. Rollen en verantwoordelijkheden toewijzen", S.has_roles_assigned),
+                ("3. Doelstellingen definiëren", S.has_objectives),
+            ],
+        ),
+
+        # Banner
+        rx.box(
+            rx.hstack(
+                rx.icon("info", size=20, color="var(--indigo-4)", flex_shrink="0"),
+                rx.text(
+                    "De fase 'leiderschap' omvat het tonen van commitment door het topmanagement via het "
+                    "vaststellen van een informatiebeveiligingsbeleid en meetbare doelstellingen die aansluiten "
+                    "bij de organisatiestrategie. Tevens worden binnen deze fase rollen en verantwoordelijkheden "
+                    "toegewezen, de benodigde middelen beschikbaar gesteld en de integratie van ISMS-eisen in "
+                    "de bedrijfsprocessen geborgd.",
+                    size="2",
+                    color="var(--indigo-3)",
+                    line_height="1.7",
+                ),
+                spacing="3",
+                align="start",
+            ),
+            background="linear-gradient(135deg, var(--indigo-9), var(--indigo-11))",
+            border_radius="var(--radius-3)",
+            padding="20px 24px",
+            width="100%",
+        ),
+
+        # ── Beleid metadata ──
+        rx.box(
+            rx.vstack(
+                rx.box(width="100%", height="3px", background="var(--indigo-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
+                rx.vstack(
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("file-badge", size=18, color="white"),
+                            background="var(--indigo-9)",
+                            padding="8px",
+                            border_radius="var(--radius-2)",
+                        ),
+                        rx.text("Informatiebeveiligingsbeleid", size="3", weight="bold"),
+                        rx.spacer(),
+                        rx.hstack(
+                            rx.badge(
+                                rx.fragment("v", S.beleid_versie),
+                                color_scheme="indigo", variant="soft", size="1",
+                                cursor="pointer",
+                                on_click=S.open_beleid_edit("versie"),
+                            ),
+                            rx.badge(
+                                S.beleid_status,
+                                color_scheme="green", variant="soft", size="1",
+                                cursor="pointer",
+                                on_click=S.open_beleid_edit("status"),
+                            ),
+                            rx.badge(
+                                S.beleid_datum,
+                                color_scheme="gray", variant="soft", size="1",
+                                cursor="pointer",
+                                on_click=S.open_beleid_edit("datum"),
+                            ),
+                            spacing="2",
+                        ),
+                        width="100%",
+                        align="center",
+                        spacing="3",
+                    ),
+                    rx.text(
+                        S.beleid_gemeenten,
+                        size="2",
+                        color="var(--gray-10)",
+                        cursor="pointer",
+                        _hover={"color": "var(--indigo-11)"},
+                        on_click=S.open_beleid_edit("gemeenten"),
+                    ),
+                    rx.divider(),
+
+                    # Hoofdstuk 1: Inleiding
+                    rx.text("Hoofdstuk 1 — Inleiding", size="2", weight="bold", color="var(--indigo-11)"),
+                    _beleid_section("book-open", "Inleiding & Context", S.beleid_inleiding, "inleiding"),
+                    _beleid_section("scan", "Reikwijdte", S.beleid_reikwijdte, "reikwijdte"),
+
+                    rx.divider(),
+
+                    # Hoofdstuk 2: Strategie & Doelen
+                    rx.text("Hoofdstuk 2 — Strategie & Doelen", size="2", weight="bold", color="var(--indigo-11)"),
+                    _beleid_section("target", "Doelstellingen informatiebeveiliging", S.beleid_strategie, "strategie"),
+
+                    rx.divider(),
+
+                    # Hoofdstuk 3: Risicomanagement
+                    rx.text("Hoofdstuk 3 — Risicomanagement", size="2", weight="bold", color="var(--indigo-11)"),
+                    _beleid_section("shield-alert", "Risicobeheer", S.beleid_risicomanagement, "risicomanagement"),
+
+                    rx.divider(),
+
+                    # Hoofdstuk 4: Rollen & Verantwoordelijkheden
+                    rx.text("Hoofdstuk 4 — Rollen & Verantwoordelijkheden", size="2", weight="bold", color="var(--indigo-11)"),
+                    rx.hstack(
+                        rx.badge("Lijn 1", color_scheme="blue", variant="soft", size="1"),
+                        rx.text("Uitvoering", size="1", color="var(--gray-10)"),
+                        rx.badge("Lijn 2", color_scheme="amber", variant="soft", size="1"),
+                        rx.text("Ondersteuning & Controle", size="1", color="var(--gray-10)"),
+                        rx.badge("Lijn 3", color_scheme="red", variant="soft", size="1"),
+                        rx.text("Onafhankelijke toetsing", size="1", color="var(--gray-10)"),
+                        spacing="2",
+                        align="center",
+                        flex_wrap="wrap",
+                    ),
+                    rx.grid(
+                        _role_card("landmark", "College van B&W", S.beleid_rol_college, "rol_college", "1"),
+                        _role_card("crown", "Directeuren", S.beleid_rol_directeuren, "rol_directeuren", "1"),
+                        _role_card("briefcase", "Afdelingsmanagers", S.beleid_rol_afdelingsmanagers, "rol_afdelingsmanagers", "1"),
+                        _role_card("shield", "CISO", S.beleid_rol_ciso, "rol_ciso", "2"),
+                        _role_card("users", "IB-team", S.beleid_rol_ibteam, "rol_ibteam", "2"),
+                        _role_card("database", "Proceseigenaren", S.beleid_rol_proceseigenaren, "rol_proceseigenaren", "1"),
+                        _role_card("user", "Alle medewerkers", S.beleid_rol_medewerkers, "rol_medewerkers", "1"),
+                        columns="2",
+                        spacing="3",
+                        width="100%",
+                    ),
+
+                    rx.divider(),
+
+                    # Hoofdstuk 5: Naleving
+                    rx.text("Hoofdstuk 5 — Naleving", size="2", weight="bold", color="var(--indigo-11)"),
+                    _beleid_section("clipboard-check", "Borging, controle & handhaving", S.beleid_naleving, "naleving"),
+
+                    spacing="4",
+                    width="100%",
+                    padding="20px",
+                ),
+                spacing="0",
+                width="100%",
+            ),
+            background="linear-gradient(135deg, var(--gray-1), var(--gray-3))",
+            border="1px solid var(--gray-a4)",
+            border_radius="var(--radius-3)",
+            overflow="hidden",
+            width="100%",
+        ),
+
+        # Edit dialog
+        beleid_edit_dialog(),
+
+        align_items="start",
+        width="100%",
+        spacing="5",
     )
 
 

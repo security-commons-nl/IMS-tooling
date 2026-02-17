@@ -528,6 +528,186 @@ class IsmsImplementerState(BaseState):
     def has_scope(self) -> bool:
         return len(self.scopes) > 0
 
+    # --- Informatiebeveiligingsbeleid (Stap 3: Leiderschap) ---
+
+    beleid_versie: str = "1.0"
+    beleid_datum: str = "08-07-2025"
+    beleid_status: str = "Definitief"
+    beleid_gemeenten: str = "Gemeenten Leiden, Leiderdorp, Oegstgeest, Zoeterwoude, Holland Rijnland"
+
+    beleid_inleiding: str = (
+        "Binnen de gemeenten Leiden, Leiderdorp, Oegstgeest en Zoeterwoude (hierna: de gemeente), "
+        "gezamenlijk ook wel de Leidse regio genoemd, zijn wij toegewijd aan het waarborgen van de "
+        "vertrouwelijkheid, integriteit en beschikbaarheid van informatie die wordt gebruikt voor de "
+        "uitvoering van gemeentelijke processen. Dit geldt ongeacht of de informatie toebehoort aan "
+        "de gemeente zelf, haar medewerkers, partners, inwoners of leveranciers.\n\n"
+        "Dit Informatiebeveiligingsbeleid vormt het kader voor de informatiebeveiligingsstrategie "
+        "van de gemeente. Het onderstreept de toewijding van het College van B&W om informatiebeveiliging "
+        "binnen de organisatie te implementeren, onderhouden en continu te verbeteren."
+    )
+
+    beleid_reikwijdte: str = (
+        "Dit informatiebeveiligingsbeleid is van toepassing op alle medewerkers, contractanten, "
+        "externe partijen, consultants, tijdelijke krachten, bezoekers en overige personen die werken "
+        "namens of binnen de gemeente. Iedereen die toegang heeft tot gemeentelijke informatie of "
+        "informatiesystemen dient zich te houden aan de richtlijnen en maatregelen die in dit beleid "
+        "zijn vastgelegd.\n\n"
+        "Het beleid geldt voor alle gemeentelijke processen, informatie(systemen) en procesautomatisering "
+        "die de gemeente in beheer heeft of waarvoor zij verantwoordelijkheid draagt."
+    )
+
+    beleid_strategie: str = (
+        "• Het waarborgen van de vertrouwelijkheid, integriteit en beschikbaarheid van informatie en systemen\n"
+        "• Het beschermen van gevoelige burgerdata en overheidsinformatie tegen ongeoorloofde toegang, wijziging of vernietiging\n"
+        "• Het naleven van relevante wet- en regelgeving (NIS2/Cbw, AVG, BIO, WPG, DigiD-audit, SUWI, Woo, Wet BRP)\n"
+        "• Het via ENSIA afleggen van correcte en transparante verantwoording aan stelselhouders\n"
+        "• Het systematisch uitvoeren van risicomanagement conform ISO/IEC 27001 en ISO/IEC 27005\n"
+        "• Het versterken van de cyberweerbaarheid en waarborgen van de continuïteit van essentiële gemeentelijke diensten\n"
+        "• Het snel detecteren en adequaat reageren op beveiligingsincidenten\n"
+        "• Het bevorderen van een sterke beveiligingscultuur via bewustwording en training\n"
+        "• Het continu verbeteren van informatiebeveiliging en vergroten van transparantie richting burgers en partners"
+    )
+
+    beleid_risicomanagement: str = (
+        "Risicobeheer is een continu en integraal proces binnen de gemeente, verweven met alle "
+        "bedrijfsactiviteiten, en volgt een systematische aanpak op basis van de richtlijnen van "
+        "ISO 27001 en de BIO. De gemeente hanteert een risicogebaseerde benadering binnen elk proces, "
+        "waarbij risico's proactief worden geïdentificeerd, beoordeeld en beheerst.\n\n"
+        "Het College van B&W is eindverantwoordelijk voor het risicobeheer. Strategische risico's worden "
+        "minimaal jaarlijks beoordeeld, terwijl operationele risico's doorlopend worden beheerd door de "
+        "proceseigenaren met ondersteuning van het informatiebeveiligingsteam."
+    )
+
+    beleid_rol_college: str = (
+        "• Eindverantwoordelijkheid voor naleving van wet- en regelgeving\n"
+        "• Jaarlijkse beoordeling van informatiebeveiligingsinitiatieven\n"
+        "• Stelt het informatiebeveiligingsbeleid vast\n"
+        "• Zorgdragen voor voldoende middelen voor informatiebeveiligingsprogramma's\n"
+        "• Toezicht op belangrijke beveiligingsrisico's"
+    )
+
+    beleid_rol_directeuren: str = (
+        "• Keuren strategieën, beleidsregels en beveiligingsinitiatieven goed\n"
+        "• Zorgen voor integratie in bedrijfsvoering en besluitvorming\n"
+        "• Waken over toereikende middelen (financieel, personeel, technisch)\n"
+        "• Positioneren informatiebeveiliging als integraal onderdeel van risicomanagement\n"
+        "• Dragen eigenaarschap over strategische risico's"
+    )
+
+    beleid_rol_afdelingsmanagers: str = (
+        "• Zorgdragen voor implementatie, onderhoud en afstemming van beveiligingsmaatregelen\n"
+        "• Vertalen van beveiligingsdoelen naar operationele processen\n"
+        "• Handelen als risico-eigenaar\n"
+        "• Verantwoordelijk voor informatiebeveiliging binnen hun afdeling\n"
+        "• Deelname aan post-mortem analyses na (grote) incidenten"
+    )
+
+    beleid_rol_ciso: str = (
+        "• Ontwikkelt en onderhoudt de informatiebeveiligingsstrategie en het beleid\n"
+        "• Houdt toezicht op de implementatie en werking van beveiligingsmaatregelen\n"
+        "• Rapporteert beveiligingsstatus, risico's en kwesties aan directie en College van B&W\n"
+        "• Zorgt voor naleving van beveiligingsvereisten en standaarden\n"
+        "• Faciliteert beveiligingsbewustzijns- en trainingsprogramma's\n"
+        "• Ondersteunt de gemeente vanuit een onafhankelijke positie"
+    )
+
+    beleid_rol_ibteam: str = (
+        "• Ondersteunen bij implementatie, onderhoud en naleving van beveiligingsmaatregelen\n"
+        "• Uitvoeren van risicoanalyses\n"
+        "• Verstrekken van beveiligingsadvies aan bedrijfsonderdelen en projecten\n"
+        "• Onderzoeken van incidenten, coördineren van respons\n"
+        "• Geven van beveiligingstrainingen en bewustzijnscampagnes\n"
+        "• Monitoren en analyseren van externe bedreigingen en kwetsbaarheden"
+    )
+
+    beleid_rol_proceseigenaren: str = (
+        "• Implementatie van beveiligingsmaatregelen binnen hun afdeling\n"
+        "• Zorgen voor naleving van het beleid door hun medewerkers\n"
+        "• Ondersteunen van beveiligingsrisicobeoordelingen en audits\n"
+        "• Bijhouden van een actuele inventaris van informatie-assets\n"
+        "• Definiëren van classificatieniveaus voor hun informatie-assets\n"
+        "• Goedkeuren van systeemwijzigingen die beveiliging beïnvloeden"
+    )
+
+    beleid_rol_medewerkers: str = (
+        "• Naleving van het informatiebeveiligingsbeleid en procedures\n"
+        "• Voltooien van verplichte beveiligingsbewustzijnstrainingen\n"
+        "• Bescherming van informatie-assets binnen hun controle\n"
+        "• Direct melden van beveiligingsincidenten en schendingen\n"
+        "• Gebruik van informatie-assets uitsluitend voor geautoriseerde doeleinden\n"
+        "• Beschermen van authenticatiegegevens (wachtwoorden, tokens)\n"
+        "• Zorgen voor fysieke beveiliging van middelen"
+    )
+
+    beleid_naleving: str = (
+        "• Het beleid wordt elke drie jaar beoordeeld, herzien en bijgewerkt\n"
+        "• Communicatie naar alle medewerkers via e-mail, intranet, trainingen en posters\n"
+        "• Borging via de Plan-Do-Check-Act (PDCA)-cyclus\n"
+        "• Periodieke (onafhankelijke) audits en controles\n"
+        "• Niet-naleving kan leiden tot disciplinaire maatregelen en juridische consequenties\n"
+        "• Formeel uitzonderingsproces beschikbaar via het informatiebeveiligingsteam"
+    )
+
+    # Beleid edit state
+    beleid_editing: str = ""
+    beleid_edit_text: str = ""
+
+    def open_beleid_edit(self, section: str):
+        self.beleid_editing = section
+        mapping = {
+            "inleiding": self.beleid_inleiding,
+            "reikwijdte": self.beleid_reikwijdte,
+            "strategie": self.beleid_strategie,
+            "risicomanagement": self.beleid_risicomanagement,
+            "rol_college": self.beleid_rol_college,
+            "rol_directeuren": self.beleid_rol_directeuren,
+            "rol_afdelingsmanagers": self.beleid_rol_afdelingsmanagers,
+            "rol_ciso": self.beleid_rol_ciso,
+            "rol_ibteam": self.beleid_rol_ibteam,
+            "rol_proceseigenaren": self.beleid_rol_proceseigenaren,
+            "rol_medewerkers": self.beleid_rol_medewerkers,
+            "naleving": self.beleid_naleving,
+            "versie": self.beleid_versie,
+            "datum": self.beleid_datum,
+            "status": self.beleid_status,
+            "gemeenten": self.beleid_gemeenten,
+        }
+        self.beleid_edit_text = mapping.get(section, "")
+
+    def save_beleid_edit(self):
+        m = {
+            "inleiding": "beleid_inleiding",
+            "reikwijdte": "beleid_reikwijdte",
+            "strategie": "beleid_strategie",
+            "risicomanagement": "beleid_risicomanagement",
+            "rol_college": "beleid_rol_college",
+            "rol_directeuren": "beleid_rol_directeuren",
+            "rol_afdelingsmanagers": "beleid_rol_afdelingsmanagers",
+            "rol_ciso": "beleid_rol_ciso",
+            "rol_ibteam": "beleid_rol_ibteam",
+            "rol_proceseigenaren": "beleid_rol_proceseigenaren",
+            "rol_medewerkers": "beleid_rol_medewerkers",
+            "naleving": "beleid_naleving",
+            "versie": "beleid_versie",
+            "datum": "beleid_datum",
+            "status": "beleid_status",
+            "gemeenten": "beleid_gemeenten",
+        }
+        attr = m.get(self.beleid_editing)
+        if attr:
+            setattr(self, attr, self.beleid_edit_text)
+        self.beleid_editing = ""
+        self.beleid_edit_text = ""
+
+    def close_beleid_edit(self):
+        self.beleid_editing = ""
+        self.beleid_edit_text = ""
+
+    def handle_beleid_dialog_change(self, is_open: bool):
+        if not is_open:
+            self.beleid_editing = ""
+            self.beleid_edit_text = ""
+
     # --- Business Case Progress ---
 
     @rx.var
@@ -591,15 +771,15 @@ class IsmsImplementerState(BaseState):
 
     @rx.var
     def has_policy(self) -> bool:
-        return len(self.policies) > 0
+        return len(self.policies) > 0 or bool(self.beleid_inleiding)
 
     @rx.var
     def has_roles_assigned(self) -> bool:
-        return False
+        return bool(self.beleid_rol_college or self.beleid_rol_ciso)
 
     @rx.var
     def has_objectives(self) -> bool:
-        return False
+        return bool(self.beleid_strategie)
 
     # --- Risicomanagement Progress ---
 
