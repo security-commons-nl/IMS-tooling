@@ -528,3 +528,153 @@ class IsmsImplementerState(BaseState):
     def has_scope(self) -> bool:
         return len(self.scopes) > 0
 
+    # --- Business Case Progress ---
+
+    @rx.var
+    def has_bmc(self) -> bool:
+        return bool(self.bmc_partners or self.bmc_activiteiten or self.bmc_waarde)
+
+    @rx.var
+    def has_bc_elements(self) -> bool:
+        return bool(self.bc_omgeving or self.bc_doelen or self.bc_samenvatting)
+
+    @rx.var
+    def bc_progress(self) -> int:
+        progress = 0
+        if self.bmc_partners or self.bmc_activiteiten or self.bmc_waarde:
+            progress += 50
+        if self.bc_omgeving or self.bc_doelen or self.bc_samenvatting:
+            progress += 50
+        return progress
+
+    # --- Projectplan Progress ---
+
+    @rx.var
+    def has_wbs(self) -> bool:
+        return len(self.wbs_rows) > 0
+
+    @rx.var
+    def has_planning(self) -> bool:
+        return any(r.get("planning", "") for r in self.wbs_rows)
+
+    @rx.var
+    def pp_progress(self) -> int:
+        progress = 0
+        if len(self.wbs_rows) > 0:
+            progress += 50
+        if any(r.get("planning", "") for r in self.wbs_rows):
+            progress += 50
+        return progress
+
+    # --- Gap-Analysis Progress ---
+
+    @rx.var
+    def gap_progress(self) -> int:
+        return 0
+
+    @rx.var
+    def has_gap_analysis(self) -> bool:
+        return False
+
+    @rx.var
+    def has_action_plan(self) -> bool:
+        return False
+
+    # --- Leiderschap Progress ---
+
+    @rx.var
+    def leadership_progress(self) -> int:
+        p = 0
+        if len(self.policies) > 0:
+            p += 34
+        return p
+
+    @rx.var
+    def has_policy(self) -> bool:
+        return len(self.policies) > 0
+
+    @rx.var
+    def has_roles_assigned(self) -> bool:
+        return False
+
+    @rx.var
+    def has_objectives(self) -> bool:
+        return False
+
+    # --- Risicomanagement Progress ---
+
+    @rx.var
+    def risk_progress(self) -> int:
+        p = 0
+        if len(self.risks) > 0:
+            p += 50
+        return p
+
+    @rx.var
+    def has_risk_analysis(self) -> bool:
+        return len(self.risks) > 0
+
+    @rx.var
+    def has_risk_treatment(self) -> bool:
+        return False
+
+    # --- Middelen & Bewustzijn Progress ---
+
+    @rx.var
+    def support_progress(self) -> int:
+        return 0
+
+    @rx.var
+    def has_resources(self) -> bool:
+        return False
+
+    @rx.var
+    def has_competences(self) -> bool:
+        return False
+
+    @rx.var
+    def has_awareness(self) -> bool:
+        return False
+
+    # --- Beheersing & SoA Progress ---
+
+    @rx.var
+    def controls_progress(self) -> int:
+        return 0
+
+    @rx.var
+    def has_soa(self) -> bool:
+        return False
+
+    @rx.var
+    def has_controls_implemented(self) -> bool:
+        return False
+
+    # --- Evaluatie & Audit Progress ---
+
+    @rx.var
+    def evaluation_progress(self) -> int:
+        return 0
+
+    @rx.var
+    def has_internal_audit(self) -> bool:
+        return False
+
+    @rx.var
+    def has_management_review(self) -> bool:
+        return False
+
+    # --- Verbetering Progress ---
+
+    @rx.var
+    def improvement_progress(self) -> int:
+        return 0
+
+    @rx.var
+    def has_corrective_actions(self) -> bool:
+        return False
+
+    @rx.var
+    def has_improvement_plans(self) -> bool:
+        return False
+

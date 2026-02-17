@@ -36,34 +36,36 @@ def _activity_check(label: str, is_done: rx.Var) -> rx.Component:
     )
 
 
-def context_dashboard() -> rx.Component:
-    """Dashboard showing progress for Context phase."""
+def phase_dashboard(
+    accent: str,
+    progress_var: rx.Var,
+    activities: list,
+) -> rx.Component:
+    """Generic phase progress dashboard. Used on every step."""
     return rx.box(
         rx.vstack(
-            # Accent bar
             rx.box(
                 width="100%",
                 height="3px",
-                background="var(--indigo-9)",
+                background=f"var(--{accent}-9)",
                 border_radius="var(--radius-3) var(--radius-3) 0 0",
             ),
             rx.vstack(
-                # Header
                 rx.hstack(
                     rx.box(
                         rx.icon("gauge", size=20, color="white"),
-                        background="var(--indigo-9)",
+                        background=f"var(--{accent}-9)",
                         padding="8px",
                         border_radius="var(--radius-2)",
                     ),
                     rx.text("Fase Voortgang", size="3", weight="bold"),
                     rx.spacer(),
                     rx.badge(
-                        rx.fragment(IsmsImplementerState.context_progress.to(str), "%"),
+                        rx.fragment(progress_var.to(str), "%"),
                         color_scheme=rx.cond(
-                            IsmsImplementerState.context_progress >= 100,
+                            progress_var >= 100,
                             "green",
-                            rx.cond(IsmsImplementerState.context_progress > 0, "blue", "gray"),
+                            rx.cond(progress_var > 0, "blue", "gray"),
                         ),
                         variant="soft",
                         size="2",
@@ -71,16 +73,15 @@ def context_dashboard() -> rx.Component:
                     width="100%",
                     align="center",
                 ),
-                # Progress bar
                 rx.box(
                     rx.box(
                         width=rx.cond(
-                            IsmsImplementerState.context_progress > 0,
-                            IsmsImplementerState.context_progress.to(str) + "%",
+                            progress_var > 0,
+                            progress_var.to(str) + "%",
                             "0%",
                         ),
                         height="100%",
-                        background="var(--indigo-9)",
+                        background=f"var(--{accent}-9)",
                         border_radius="4px",
                         transition="width 0.5s ease",
                     ),
@@ -91,11 +92,8 @@ def context_dashboard() -> rx.Component:
                     overflow="hidden",
                 ),
                 rx.divider(),
-                # Activities checklist
                 rx.text("Activiteiten", size="2", weight="bold", color="var(--gray-11)"),
-                _activity_check("1. Interne en externe analyse", IsmsImplementerState.has_context_issues),
-                _activity_check("2. Stakeholders identificeren, analyseren en adresseren", IsmsImplementerState.has_stakeholders),
-                _activity_check("3. Vaststellen toepassingsgebied (scope)", IsmsImplementerState.has_scope),
+                *[_activity_check(label, var) for label, var in activities],
                 spacing="3",
                 width="100%",
                 padding="20px",
@@ -277,7 +275,15 @@ def step_1_content() -> rx.Component:
         ),
 
         # Dashboard
-        context_dashboard(),
+        phase_dashboard(
+            "indigo",
+            IsmsImplementerState.context_progress,
+            [
+                ("1. Interne en externe analyse", IsmsImplementerState.has_context_issues),
+                ("2. Stakeholders identificeren, analyseren en adresseren", IsmsImplementerState.has_stakeholders),
+                ("3. Vaststellen toepassingsgebied (scope)", IsmsImplementerState.has_scope),
+            ],
+        ),
 
         # ── Sectie 1: Interne en externe analyse ──────────────────
         rx.box(
@@ -905,6 +911,15 @@ def step_bc_content() -> rx.Component:
     """Content for preparation step: Business Case."""
     return rx.vstack(
         step_header(0, "Business Case"),
+        # Dashboard
+        phase_dashboard(
+            "amber",
+            IsmsImplementerState.bc_progress,
+            [
+                ("1. Business Model Canvas invullen", IsmsImplementerState.has_bmc),
+                ("2. Elementen van de Business Case invullen", IsmsImplementerState.has_bc_elements),
+            ],
+        ),
         # Banner
         rx.box(
             rx.hstack(
@@ -986,6 +1001,15 @@ def step_pp_content() -> rx.Component:
     """Content for preparation step: Projectplan."""
     return rx.vstack(
         step_header(0, "Projectplan"),
+        # Dashboard
+        phase_dashboard(
+            "amber",
+            IsmsImplementerState.pp_progress,
+            [
+                ("1. Work Breakdown Structure opstellen", IsmsImplementerState.has_wbs),
+                ("2. Planning en mijlpalen vastleggen", IsmsImplementerState.has_planning),
+            ],
+        ),
         # Banner
         rx.box(
             rx.hstack(
@@ -1188,6 +1212,11 @@ def step_gap_content() -> rx.Component:
         "De gap-analyse is nog in ontwikkeling. Hier komt een overzicht van "
         "de huidige status per ISO 27001-hoofdstuk, geïdentificeerde hiaten "
         "en het bijbehorende actieplan.",
+        progress_var=IsmsImplementerState.gap_progress,
+        activities=[
+            ("1. Gap-analyse uitvoeren", IsmsImplementerState.has_gap_analysis),
+            ("2. Actieplan opstellen", IsmsImplementerState.has_action_plan),
+        ],
     )
 
 
@@ -1198,11 +1227,20 @@ def _step_page(
     icon_name: str,
     accent: str,
     placeholder: str,
+    progress_var: rx.Var = None,
+    activities: list = None,
 ) -> rx.Component:
-    """Reusable step page layout: header + banner + card."""
-    return rx.vstack(
-        step_header(step_number, title),
-        # Inleidende banner
+    """Reusable step page layout: header + dashboard + banner + card."""
+    children = [step_header(step_number, title)]
+
+    # Phase dashboard
+    if progress_var is not None and activities is not None:
+        children.append(
+            phase_dashboard(accent, progress_var, activities)
+        )
+
+    # Banner
+    children.append(
         rx.box(
             rx.hstack(
                 rx.icon("info", size=20, color=f"var(--{accent}-4)", flex_shrink="0"),
@@ -1219,8 +1257,11 @@ def _step_page(
             border_radius="var(--radius-3)",
             padding="20px 24px",
             width="100%",
-        ),
-        # Content card
+        )
+    )
+
+    # Content card
+    children.append(
         rx.box(
             rx.vstack(
                 rx.box(width="100%", height="3px", background=f"var(--{accent}-9)", border_radius="var(--radius-3) var(--radius-3) 0 0"),
@@ -1256,7 +1297,11 @@ def _step_page(
             border_radius="var(--radius-3)",
             overflow="hidden",
             width="100%",
-        ),
+        )
+    )
+
+    return rx.vstack(
+        *children,
         align_items="start",
         width="100%",
         spacing="5",
@@ -1273,6 +1318,12 @@ def step_3_content() -> rx.Component:
         "de bedrijfsprocessen geborgd.",
         "crown", "indigo",
         "Hier komt de content voor Stap 3 (Beleid, Doelstellingen).",
+        progress_var=IsmsImplementerState.leadership_progress,
+        activities=[
+            ("1. Informatiebeveiligingsbeleid vaststellen", IsmsImplementerState.has_policy),
+            ("2. Rollen en verantwoordelijkheden toewijzen", IsmsImplementerState.has_roles_assigned),
+            ("3. Doelstellingen definiëren", IsmsImplementerState.has_objectives),
+        ],
     )
 
 
@@ -1284,6 +1335,11 @@ def step_4_content() -> rx.Component:
         "beheersmaatregelen geselecteerd om risico's te mitigeren tot een acceptabel niveau.",
         "triangle-alert", "red",
         "Hier komt de content voor Stap 4 (Risico's, Bedreigingen).",
+        progress_var=IsmsImplementerState.risk_progress,
+        activities=[
+            ("1. Risicoanalyse uitvoeren", IsmsImplementerState.has_risk_analysis),
+            ("2. Risicobehandelingsplan opstellen", IsmsImplementerState.has_risk_treatment),
+        ],
     )
 
 
@@ -1296,6 +1352,12 @@ def step_5_content() -> rx.Component:
         "en hun rol daarin.",
         "graduation-cap", "blue",
         "Hier komt de content voor Stap 5 (Middelen, Training, Bewustzijn).",
+        progress_var=IsmsImplementerState.support_progress,
+        activities=[
+            ("1. Middelen beschikbaar stellen", IsmsImplementerState.has_resources),
+            ("2. Competenties vaststellen", IsmsImplementerState.has_competences),
+            ("3. Bewustwordingsprogramma opzetten", IsmsImplementerState.has_awareness),
+        ],
     )
 
 
@@ -1307,6 +1369,11 @@ def step_6_content() -> rx.Component:
         "maatregelen van toepassing zijn, waarom, en hoe ze zijn geïmplementeerd.",
         "shield-check", "green",
         "Hier komt de content voor Stap 6 (Beheersmaatregelen, SoA).",
+        progress_var=IsmsImplementerState.controls_progress,
+        activities=[
+            ("1. Verklaring van Toepasselijkheid (SoA) opstellen", IsmsImplementerState.has_soa),
+            ("2. Beheersmaatregelen implementeren", IsmsImplementerState.has_controls_implemented),
+        ],
     )
 
 
@@ -1318,6 +1385,11 @@ def step_7_content() -> rx.Component:
         "vast te stellen of het ISMS effectief is en voldoet aan de gestelde eisen.",
         "clipboard-check", "orange",
         "Hier komt de content voor Stap 7 (Monitoring, Interne Audits, Directiebeoordeling).",
+        progress_var=IsmsImplementerState.evaluation_progress,
+        activities=[
+            ("1. Interne audit uitvoeren", IsmsImplementerState.has_internal_audit),
+            ("2. Directiebeoordeling uitvoeren", IsmsImplementerState.has_management_review),
+        ],
     )
 
 
@@ -1329,6 +1401,11 @@ def step_8_content() -> rx.Component:
         "wordt continu verbeterd om de effectiviteit en geschiktheid te waarborgen.",
         "refresh-cw", "red",
         "Hier komt de content voor Stap 8 (Corrigerende Acties, Continue Verbetering).",
+        progress_var=IsmsImplementerState.improvement_progress,
+        activities=[
+            ("1. Corrigerende acties definiëren", IsmsImplementerState.has_corrective_actions),
+            ("2. Verbeterplannen opstellen", IsmsImplementerState.has_improvement_plans),
+        ],
     )
 
 
