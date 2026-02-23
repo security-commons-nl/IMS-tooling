@@ -5,6 +5,9 @@
     "editor.minimap.enabled": false,
     "editor.wordWrap": "on",
     "terminal.integrated.fontSize": 14,
+    "terminal.integrated.scrollback": 10000,
+    "terminal.integrated.mouseWheelScrollSensitivity": 3,
+    "terminal.integrated.fastScrollSensitivity": 7,
     "terminal.integrated.defaultProfile.linux": "tmux",
     "terminal.integrated.profiles.linux": {
         "tmux": {
