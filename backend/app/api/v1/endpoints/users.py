@@ -396,7 +396,7 @@ async def get_user_tenants(
         {
             "tenant_id": m.tenant_id,
             "is_default": m.is_default,
-            "joined_at": m.joined_at,
+            "joined_at": m.created_at,
         }
         for m in memberships
     ]

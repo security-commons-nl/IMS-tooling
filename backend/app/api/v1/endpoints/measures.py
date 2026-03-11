@@ -195,9 +195,10 @@ async def delete_measure(
 @router.get("/{measure_id}/controls", response_model=List[Control])
 async def get_implementing_controls(
     measure_id: int,
-    tenant_id: Optional[int] = Query(None, description="Filter controls by tenant"),
+    _tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
+    tenant_id = _tenant_id
     """
     Get all controls that implement this measure.
 
@@ -222,9 +223,10 @@ async def get_implementing_controls(
 @router.get("/{measure_id}/coverage")
 async def get_measure_coverage(
     measure_id: int,
-    tenant_id: Optional[int] = Query(None),
+    _tenant_id: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ):
+    tenant_id = _tenant_id
     """
     Get coverage statistics for this measure.
 

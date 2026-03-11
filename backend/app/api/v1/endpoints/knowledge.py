@@ -3,12 +3,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.db import get_session
+from app.core.rbac import get_tenant_id
 from app.models.core_models import AIKnowledgeBase
 
 router = APIRouter()
 
 @router.get("/", response_model=List[AIKnowledgeBase])
 async def get_knowledge_entries(
+    _tid: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
     skip: int = 0,
     limit: int = 100,
@@ -43,6 +45,7 @@ async def get_knowledge_entries(
 @router.get("/{entry_id}", response_model=AIKnowledgeBase)
 async def get_knowledge_entry(
     entry_id: int,
+    _tid: int = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     """

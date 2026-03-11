@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.core.db import get_session
+from app.core.rbac import get_tenant_id
 from app.models.core_models import Standard, Requirement
 from app.services.knowledge_service import knowledge_service
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 # --- Standards (Frameworks) ---
 
 @router.get("/", response_model=List[Standard])
-async def read_standards(skip: int = 0, limit: int = 100, session: AsyncSession = Depends(get_session)):
+async def read_standards(skip: int = 0, limit: int = 100, _tid: int = Depends(get_tenant_id), session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Standard).offset(skip).limit(limit))
     return result.scalars().all()
 
@@ -41,7 +42,7 @@ async def create_standard(standard: Standard, session: AsyncSession = Depends(ge
     return standard
 
 @router.get("/{standard_id}", response_model=Standard)
-async def read_standard(standard_id: int, session: AsyncSession = Depends(get_session)):
+async def read_standard(standard_id: int, _tid: int = Depends(get_tenant_id), session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(Standard).where(Standard.id == standard_id))
     standard = result.scalars().first()
     if not standard:

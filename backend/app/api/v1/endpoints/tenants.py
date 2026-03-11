@@ -220,7 +220,7 @@ async def remove_user_from_tenant(
 # TENANT RELATIONSHIPS (SSC Model)
 # =============================================================================
 
-@router.get("/{tenant_id}/relationships", response_model=List[dict])
+@router.get("/{tenant_id}/relationships")
 async def get_tenant_relationships(
     tenant_id: int,
     session: AsyncSession = Depends(get_session),

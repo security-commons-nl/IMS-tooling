@@ -117,6 +117,12 @@ async def get_tenant_id(
                     status_code=403,
                     detail="Geen toegang tot deze tenant",
                 )
+        # CRITICAL: always set app.current_tenant so RLS policies work on this connection
+        from sqlalchemy import text
+        await session.execute(
+            text("SELECT set_config('app.current_tenant', :tenant_id, false)"),
+            {"tenant_id": str(x_tenant_id)}
+        )
         return x_tenant_id
 
     # Fallback: resolve default tenant from memberships

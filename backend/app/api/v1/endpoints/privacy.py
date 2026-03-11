@@ -153,7 +153,7 @@ async def list_data_subject_requests(
     if status:
         query = query.where(DataSubjectRequest.status == status)
 
-    query = query.order_by(DataSubjectRequest.created_at.desc())
+    query = query.order_by(DataSubjectRequest.received_date.desc())
     query = query.offset(skip).limit(limit)
     result = await session.execute(query)
     return result.scalars().all()

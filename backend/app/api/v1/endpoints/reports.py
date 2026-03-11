@@ -83,7 +83,7 @@ async def get_executive_dashboard(
     measures_result = await session.execute(measure_query)
     measures = measures_result.scalars().all()
 
-    active_measures = [m for m in measures if m.status == Status.ACTIVE]
+    active_measures = [m for m in measures if m.is_active]
     avg_effectiveness = 0
     if active_measures:
         effectiveness_values = [m.effectiveness_percentage for m in active_measures if m.effectiveness_percentage]
@@ -373,7 +373,7 @@ async def get_incident_summary(
 
     # Recent incidents (last N days)
     cutoff = datetime.utcnow() - timedelta(days=days)
-    recent = [i for i in incidents if i.created_at and i.created_at >= cutoff]
+    recent = [i for i in incidents if i.date_occurred and i.date_occurred >= cutoff]
 
     # Status breakdown
     open_incidents = sum(1 for i in incidents if i.status in [Status.DRAFT, Status.ACTIVE])
