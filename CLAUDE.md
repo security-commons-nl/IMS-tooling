@@ -34,7 +34,6 @@ git add <files> && git commit -m "..." && git push origin main
 ```
 
 - `origin` = GitHub — **altijd automatisch pushen na wijzigingen**
-- `server` = VPS (Hetzner) — **alleen pushen als de gebruiker het expliciet vraagt** (`git push server main`)
 - Local dev: `cd frontend && python -m reflex run` on http://localhost:3000
 
 ## Architecture
