@@ -878,6 +878,18 @@ Drie statussen: **concept** → **in review** → **vastgesteld**. Alleen vastge
 
 Het handboek hoeft niet elk jaar opnieuw — alleen bij governance-/scope-/beleidswijziging.
 
+### K4. Stap-ontgrendeling (vastgesteld 18 maart 2026)
+
+Drie zichtbare staten per stap:
+
+| Status | Wat de gebruiker ziet | Wat er kan |
+|--------|----------------------|------------|
+| 🔒 Geblokkeerd | "Stap X en Y moeten eerst worden afgerond" | Niets — B-inputs ontbreken |
+| ⚠️ Beschikbaar met waarschuwing | "Je kunt starten, maar let op: [wat ontbreekt]" | Stap starten, waarschuwing blijft zichtbaar |
+| ✅ Volledig beschikbaar | Geen melding | Stap starten |
+
+Waarschuwing verdwijnt niet bij starten — blijft zichtbaar totdat de W-input alsnog is afgerond. Gebaseerd op de B/W-dataflow-tabellen uit punt 2.
+
 ### K3. Accordering (vastgesteld 18 maart 2026)
 
 Optie A: naam + functie + datum + IP-adres vastgelegd in besluitlog. Immutable na accordering. Exporteerbaar als PDF met alle metadata. Voldoende voor ISO-audit.
