@@ -1,7 +1,7 @@
 # IMS-proces — Gesprekscontext & Ontwerprichtingen
 
 *Bijgehouden zodat een volgend LLM-gesprek direct kan doorpakken.*
-*Laatst bijgewerkt: 2026-03-13*
+*Laatst bijgewerkt: 2026-03-18*
 
 ---
 
@@ -963,3 +963,33 @@ Accordering:
   besluitlog_id:    "0007"
   → immutable, niet te wijzigen na vastlegging
 ```
+
+### K9. Normversioning (vastgesteld 18 maart 2026)
+
+**Aanleiding:** BIO 2.0 → BIO 3.0 en ISO-revisies zullen komen. Zonder versioning raken RequirementMappings en SoA-scores los van de norm waarop ze zijn gebaseerd.
+
+**Datamodel:**
+
+```
+Standard
+  id
+  name          "BIO"
+  version       "2.0"
+  published_at  2022-01-01
+  superseded_by → Standard.id   ← verwijst naar BIO 3.0 zodra die bestaat
+  status        actief | vervallen
+
+Requirement
+  id
+  standard_id   → Standard (versie-specifiek)
+  code          "OT.1.1"
+  ...
+
+RequirementMapping
+  id
+  source_requirement_id  → Requirement (BIO 2.0 OT.1.1)
+  target_requirement_id  → Requirement (ISO 27001 A.5.1)
+  norm_version_source    "BIO 2.0"    ← denormalisatie voor query-gemak
+```
+
+**Bij normupdate:** migratiewizard die per oude control vraagt "mappen op nieuwe X.X.X?" met AI-suggestie. Controls zonder mapping krijgen status `wees` en worden geflagd voor handmatige review. Historische SoA-scores blijven gekoppeld aan de normversie waarop ze zijn gebaseerd — nooit overschrijven.
