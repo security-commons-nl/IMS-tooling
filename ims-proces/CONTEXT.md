@@ -763,16 +763,28 @@ De CISO (Bas) heeft een 3e-lijn toezichtrol en staat buiten SIMS en TIMS. Als pr
 - `{{TIMS_VOORZITTER}}` — lid van TIMS, permanente governance
 - `{{IMPLEMENTATIECOORDINATOR}}` — projectleider implementatietraject, tijdelijk
 
-### 5. Besluitlog-structuur (moet definiëren)
-Elke stap produceert besluitlog-entries, maar het format is niet gedefinieerd.
+### 5. Besluitlog-structuur (vastgesteld 18 maart 2026)
 
-Te beslissen:
-- Vaste velden: wie, wat, wanneer, grondslag (ISO-clause), besluit, geldigheidsduur?
-- Optionele velden: overwegingen, alternatieven, risico-acceptatie?
-- Is het besluitlog één doorlopend register of per stap apart?
-- Hoe verhoudt het zich tot de GRC-tool (wordt het daar opgeslagen)?
+**Één doorlopend register** in het platform (database). Nummering: `0001`, `0002`, ... (4 cijfers — ruimte voor groei). Exporteerbaar als PDF/Word voor audits en certificering (export is een platform-breed principe, niet besluitlog-specifiek).
 
-**Deliverable:** besluitlog-schema.
+Besluiten worden nooit overschreven. Een herzien besluit krijgt een nieuw entry met verwijzing naar het originele. Audit trail blijft altijd intact.
+
+#### Schema
+
+| Veld | V/A | Toelichting |
+|------|-----|-------------|
+| `id` | V | Doorlopend nummer (0001, 0002, ...) |
+| `datum` | V | Datum van vaststelling |
+| `stap` | V | Processtap (bijv. "2b") |
+| `besluit` | V | Wat is er besloten — kort en feitelijk |
+| `grondslag` | V | ISO-clause of systeemvereiste (bijv. "ISO 27001 §4.3") |
+| `bevoegd_gremium` | V | SIMS / TIMS / discipline-eigenaar |
+| `vastgesteld_door` | V | Naam van de persoon die accordeert |
+| `geldigheidsduur` | V | Datum of "tot herziening" |
+| `motivering` | A | Waarom deze keuze — bij niet-standaard besluiten |
+| `alternatieven` | A | Welke opties zijn overwogen |
+| `non_compliance` | A | Alleen bij overslaan V-output: welke ISO-clause, bewuste keuze |
+| `herziet_besluit` | A | Verwijzing naar id van het originele besluit bij herziening |
 
 ### 6. Fase 2 cyclisch mechanisme (moet definiëren)
 Stappen 13-17 zijn "cyclisch, niet lineair", maar het herhalingsmechanisme is ongedefinieerd.
