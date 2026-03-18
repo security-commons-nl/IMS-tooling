@@ -786,16 +786,40 @@ Besluiten worden nooit overschreven. Een herzien besluit krijgt een nieuw entry 
 | `non_compliance` | A | Alleen bij overslaan V-output: welke ISO-clause, bewuste keuze |
 | `herziet_besluit` | A | Verwijzing naar id van het originele besluit bij herziening |
 
-### 6. Fase 2 cyclisch mechanisme (moet definiëren)
-Stappen 13-17 zijn "cyclisch, niet lineair", maar het herhalingsmechanisme is ongedefinieerd.
+### 6. Fase 2 cyclisch mechanisme (vastgesteld 18 maart 2026)
 
-Te beslissen:
-- Jaarlijkse cyclus (aangestuurd door jaarplanning uit stap 17)?
-- Event-driven (getriggerd door incidenten, audit-bevindingen, context-wijzigingen)?
-- Combinatie van beide?
-- Hoe schakelt het platform van inrichtingsmodus naar beheermodus — is dat per domein apart (ISMS kan al draaien terwijl BCMS nog in Fase 1 zit)?
+#### Cyclus-karakter per stap
 
-**Deliverable:** cyclus-beschrijving als ontwerpbeslissing.
+| Stap | Karakter | Frequentie |
+|------|----------|------------|
+| 13 — Interne audit | Gepland | Jaarlijks (conform auditprogramma) |
+| 14 — Management review | Gepland | Jaarlijks (ISO 9.3) |
+| 15 — Afwijkingen & incidenten | Event-driven | Zodra het zich voordoet |
+| 16 — Evidence & monitoring | Continu | Permanent actieve module in beheermodus |
+| 17 — PDCA-cyclus formaliseren | Gepland | Jaarlijks — produceert jaarplanning voor volgend jaar |
+
+Stap 17 produceert de jaarplanning die bepaalt wanneer 13 en 14 het volgende jaar plaatsvinden. Zo sluit de cirkel.
+
+#### Schakeling inrichtingsmodus → beheermodus
+
+Per domein apart, bij go/no-go Fase 2. ISMS kan al in Fase 2 draaien terwijl BCMS nog in Fase 1 zit. Het platform toont per domein in welke fase het zit. Beheermodus-functionaliteit wordt per domein ontgrendeld zodra het go/no-go besluit is vastgelegd in het besluitlog.
+
+#### Platform-scope: governance, niet operationeel
+
+Het IMS-platform beheert **geen individuele operationele events**. Individuele incidenten horen in operationele tools (TopDesk, ServiceNow). De koppeling loopt via integraties: operationele tools leveren input voor management review en correctieve acties, maar het incident zelf wordt niet in het platform beheerd.
+
+Wat het platform wél doet rond incidenten:
+
+| Wat | In platform |
+|-----|-------------|
+| Incidentmanagementprocedure (beleid) | Ja — output stap 15 |
+| Non-conformiteiten uit audits | Ja — systemische afwijkingen |
+| Correctieve acties | Ja — PDCA-verbetercyclus |
+| Trenddata voor management review | Ja — aggregaat |
+| Individuele incidenten registreren | Nee — TopDesk/ServiceNow |
+| 72-uurs AVG-meldplicht uitvoeren | Nee — operationeel proces |
+
+Dit is een **platform-breed principe**: het platform beheert governance en compliance, niet de dagelijkse operatie.
 
 ### 7. IMS-beleid als apart document (moet overleggen)
 Stap 3 produceert "IMS-beleid" als output. In het blueprint-handboek is het beleid verweven in §5 (governance). Maar ISO 5.2 vereist een vastgesteld beleidsdocument.
