@@ -61,12 +61,21 @@ Fasen zijn **communicatielabels** voor planning en bestuurlijke rapportage — g
 ## Stap-patroon (geldt voor elke processtap)
 
 ```
-Input verzamelen (gebruiker vult in)
-    → AI agent genereert concept-document
-    → Bevoegd gremium reviewt en accordeert
-    → Output vastgelegd (besluitlog / handboek / register)
-    → Volgende stap ontgrendeld
+Waarom nu:  [één zin — waarom is deze stap logisch op dit moment?]
+            Voorbeeld: "Zonder normenkader kun je geen controls prioriteren in de volgende stap."
+
+Input:      Gebruiker vult in via vragenlijst (primair) of document-upload (secundair)
+    ↓
+Agent:      AI genereert concept — altijd als concept, nooit als definitief
+    ↓
+Review:     Bevoegd gremium reviewt en accordeert (human-in-the-loop verplicht)
+    ↓
+Output:     Vastgelegd in besluitlog / handboek / register
+    ↓
+Ontgrendeld: Volgende stap beschikbaar (B/W-logica bepaalt status)
 ```
+
+Het "waarom nu"-veld maakt de methodologie zelfdragend. Een gebruiker begrijpt de logica zonder implementatiecoördinator nodig te hebben.
 
 ### Stappen overslaan
 Stappen zijn niet hard geblokkeerd. Als een gemeente een stap overslaat:
