@@ -905,19 +905,35 @@ Dit is platformbeheer, geen IMS-processtap. Dezelfde wizard-logica als de 22 sta
 
 **Bestandsformaten:** PDF, Word (.docx), Markdown.
 
+**Twee invoerroutes:**
+
+```
+Primaire route (standaard):
+  Gestructureerde vragenlijst in het platform
+  → directe database-invoer, altijd betrouwbaar
+  → voor gemeenten zonder bestaand beleid
+
+Secundaire route (gemeente heeft al iets):
+  Document uploaden (PDF / Word / Markdown)
+  → gap-analyse agent leest, met expliciete onzekerheidsmarkering
+  → output bevat altijd: "gebaseerd op documentextractie — verifieer handmatig"
+  → gebruiker accordeert welke gaps daadwerkelijk kloppen
+  → pas daarna invoer naar database
+```
+
 **Agent-architectuur: twee aparte agents**
 
 ```
-Gebruiker uploadt document
+Gebruiker kiest secundaire route → uploadt document
     ↓
 [Gap-analyse agent]  — platform-breed herbruikbaar
 Leest document, vergelijkt met normvereisten voor deze stap
-Output: gestructureerde lijst gaps
+Output: gestructureerde lijst gaps (met onzekerheidsmarkering)
     ↓
-Gebruiker ziet gaps, klikt "vul aan"
+Gebruiker valideert gaps → klikt "vul aan"
     ↓
 [Domein-agent voor deze stap]  — stap-specifiek, kent de norm al
-Input: origineel document + gap-rapport + normvereisten
+Input: origineel document + gevalideerd gap-rapport + normvereisten
 Output: ontbrekende secties bijgeschreven
     ↓
 Gebruiker reviewt → accordering
