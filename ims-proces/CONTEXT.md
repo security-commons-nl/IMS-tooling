@@ -884,8 +884,8 @@ Optie A: naam + functie + datum + IP-adres vastgelegd in besluitlog. Immutable n
 
 ```
 Accordering:
-  vastgesteld_door: "Luuk van der Meer"
-  functie:          "TIMS-voorzitter"
+  vastgesteld_door: "{{NAAM}}"
+  functie:          "{{FUNCTIE}}"
   datum:            "2026-03-18T14:32:00"
   ip_adres:         "..." (intern gelogd, niet zichtbaar in export)
   besluitlog_id:    "0007"
