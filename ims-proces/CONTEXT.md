@@ -952,17 +952,28 @@ Waarschuwing verdwijnt niet bij starten — blijft zichtbaar totdat de W-input a
 
 ### K3. Accordering (vastgesteld 18 maart 2026)
 
-Optie A: naam + functie + datum + IP-adres vastgelegd in besluitlog. Immutable na accordering. Exporteerbaar als PDF met alle metadata. Voldoende voor ISO-audit.
+Naam + functie + datum vastgelegd in besluitlog. Immutable na accordering. Exporteerbaar als PDF met alle metadata. Voldoende voor ISO-audit.
+
+**IP-adres: niet opslaan.** IP is een persoonsgegeven (AVG), shared IP's (NAT/VPN) maken het onbetrouwbaar als identificator, en naam + functie + datum is voldoende bewijs voor auditdoeleinden.
 
 ```
 Accordering:
   vastgesteld_door: "{{NAAM}}"
   functie:          "{{FUNCTIE}}"
   datum:            "2026-03-18T14:32:00"
-  ip_adres:         "..." (intern gelogd, niet zichtbaar in export)
   besluitlog_id:    "0007"
   → immutable, niet te wijzigen na vastlegging
 ```
+
+**Mandatering hoge-drempel besluiten:** De IMS Stuurgroep (DT-leden + CISO) heeft als expliciete bevoegdheid de acceptatie van restrisico's en vaststelling van afwijkingen t.o.v. beleid/normen (vastgelegd in `IMS - rollen en verantwoordelijkheden.md`). Het platform valideert bij risicoacceptatie of de accordeur de juiste rol heeft:
+
+| Besluittype | Vereiste rol |
+|-------------|-------------|
+| Normale stap-accordering | TIMS-lid of discipline-eigenaar |
+| Restrisico acceptatie | IMS Stuurgroep-lid (DT of CISO) |
+| Afwijking van beleid/norm | IMS Stuurgroep-lid |
+
+Accordering door een gebruiker zonder de vereiste rol → geblokkeerd (type B), niet slechts waarschuwing.
 
 ### K9. Normversioning (vastgesteld 18 maart 2026)
 
