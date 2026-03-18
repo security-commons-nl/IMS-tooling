@@ -991,6 +991,59 @@ Accordering:
 
 Accordering door een gebruiker zonder de vereiste rol → geblokkeerd (type B), niet slechts waarschuwing.
 
+### K15. Agent-architectuur — RAG-store, normenkader-workflow, human-in-the-loop (vastgesteld 18 maart 2026)
+
+**RAG-store: twee lagen**
+
+```
+Normatieve laag (platform-breed, gedeeld):
+  BIO 2.0, ISO 27001, ISO 27701, ISO 22301, AVG-tekst
+  normenmapping, handboek-blueprint
+  → geldt voor alle gemeenten, één keer laden
+
+Organisatielaag (per tenant):
+  organisatiecontextdocument (stap 2)
+  vastgestelde besluiten, handboek-versies
+  gemeente-specifieke beleidsdocumenten
+  → alleen zichtbaar voor die tenant, nooit cross-tenant
+```
+
+**Agentic normenkader-workflow**
+
+Nieuwe frameworks (bijv. BIO 3.0) worden niet door een developer ingeladen maar via een geautoriseerde workflow:
+
+```
+2e-lijnsrol (CISO, FG) uploadt document (PDF/Word)
+  OF geeft een URL op in het platform
+    ↓
+[Normenkader-agent]
+  Leest document, splitst op in afzonderlijke normen
+  Genereert Standard + Requirement-entries met norm_version
+  Output: conceptlijst van normen ter review
+    ↓
+2e-lijnsrol reviewt en valideert de normen
+  → Fout? Corrigeren vóór activatie
+  → Akkoord? Normen worden actief in het platform
+    ↓
+Bestaande RequirementMappings worden geflagd voor review (zie K9)
+```
+
+Vereiste rol: 2e lijn (CISO, FG, IB&P Manager). Niet toegankelijk voor 1e lijn.
+
+**Human-in-the-loop — altijd verplicht**
+
+AI is altijd adviserend. AI mag nooit finaliseren. De stap `concept → in review → vastgesteld` is voor elk door een agent gegenereerd document verplicht — zonder uitzondering. Een mens moet altijd de overgang naar `vastgesteld` maken.
+
+Dit geldt voor: handboek-secties, gap-analyse output, normenkader-entries, risicobeoordelingen, SoA-scores, auditrapportages.
+
+**Agent-structuur: 6-8 domain agents + 1 orchestrator**
+
+In plaats van 18 stap-specifieke agents met embedded kennis:
+- Kennis zit in de RAG-store, niet in agent-prompts
+- 6-8 domain agents (ISMS, PIMS, BCMS, Governance, Risk, Compliance, Reporting, Admin)
+- 1 orchestrator die op basis van context de juiste domain agent aanroept
+- Bij normwijziging: RAG-store bijwerken → alle agents profiteren automatisch
+
 ### K14. "Simpel voor de gebruiker" — drie UI-principes (vastgesteld 18 maart 2026)
 
 Het platform heeft inherente complexiteit (22 stappen, twee modi, RBAC, agents, cyclus_id). Die complexiteit wordt **verborgen**, niet vereenvoudigd. Drie harde principes:
