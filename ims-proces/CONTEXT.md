@@ -746,16 +746,22 @@ V (ISO-verplicht), B (technisch blokkerend) en W (waarschuwing) zijn drie versch
 
 B is gereserveerd voor technische onmogelijkheden — inputs die een agent echt niet kan missen om zijn werk te doen (zie dataflow-tabellen punt 2).
 
-### 4. Implementatiecoördinator / projectleidersrol (moet overleggen)
-Het proces definieert agents en gremia, maar niet wie het implementatietraject aanstuurt. Feedback noemt Bas als TIMS-voorzitter, maar CONTEXT.md definieert geen projectleidersrol.
+### 4. Implementatiecoördinator / projectleidersrol (vastgesteld 18 maart 2026)
 
-Te beslissen:
-- Is er een expliciete implementatiecoördinator-rol?
-- Is dat de TIMS-voorzitter, of een aparte projectleider?
-- Hoe verhoudt die rol zich tot de agents (opdrachtgever van de agents? Gebruiker?)?
-- Moet deze rol in het generieke model (blueprint) of alleen in de Leiden-invulling?
+Twee afzonderlijke rollen, beide in het generieke model:
 
-**Deliverable:** rolbeschrijving + positie in governance.
+| Rol | Karakter | Eindigt | Leiden-invulling |
+|-----|----------|---------|-----------------|
+| **TIMS-voorzitter** | Permanent, governance | Nooit | Luuk |
+| **Implementatiecoördinator / Projectleider** | Tijdelijk, operationele regie over de 22 stappen | Bij go/no-go Fase 2 → overdracht aan discipline-eigenaren | Bas Stevens (projectleider-hoed, niet CISO-hoed) |
+
+De CISO (Bas) heeft een 3e-lijn toezichtrol en staat buiten SIMS en TIMS. Als projectleider heeft hij een aparte, tijdelijke operationele rol. Het platform en de documentatie maken dit onderscheid expliciet.
+
+**Relatie tot het platform:** de implementatiecoördinator is de primaire gebruiker tijdens de inrichtingsmodus. Zij triggeren stappen, reviewen agent-output en bewaken voortgang. De agents werken voor hen.
+
+**Blueprint-placeholders:**
+- `{{TIMS_VOORZITTER}}` — lid van TIMS, permanente governance
+- `{{IMPLEMENTATIECOORDINATOR}}` — projectleider implementatietraject, tijdelijk
 
 ### 5. Besluitlog-structuur (moet definiëren)
 Elke stap produceert besluitlog-entries, maar het format is niet gedefinieerd.

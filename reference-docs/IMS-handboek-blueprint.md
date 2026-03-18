@@ -391,6 +391,8 @@ Na implementatie wordt de regiegroep het Tactisch IMS-team (TIMS). Het TIMS is v
 - Beleidsmatige keuzes
 - Capaciteits- of prioriteringsconflicten
 
+**Voorzitter:** {{TIMS_VOORZITTER}}
+
 **Samenstelling TIMS:**
 
 {{TIMS_SAMENSTELLING}}
@@ -414,6 +416,12 @@ De operationele sturing binnen het IMS is belegd bij discipline-eigenaren. Een d
 - Zorgt voor documentatie en registratie
 
 De discipline-eigenaar kan operationele taken delegeren, maar blijft verantwoordelijk voor de beheersing binnen het domein.
+
+**Implementatiecoördinator / Projectleider:**
+
+{{IMPLEMENTATIECOORDINATOR}}
+
+*Tijdelijke rol tijdens de inrichtingsmodus (Fase 0–1). Primaire gebruiker van het IMS-platform tijdens de implementatie. Verantwoordelijk voor voortgang van de 22 stappen, reviewen van agent-output en agendering bij SIMS/TIMS. Eindigt bij go/no-go Fase 2, waarna eigenaarschap overgaat aan de discipline-eigenaren. De implementatiecoördinator heeft een operationele projectrol — niet te verwarren met eventuele toezichthoudende functies (CISO, FG) die 3e lijn zijn.*
 
 **Toewijzing discipline-eigenaren:**
 
