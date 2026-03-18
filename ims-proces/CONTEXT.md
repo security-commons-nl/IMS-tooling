@@ -54,7 +54,7 @@ Fase 2 (Q1 2027)     → Beheertool: PDCA draait, controls, evidence
 Fase 3 (2028+)       → Volwassen GRC-platform
 ```
 
-Elke fase heeft een **formeel eindpunt** (go/no-go besluit) voordat de volgende fase begint.
+Fasen zijn **communicatielabels** voor planning en bestuurlijke rapportage — geen technische gates. Het platform kent technisch twee modi: inrichtingsmodus en beheermodus (zie K13).
 
 ---
 
@@ -990,6 +990,33 @@ Accordering:
 | Afwijking van beleid/norm | IMS Stuurgroep-lid |
 
 Accordering door een gebruiker zonder de vereiste rol → geblokkeerd (type B), niet slechts waarschuwing.
+
+### K13. Twee modi, vier fasen (vastgesteld 18 maart 2026)
+
+**Technisch kent het platform twee modi:**
+
+```
+Inrichtingsmodus  →  de 22 stappen worden doorlopen
+                     inrichtingsscore groeit naar 100%
+                     GRC-engine nog niet actief
+
+Beheermodus       →  GRC-engine actief, PDCA draait
+                     GRC-score start op 0% en groeit
+                     inrichtingsstappen blijven beschikbaar voor herziening
+```
+
+**Overgang:** geen formeel go/no-go op een vaste datum. Het platform ontgrendelt beheermodus per domein zodra de vereiste stappen voor dat domein de status `vastgesteld` hebben. ISMS kan in beheermodus terwijl BCMS nog in inrichtingsmodus zit.
+
+**Vier fasen blijven bestaan als communicatielabels** — voor planning, bestuurlijke communicatie en budgetrondes:
+
+```
+Fase 0 (Q1-Q2 2026)  → Bouwplaats: TIMS richt het IMS in
+Fase 1 (Q3 2026)     → Werktool: lijnmanagement doet risicoanalyse
+Fase 2 (Q1 2027)     → Beheertool: PDCA draait, controls, evidence
+Fase 3 (2028+)       → Volwassen GRC-platform
+```
+
+Fasen zijn geen technische gates — de twee modi zijn de technische grens. Fasen zijn de menselijke taal voor dezelfde overgang.
 
 ### K12. Twee-scores-model — inrichtingsscore + GRC-score (vastgesteld 18 maart 2026)
 
