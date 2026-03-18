@@ -991,6 +991,34 @@ Accordering:
 
 Accordering door een gebruiker zonder de vereiste rol → geblokkeerd (type B), niet slechts waarschuwing.
 
+### K12. Twee-scores-model — inrichtingsscore + GRC-score (vastgesteld 18 maart 2026)
+
+Het platform kent twee aparte scores die verschillende vragen beantwoorden.
+
+**Inrichtingsscore** (Fase 0 → Fase 1)
+- Vraag: "Hebben we het IMS goed neergezet?"
+- Groeit van 0% → 100% naarmate de 22 stappen worden afgerond
+- Herbevestiging per Fase 2-cyclus houdt hem actueel (optie B)
+- Zakt als jaarlijkse herbevestiging uitblijft
+- Zichtbaar voor: TIMS, Stuurgroep, implementatiecoördinator
+
+**GRC-score** (Fase 2+)
+- Vraag: "Hoe goed draait het IMS in de praktijk?"
+- Start op 0% bij aanvang Fase 2 — ongeacht inrichtingsscore
+- Groeit op basis van daadwerkelijke GRC-activiteit: controls geïmplementeerd, evidence actueel, bevindingen opgevolgd, audits afgerond, managementreview gedaan
+- Data-gedreven (optie A) — daalt automatisch als activiteit uitblijft
+- Zichtbaar voor: iedereen, inclusief regionaal dashboard
+
+```
+Fase 0-1:  [Inrichtingsscore ████████░░ 80%]   [GRC-score: n.v.t.]
+Fase 2:    [Inrichtingsscore ██████████ 100%]  [GRC-score ██░░░░░░░░ 20%]
+Fase 3:    [Inrichtingsscore ██████████ 100%]  [GRC-score ████████░░ 78%]
+```
+
+**Waarom twee scores:** één gecombineerde score zou beide vragen slecht beantwoorden. Een gemeente op 100% inrichtingsscore met 12% GRC-score heeft het IMS ingericht maar doet er nog niets mee — dat moet zichtbaar zijn voor een bestuurder.
+
+**Nog uit te werken (backlog):** berekeningsmodel voor de GRC-score — wat weegt hoe zwaar (audits, evidence, bevindingen, managementreview). Moet gereed zijn vóór Fase 2-bouw.
+
 ### K11. Visibility-layer — centrumregelingmodel (vastgesteld 18 maart 2026)
 
 **Centrumregelingmodel:** de andere gemeenten nemen bedrijfsvoering (IT, IV, security, privacy, BCM) af van de centrumgemeente (Leiden). Leiden bepaalt het normenkader voor de hele regio. Geen afwijkingen door andere gemeenten, geen regionaal akkoord nodig bij updates.
