@@ -847,3 +847,33 @@ Bestaande domeinbeleidsplannen worden in stap 3 gereviewed en via het handboek g
 ---
 
 *Pas als bovenstaande 7 punten zijn uitgewerkt en vastgelegd, is het ontwerp compleet genoeg voor de bouwfase.*
+
+---
+
+## Bouwfase — knelpunten & architectuurkeuzes
+
+### K1. Multi-tenant + RBAC (vastgesteld 18 maart 2026)
+Zie `reference-docs/architectuur-multi-tenant.md`.
+
+### K2. Document-generatie, bewerking en versies (vastgesteld 18 maart 2026)
+
+**Bewerking:** in het platform — niet downloaden/uploaden. Platform behoudt controle, kan diff's tonen, agent kan helpen bij herziening.
+
+**Versiemodel:**
+```
+Document
+  ├── versie 1.0  [agent-concept]      → status: concept
+  ├── versie 1.1  [bewerkt door ...]   → status: in review
+  └── versie 2.0  [geaccordeerd]       → status: vastgesteld ← enige die telt
+```
+
+Drie statussen: **concept** → **in review** → **vastgesteld**. Alleen vastgesteld is de waarheid. Eerdere versies zijn auditspoor.
+
+**Documenttypes bepalen herzieningsritme:**
+
+| Type | Herzieningsritme | Versiemodel |
+|------|-----------------|-------------|
+| Levend document (handboek, risicoregister, SoA) | Bij wijziging | Nieuwe versie op zelfde document |
+| Periodiek document (auditrapportage, management review, jaarplanning) | Per cyclus | Nieuw document, gekoppeld aan vorige |
+
+Het handboek hoeft niet elk jaar opnieuw — alleen bij governance-/scope-/beleidswijziging.
