@@ -877,3 +877,17 @@ Drie statussen: **concept** → **in review** → **vastgesteld**. Alleen vastge
 | Periodiek document (auditrapportage, management review, jaarplanning) | Per cyclus | Nieuw document, gekoppeld aan vorige |
 
 Het handboek hoeft niet elk jaar opnieuw — alleen bij governance-/scope-/beleidswijziging.
+
+### K3. Accordering (vastgesteld 18 maart 2026)
+
+Optie A: naam + functie + datum + IP-adres vastgelegd in besluitlog. Immutable na accordering. Exporteerbaar als PDF met alle metadata. Voldoende voor ISO-audit.
+
+```
+Accordering:
+  vastgesteld_door: "Luuk van der Meer"
+  functie:          "TIMS-voorzitter"
+  datum:            "2026-03-18T14:32:00"
+  ip_adres:         "..." (intern gelogd, niet zichtbaar in export)
+  besluitlog_id:    "0007"
+  → immutable, niet te wijzigen na vastlegging
+```
