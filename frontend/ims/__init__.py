@@ -1,1 +1,0 @@
-# IMS Frontend - Reflex Application

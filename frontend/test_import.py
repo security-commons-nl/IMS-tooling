@@ -1,1 +1,0 @@
-import sys; sys.path.insert(0,"."); from ims.state.assessment import AssessmentState; print("OK")

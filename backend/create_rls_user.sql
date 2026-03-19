@@ -1,7 +1,0 @@
-DO $$ BEGIN
-  CREATE ROLE ims_app_user WITH LOGIN PASSWORD 'testpass' NOBYPASSRLS;
-EXCEPTION WHEN duplicate_object THEN
-  RAISE NOTICE 'Role already exists';
-END $$;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ims_app_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ims_app_user;
