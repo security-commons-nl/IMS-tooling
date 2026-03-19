@@ -4,7 +4,18 @@
 *Status: ontwerp — nog niet geïmplementeerd*
 
 Alle tabellen hebben prefix `ims_`. Platform-brede tabellen (users, tenants) hebben geen prefix.
-Elke tabel heeft minimaal: `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `created_at TIMESTAMPTZ DEFAULT now()`.
+
+**Standaard kolommen op elke tabel:**
+```sql
+id         UUID PRIMARY KEY DEFAULT gen_random_uuid()
+created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+updated_at TIMESTAMPTZ DEFAULT now() NOT NULL  -- via trigger; NIET op immutable tabellen
+```
+**Uitzondering:** `ims_decisions` en `ims_document_versions` zijn immutable — geen `updated_at`. Correcties via nieuw record.
+
+**ENUM-strategie:** PostgreSQL native `ENUM`-types worden in de migraties gedefinieerd als `CREATE TYPE`. Wijzigen vereist `ALTER TYPE` — documenteer bij elke migratie welke ENUMs worden geraakt.
+
+**Indexstrategie:** zie sectie "Indexen & cascade-regels" onderaan dit document.
 
 ---
 
@@ -37,9 +48,9 @@ Platform-brede gebruikerstabel. Authenticatie via JWT (extern of Keycloak).
 |------|------|-------------|
 | id | UUID PK | |
 | tenant_id | UUID FK → tenants | Thuistenant |
-| external_id | TEXT UNIQUE | Keycloak sub of eigen auth-ID |
-| name | TEXT | Volledige naam |
-| email | TEXT | |
+| external_id | VARCHAR(255) UNIQUE | Keycloak sub of eigen auth-ID |
+| name | VARCHAR(200) | Volledige naam |
+| email | VARCHAR(255) | |
 | is_active | BOOL | |
 
 ### `user_tenant_roles`
@@ -92,10 +103,10 @@ De 22 processtappen — statische definitietabel, niet per tenant.
 | Veld | Type | Toelichting |
 |------|------|-------------|
 | id | UUID PK | |
-| number | TEXT | "1", "2a", "2b", "3a", ... |
+| number | VARCHAR(10) | "1", "2a", "2b", "3a", ... |
 | phase | INT | 0, 1, 2, 3 |
-| name | TEXT | "Bestuurlijk commitment" |
-| waarom_nu | TEXT | Uitleg voor de gebruiker |
+| name | VARCHAR(200) | "Bestuurlijk commitment" |
+| waarom_nu | TEXT | Uitleg voor de gebruiker (onbegrensd) |
 | required_gremium | ENUM | `sims` \| `tims` \| `lijnmanagement` \| `discipline_eigenaar` |
 | is_optional | BOOL | Alleen Fase 3-stappen |
 | domain | ENUM NULL | `ISMS` \| `PIMS` \| `BCMS` \| NULL (geldt voor alle) |
@@ -196,8 +207,8 @@ Normatieve kaders met versioning (K9).
 | Veld | Type | Toelichting |
 |------|------|-------------|
 | id | UUID PK | |
-| name | TEXT | "BIO", "ISO 27001", "ISO 27701", "ISO 22301", "AVG" |
-| version | TEXT | "2.0", "2022", "2019" |
+| name | VARCHAR(100) | "BIO", "ISO 27001", "ISO 27701", "ISO 22301", "AVG" |
+| version | VARCHAR(20) | "2.0", "2022", "2019" |
 | published_at | DATE | |
 | status | ENUM | `actief` \| `vervallen` |
 | superseded_by_id | UUID FK → ims_standards NULL | BIO 2.0 → BIO 3.0 zodra die bestaat |
@@ -210,8 +221,8 @@ Individuele normeisen, gekoppeld aan een specifieke versie van een standaard.
 |------|------|-------------|
 | id | UUID PK | |
 | standard_id | UUID FK → ims_standards | Versie-specifiek |
-| code | TEXT | "OT.1.1", "A.5.1", "7.4" |
-| title | TEXT | |
+| code | VARCHAR(50) | "OT.1.1", "A.5.1", "7.4" |
+| title | VARCHAR(500) | |
 | description | TEXT | |
 | domain | ENUM | `ISMS` \| `PIMS` \| `BCMS` \| `all` |
 | is_mandatory | BOOL | ISO shall-eis (V) of aanbevolen (A) |
@@ -273,8 +284,8 @@ Risico's per tenant, gekoppeld aan scope.
 | likelihood | INT | 1–5 |
 | impact | INT | 1–5 |
 | financial_impact_eur | DECIMAL(15,2) NULL | Optionele financiële impact (P&C-cyclus) |
-| risk_score | INT GENERATED | `likelihood * impact` (computed column) |
-| risk_level | ENUM GENERATED | `groen` \| `geel` \| `oranje` \| `rood` |
+| risk_score | INT GENERATED ALWAYS AS (likelihood * impact) STORED | Altijd consistent |
+| risk_level | VARCHAR(10) | Applicatielogica — niet als generated column (CASE-expressie te complex voor PostgreSQL STORED) |
 | status | ENUM | `open` \| `in_behandeling` \| `geaccepteerd` \| `gesloten` |
 | owner_user_id | UUID FK → users NULL | |
 | cyclus_id | INT NULL | Jaar |
@@ -306,8 +317,10 @@ Veel-op-veel: risico's worden gemitigeerd door controls.
 
 | Veld | Type | Toelichting |
 |------|------|-------------|
-| risk_id | UUID FK → ims_risks | |
-| control_id | UUID FK → ims_controls | |
+| risk_id | UUID FK → ims_risks ON DELETE CASCADE | |
+| control_id | UUID FK → ims_controls ON DELETE CASCADE | |
+
+**Composite PK:** `PRIMARY KEY (risk_id, control_id)` — geen surrogate UUID nodig voor pure junction-tabel. Geen `created_at`/`updated_at` — relatie heeft geen eigen levenscyclus.
 
 ### `ims_assessments`
 Audits, DPIA's, pentests, self-assessments, BC-oefeningen.
@@ -494,18 +507,100 @@ ims_knowledge_chunks (layer=normatief, tenant_id=NULL) ────────�
 
 ---
 
+## Indexen & cascade-regels
+
+### Verplichte indexen (bij elke migratie aanmaken)
+
+```sql
+-- tenant_id staat op bijna elke tabel — altijd indexeren
+CREATE INDEX idx_step_executions_tenant   ON ims_step_executions(tenant_id);
+CREATE INDEX idx_decisions_tenant         ON ims_decisions(tenant_id);
+CREATE INDEX idx_documents_tenant         ON ims_documents(tenant_id);
+CREATE INDEX idx_risks_tenant             ON ims_risks(tenant_id);
+CREATE INDEX idx_controls_tenant          ON ims_controls(tenant_id);
+CREATE INDEX idx_assessments_tenant       ON ims_assessments(tenant_id);
+CREATE INDEX idx_findings_tenant          ON ims_findings(tenant_id);
+CREATE INDEX idx_corrective_actions_tenant ON ims_corrective_actions(tenant_id);
+CREATE INDEX idx_incidents_tenant         ON ims_incidents(tenant_id);
+CREATE INDEX idx_knowledge_chunks_tenant  ON ims_knowledge_chunks(tenant_id);
+
+-- FK-kolommen op hoge-volume tabellen
+CREATE INDEX idx_step_executions_step     ON ims_step_executions(step_id);
+CREATE INDEX idx_decisions_step_exec      ON ims_decisions(step_execution_id);
+CREATE INDEX idx_risks_scope              ON ims_risks(scope_id);
+CREATE INDEX idx_findings_assessment      ON ims_findings(assessment_id);
+CREATE INDEX idx_corrective_actions_finding ON ims_corrective_actions(finding_id);
+CREATE INDEX idx_evidence_control         ON ims_evidence(control_id);
+CREATE INDEX idx_requirements_standard    ON ims_requirements(standard_id);
+CREATE INDEX idx_req_mappings_source      ON ims_requirement_mappings(source_requirement_id);
+CREATE INDEX idx_req_mappings_target      ON ims_requirement_mappings(target_requirement_id);
+
+-- pgvector embedding-index (HNSW voor snelle ANN-search)
+CREATE INDEX idx_knowledge_chunks_embedding
+  ON ims_knowledge_chunks USING hnsw (embedding vector_cosine_ops);
+
+-- Veelgebruikte filter-kolommen
+CREATE INDEX idx_risks_status             ON ims_risks(status);
+CREATE INDEX idx_step_executions_status   ON ims_step_executions(status);
+CREATE INDEX idx_assessments_status       ON ims_assessments(status);
+CREATE INDEX idx_knowledge_chunks_layer   ON ims_knowledge_chunks(layer);
+```
+
+### Cascade-regels per relatie
+
+| Relatie | ON DELETE | Reden |
+|---------|-----------|-------|
+| `users.tenant_id → tenants` | RESTRICT | Tenant verwijderen terwijl users bestaan = fout |
+| `ims_step_executions.tenant_id → tenants` | RESTRICT | Procesdata behoort bij tenant |
+| `ims_step_executions.step_id → ims_steps` | RESTRICT | Stapdefinitie is platform-breed, nooit verwijderen |
+| `ims_decisions.step_execution_id → ims_step_executions` | SET NULL | Besluit blijft bestaan ook als stap-executie wordt gereset |
+| `ims_risks.scope_id → ims_scopes` | RESTRICT | Risico zonder scope is zinloos |
+| `ims_risk_control_links.risk_id → ims_risks` | CASCADE | Risico verwijderd → koppeling weg |
+| `ims_risk_control_links.control_id → ims_controls` | CASCADE | Control verwijderd → koppeling weg |
+| `ims_findings.assessment_id → ims_assessments` | CASCADE | Bevinding behoort bij assessment |
+| `ims_corrective_actions.finding_id → ims_findings` | SET NULL | Actie blijft bestaan ook als bevinding wordt gesloten |
+| `ims_evidence.control_id → ims_controls` | RESTRICT | Bewijs niet verwijderen bij control-wijziging |
+| `ims_document_versions.document_id → ims_documents` | CASCADE | Versie behoort bij document |
+| `ims_knowledge_chunks.tenant_id → tenants` | CASCADE | Organisatielaag weg bij tenant-verwijdering |
+
+### `updated_at` trigger (eenmalig aanmaken)
+
+```sql
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Herhaal voor elke niet-immutable tabel:
+CREATE TRIGGER trg_updated_at
+BEFORE UPDATE ON <tabel>
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+```
+
+**Immutable tabellen (geen trigger):** `ims_decisions`, `ims_document_versions`
+
+---
+
 ## Ontwerpbeslissingen
 
 | Beslissing | Keuze | Reden |
 |-----------|-------|-------|
-| UUID als primary key | Ja, overal | Geen sequentie-afhankelijkheid, veilig voor export |
+| UUID als primary key | Ja, overal (behalve junction-tabel) | Geen sequentie-afhankelijkheid, veilig voor export |
+| Junction-tabel PK | Composite `PRIMARY KEY (a, b)` | Geen surrogate UUID nodig voor pure relatie-tabel |
 | Soft delete | Alleen `tenants` en `users` | Overige entiteiten zijn immutable of archiveerbaar via status |
 | `content_json` in document_versions | JSONB | Flexibel per documenttype, rendert on-demand naar PDF/Word |
 | Geen aparte vector-DB | pgvector in PostgreSQL | Één database, geen extra afhankelijkheid |
-| `risk_score` als computed column | `likelihood * impact` | Altijd consistent, nooit out-of-sync |
+| `risk_score` als GENERATED STORED | `likelihood * impact` | Altijd consistent, nooit out-of-sync |
+| `risk_level` als applicatielogica | Niet als generated column | CASE-expressie te complex voor PostgreSQL STORED; berekend in API-laag |
 | `cyclus_id` als INT (jaar) | 2026, 2027 | Leesbaar, eenvoudig te filteren, vanzelf oplopend |
-| Besluitlog immutable | Geen UPDATE/DELETE | Audit-integriteit — correcties via `supersedes_id` |
+| Besluitlog immutable | Geen UPDATE/DELETE, geen `updated_at` | Audit-integriteit — correcties via `supersedes_id` |
 | Tombstone bij visibility-downgrade | `withdrawn_at` op ims_documents | Andere gemeenten zien datum terugtrekking, nooit stille verwijdering |
+| ENUM-type | PostgreSQL native `CREATE TYPE` | Leesbaarheid; bij migratie `ALTER TYPE ADD VALUE` documenteren |
+| VARCHAR vs TEXT | VARCHAR(n) voor begrensde velden, TEXT voor onbegrensde | Betere validatie en indexering voor korte velden |
+| tenant_id altijd geïndexeerd | Ja, op elke tabel | Multi-tenant query-performance — zonder index full-table scan |
 
 ---
 
