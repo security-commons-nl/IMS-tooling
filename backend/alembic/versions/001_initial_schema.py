@@ -697,8 +697,8 @@ def upgrade() -> None:
         sa.Column("risk_id", UUID(as_uuid=True), nullable=False),
         sa.Column("control_id", UUID(as_uuid=True), nullable=False),
         sa.PrimaryKeyConstraint("risk_id", "control_id"),
-        sa.ForeignKeyConstraint(["risk_id"], ["ims_risks.id"]),
-        sa.ForeignKeyConstraint(["control_id"], ["ims_controls.id"]),
+        sa.ForeignKeyConstraint(["risk_id"], ["ims_risks.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["control_id"], ["ims_controls.id"], ondelete="CASCADE"),
     )
 
     # ------------------------------------------------------------------

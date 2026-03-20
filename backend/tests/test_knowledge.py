@@ -12,7 +12,7 @@ async def test_create_knowledge_chunk(client: AsyncClient, test_tenant):
             "tenant_id": test_tenant["id"],
             "source_type": "beleid",
             "chunk_index": 0,
-            "content": "Het informatiebeveiliigingsbeleid van Gemeente Leiden is gebaseerd op ISO 27001:2022.",
+            "content": "Het informatiebeveiligingsbeleid van Gemeente Leiden is gebaseerd op ISO 27001:2022.",
             "model_used": "mistral-small-latest",
         },
     )

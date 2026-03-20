@@ -1000,10 +1000,10 @@ class IMSRiskControlLink(Base):
     __tablename__ = "ims_risk_control_links"
 
     risk_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("ims_risks.id"), primary_key=True
+        UUID(as_uuid=True), ForeignKey("ims_risks.id", ondelete="CASCADE"), primary_key=True
     )
     control_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("ims_controls.id"), primary_key=True
+        UUID(as_uuid=True), ForeignKey("ims_controls.id", ondelete="CASCADE"), primary_key=True
     )
 
 
