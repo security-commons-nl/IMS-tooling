@@ -282,6 +282,60 @@ Het platform is zo gebouwd dat wisselen tussen beide geen code-wijzigingen verei
 
 ---
 
+## 8b. Teststrategie — elke bouwsteen heeft een eval
+
+**Principe:** geen code zonder bewijs dat het werkt. Elke endpoint, elke validatieregel, elke RBAC-check krijgt een geautomatiseerde test. De volledige suite draait met één commando.
+
+### Uitvoering
+
+```bash
+# Volledige suite
+docker-compose exec api pytest --tb=short
+
+# Eén domein
+docker-compose exec api pytest tests/test_risks.py -v
+```
+
+### Structuur
+
+```
+backend/tests/
+├── conftest.py              # Test-database, async client, fixtures (tenant, user, stappen)
+├── test_steps.py            # Inrichtingsmodus: stappen, afhankelijkheden, voortgang
+├── test_decisions.py        # Besluitlog: immutability, mandatering, supersedes
+├── test_documents.py        # Documenten + versies, visibility, tombstone
+├── test_standards.py        # Normen, requirements, mappings, ingestion-workflow
+├── test_scopes.py           # Scope-hiërarchie, PII-vlag
+├── test_risks.py            # Risico's, escalatieladder, risk_score GENERATED
+├── test_controls.py         # Controls, risk-control links, implementation_status
+├── test_assessments.py      # Assessments, findings, corrective actions
+├── test_evidence.py         # Evidence, valid_until
+├── test_incidents.py        # Incidenten, corrective_action koppeling
+├── test_scores.py           # Inrichtingsscore, GRC-score, 12-cellenmatrix
+├── test_rag.py              # Knowledge chunks, embedding search
+└── test_rbac.py             # Rolvalidatie, tenant-isolatie, escalatieladder
+```
+
+### Regels
+
+| Regel | Waarom |
+|-------|--------|
+| Elke endpoint heeft minimaal één happy-path test en één fout-test | Dekking van normaal + foutgedrag |
+| Tests draaien tegen een echte database (geen mocks) | Mocks maskeren DB-fouten — productie-incident uit vorige codebase |
+| Immutable tabellen testen op UPDATE/DELETE rejection | Audit-integriteit is een harde eis |
+| RBAC-tests per rol: viewer mag niet schrijven, sims_lid mag restrisico accorderen | Permissiematrix (sectie 9) is testbaar |
+| Cascade-regels testen: DELETE parent → check child-gedrag | Voorkomt orphaned records of onbedoelde cascades |
+| Tenant-isolatie: tenant A mag data van tenant B niet zien | Multi-tenant lek is een security-incident |
+| Elke nieuwe feature = eerst test schrijven, dan implementeren | Voorkomt regressie bij toekomstige wijzigingen |
+
+### Tooling
+
+- **pytest** + **httpx** (async test client voor FastAPI)
+- **pytest-asyncio** voor async database-tests
+- Testdatabase: aparte PostgreSQL-database (`ims_test`), na elke suite opgeschoond
+
+---
+
 ## 9. RBAC — Permissiematrix
 
 ### Rolhiërarchie
