@@ -19,7 +19,6 @@ TENANT_TABLES = [
     "ims_step_executions",
     "ims_decisions",
     "ims_documents",
-    "ims_document_versions",
     "ims_step_input_documents",
     "ims_gap_analysis_results",
     "ims_tenant_normenkader",
