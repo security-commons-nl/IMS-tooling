@@ -163,6 +163,37 @@ def upgrade() -> None:
         )
 
     # ------------------------------------------------------------------
+    # Default tenant + region + admin user (development)
+    # ------------------------------------------------------------------
+    leiden_id = "00000000-0000-0000-0000-000000000001"
+    region_id = _uuid()
+    admin_user_id = "00000000-0000-0000-0000-000000000002"
+
+    op.execute(sa.text(
+        "INSERT INTO regions (id, name, created_at, updated_at) "
+        "VALUES (:id, 'Leidse Regio', now(), now())"
+    ).bindparams(id=region_id))
+
+    op.execute(sa.text(
+        "INSERT INTO tenants (id, name, type, region_id, is_active, created_at, updated_at) "
+        "VALUES (:id, 'Gemeente Leiden', 'centrum', :region_id, true, now(), now())"
+    ).bindparams(id=leiden_id, region_id=region_id))
+
+    op.execute(sa.text(
+        "UPDATE regions SET centrum_tenant_id = :tenant_id WHERE id = :region_id"
+    ).bindparams(tenant_id=leiden_id, region_id=region_id))
+
+    op.execute(sa.text(
+        "INSERT INTO users (id, tenant_id, external_id, name, email, is_active, created_at, updated_at) "
+        "VALUES (:id, :tenant_id, 'dev-admin', 'Beheerder (dev)', 'admin@ims.dev', true, now(), now())"
+    ).bindparams(id=admin_user_id, tenant_id=leiden_id))
+
+    op.execute(sa.text(
+        "INSERT INTO user_tenant_roles (id, user_id, tenant_id, role, created_at, updated_at) "
+        "VALUES (:id, :user_id, :tenant_id, 'admin', now(), now())"
+    ).bindparams(id=_uuid(), user_id=admin_user_id, tenant_id=leiden_id))
+
+    # ------------------------------------------------------------------
     # Base standards (normenkaders)
     # ------------------------------------------------------------------
     standards = [
@@ -187,6 +218,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.execute("DELETE FROM user_tenant_roles")
+    op.execute("DELETE FROM users")
+    op.execute("DELETE FROM tenants")
+    op.execute("DELETE FROM regions")
     op.execute("DELETE FROM ims_step_dependencies")
     op.execute("DELETE FROM ims_steps")
     op.execute("DELETE FROM ims_standards")

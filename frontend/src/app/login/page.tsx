@@ -29,7 +29,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [userId] = useState(generateUUID);
-  const [tenantId, setTenantId] = useState(generateUUID);
+  const [tenantId, setTenantId] = useState('00000000-0000-0000-0000-000000000001');
   const [role, setRole] = useState('admin');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
