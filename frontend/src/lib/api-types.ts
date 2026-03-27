@@ -154,3 +154,33 @@ export interface GRCScoreResponse {
   components_json: Record<string, unknown>;
   calculated_at: string;
 }
+
+// ── Documents ────────────────────────────────────────────────────────────────
+
+export interface DocumentResponse {
+  id: string;
+  tenant_id: string;
+  step_execution_id?: string | null;
+  document_type: string;
+  title: string;
+  domain?: string | null;
+  visibility: string;
+  withdrawn_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentVersionResponse {
+  id: string;
+  document_id: string;
+  version_number: string;
+  content_json?: unknown;
+  status: string;
+  generated_by_agent?: string | null;
+  created_by_user_id?: string | null;
+  vastgesteld_at?: string | null;
+  vastgesteld_by_name?: string | null;
+  vastgesteld_by_role?: string | null;
+  decision_id?: string | null;
+  created_at: string;
+}

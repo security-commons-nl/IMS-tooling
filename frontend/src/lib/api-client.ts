@@ -1,6 +1,17 @@
 import { getToken, clearToken } from './auth';
 import { API_BASE_URL } from './constants';
-import type { TokenResponse, DevTokenRequest, CurrentUser } from './api-types';
+import type {
+  TokenResponse,
+  DevTokenRequest,
+  CurrentUser,
+  StepResponse,
+  StepExecutionResponse,
+  StepDependencyResponse,
+  DecisionResponse,
+  DocumentResponse,
+  DocumentVersionResponse,
+  SetupScoreResponse,
+} from './api-types';
 
 export class ApiError extends Error {
   constructor(
@@ -44,6 +55,51 @@ export const api = {
         body: JSON.stringify(data),
       }),
     me: () => apiFetch<CurrentUser>('/auth/me'),
+  },
+  steps: {
+    list: () => apiFetch<StepResponse[]>('/steps/'),
+    get: (id: string) => apiFetch<StepResponse>(`/steps/${id}`),
+    listExecutions: () =>
+      apiFetch<StepExecutionResponse[]>('/steps/executions/'),
+    createExecution: (data: { step_id: string; status?: string }) =>
+      apiFetch<StepExecutionResponse>('/steps/executions/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateExecution: (id: string, data: { status?: string; skipped?: boolean; skip_reason?: string }) =>
+      apiFetch<StepExecutionResponse>(`/steps/executions/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    listDependencies: () =>
+      apiFetch<StepDependencyResponse[]>('/steps/dependencies/'),
+  },
+  decisions: {
+    list: () => apiFetch<DecisionResponse[]>('/decisions/'),
+    create: (data: Record<string, unknown>) =>
+      apiFetch<DecisionResponse>('/decisions/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+  documents: {
+    list: () => apiFetch<DocumentResponse[]>('/documents/'),
+    get: (id: string) => apiFetch<DocumentResponse>(`/documents/${id}`),
+    create: (data: Record<string, unknown>) =>
+      apiFetch<DocumentResponse>('/documents/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    listVersions: (docId: string) =>
+      apiFetch<DocumentVersionResponse[]>(`/documents/${docId}/versions/`),
+    createVersion: (docId: string, data: Record<string, unknown>) =>
+      apiFetch<DocumentVersionResponse>(`/documents/${docId}/versions/`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+  scores: {
+    setupScores: () => apiFetch<SetupScoreResponse[]>('/scores/setup-scores/'),
   },
 };
 
