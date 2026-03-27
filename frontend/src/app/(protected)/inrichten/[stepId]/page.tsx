@@ -81,13 +81,12 @@ export default function StepDetailPage({
 
     try {
       if (!execution) {
-        // Create execution first, then update to desired status
+        // Create execution with default status, then transition to desired status
         const created = await api.steps.createExecution({
           step_id: stepId,
-          status: selectedStatus,
+          status: 'niet_gestart',
         });
-        // If the API doesn't support setting status on create, update it
-        if (created.status !== selectedStatus) {
+        if (selectedStatus !== 'niet_gestart') {
           await api.steps.updateExecution(created.id, { status: selectedStatus });
         }
       } else {
@@ -98,9 +97,10 @@ export default function StepDetailPage({
       setSelectedStatus('');
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(`Fout bij statuswijziging (${err.status})`);
+        const detail = err.body?.detail || JSON.stringify(err.body);
+        setError(`Fout bij statuswijziging: ${detail}`);
       } else {
-        setError('Onbekende fout bij statuswijziging');
+        setError(`Onbekende fout: ${err instanceof Error ? err.message : String(err)}`);
       }
     } finally {
       setIsUpdating(false);

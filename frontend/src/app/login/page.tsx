@@ -29,7 +29,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [userId] = useState(generateUUID);
-  const [tenantId, setTenantId] = useState('');
+  const [tenantId, setTenantId] = useState(generateUUID);
   const [role, setRole] = useState('admin');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -82,10 +82,9 @@ export default function LoginPage() {
 
             <Input
               label="Tenant ID"
-              placeholder="UUID van de tenant"
               value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
-              className="font-mono text-xs"
+              readOnly
+              className="font-mono text-xs bg-neutral-50"
             />
 
             <Select
