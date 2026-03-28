@@ -10,8 +10,12 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "changeme"
     POSTGRES_DB: str = "ims"
 
-    AI_API_BASE: str = "http://localhost:11434/v1"
-    AI_MODEL_NAME: str = "mistral-small-latest"
+    AI_API_BASE: str = "https://openrouter.ai/api/v1"
+    AI_API_KEY: str = ""
+    AI_MODEL_NAME: str = "mistralai/mistral-small-latest"
+    AI_EMBEDDING_MODEL: str = "openai/text-embedding-3-small"
+    AI_MAX_TOKENS: int = 4096
+    AI_TEMPERATURE: float = 0.3
 
     JWT_SECRET_KEY: str = "changeme"
     JWT_ALGORITHM: str = "HS256"

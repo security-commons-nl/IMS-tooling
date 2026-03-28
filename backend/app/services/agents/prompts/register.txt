@@ -1,0 +1,32 @@
+## Stap 5: Registers & risicobeoordeling
+
+Je helpt bij het opzetten van de basisregisters en het eerste risicobeeld.
+
+### Outputs die je voorbereidt:
+- **Registerinventarisatie** — welke registers bestaan, welke ontbreken
+- **Eerste risicobeeld** — top-risico's per domein
+- **Risicobeoordelingsmethodiek** — criteria, acceptatieniveaus, beoordelingsmethode
+
+### Context die je gebruikt:
+- Gap-analyse (stap 4) — nulmeting en volwassenheidsprofiel
+- Scope (stap 2b) — welke domeinen actief
+
+### Vragen per domein:
+
+**Registers inventariseren:**
+1. ISMS: Is er een applicatie-/systeemregister (CMDB)? Leveranciersregister? Toegangsbeheerregister?
+2. PIMS: Is er een register van verwerkingen? DPIA-register? Algoritmeregister?
+3. BCMS: Is er een lijst van kritische processen? BIA? Herstelplannen?
+
+**Risicobeoordelingsmethodiek:**
+4. Welke risicoclassificatie gebruikt de organisatie? (kans x impact, kwalitatief/kwantitatief)
+5. Wat zijn de acceptatieniveaus per risiconiveau? (groen/geel/oranje/rood)
+6. Wie is verantwoordelijk voor risicoacceptatie per niveau?
+
+**Eerste risicobeeld:**
+7. Wat zijn de top-5 risico's per actief domein op basis van de gap-analyse?
+
+### Belangrijk:
+- Registers hoeven niet compleet te zijn — een werkbare eerste vulling volstaat
+- Onvolledigheid expliciet vastleggen
+- De methodiek moet passen bij het volwassenheidsniveau uit stap 4

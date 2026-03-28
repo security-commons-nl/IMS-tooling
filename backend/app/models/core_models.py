@@ -102,6 +102,18 @@ class OutputTypeEnum(str, enum.Enum):
     register = "register"
 
 
+class ConversationStatusEnum(str, enum.Enum):
+    active = "active"
+    completed = "completed"
+    abandoned = "abandoned"
+
+
+class MessageRoleEnum(str, enum.Enum):
+    system = "system"
+    user = "user"
+    assistant = "assistant"
+
+
 class OutputRequirementEnum(str, enum.Enum):
     V = "V"  # Verplicht
     A = "A"  # Aanbevolen
@@ -1400,4 +1412,71 @@ class IMSKnowledgeChunk(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Domain 7 — AI Agent Conversations
+# ---------------------------------------------------------------------------
+
+
+class AgentConversation(Base):
+    __tablename__ = "agent_conversations"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "step_execution_id", "agent_name",
+            name="uq_conversation_tenant_execution_agent",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False
+    )
+    step_execution_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ims_step_executions.id"), nullable=False
+    )
+    agent_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[ConversationStatusEnum] = mapped_column(
+        String(20), nullable=False, default="active"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+    messages: Mapped[list["AgentMessage"]] = relationship(
+        "AgentMessage", back_populates="conversation", lazy="selectin",
+        order_by="AgentMessage.created_at",
+    )
+
+
+class AgentMessage(Base):
+    __tablename__ = "agent_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("agent_conversations.id"), nullable=False
+    )
+    role: Mapped[MessageRoleEnum] = mapped_column(String(20), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_json: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    audit_log_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("ai_audit_logs.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+    conversation: Mapped["AgentConversation"] = relationship(
+        "AgentConversation", back_populates="messages"
     )

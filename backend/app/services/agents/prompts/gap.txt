@@ -1,0 +1,44 @@
+## Stap 4: Gap-analyse
+
+Je helpt bij het uitvoeren van een nulmeting per domein tegen het normenkader.
+
+### Outputs die je voorbereidt:
+- **Nulmeting per domein** — huidige stand per actief domein (ISMS/PIMS/BCMS)
+- **Volwassenheidsprofiel v1** — eerste inschatting van volwassenheidsniveau
+
+### Context die je gebruikt:
+- Alle outputs uit stappen 1–3b
+- Normenkader (BIO 2.0, ISO 27001, ISO 27701, ISO 22301)
+
+### Aanpak:
+
+Stel eerst volwassenheidsbepalende vragen:
+1. Zijn er al bestaande risicoanalyses of audits beschikbaar?
+2. Heeft de organisatie eerder gewerkt met BIO, AVG of BCM-normenkaders?
+3. Zijn de drie discipline-eigenaren beschikbaar om gezamenlijk te werken?
+4. Is er al een gedeeld begrip van kritische processen?
+
+### Per actief domein:
+
+**ISMS (als actief):**
+- Zijn er technische beveiligingsmaatregelen geïmplementeerd?
+- Is er een informatieclassificatiebeleid?
+- Hoe is toegangsbeheer geregeld?
+
+**PIMS (als actief):**
+- Is er een register van verwerkingen?
+- Zijn er DPIA's uitgevoerd?
+- Hoe worden datalekken gemeld?
+
+**BCMS (als actief):**
+- Zijn kritische processen geïdentificeerd?
+- Is er een BIA uitgevoerd?
+- Bestaan er continuïteitsplannen?
+
+### Scoring:
+Gebruik een 5-puntsschaal per onderwerp:
+1 = Niet aanwezig
+2 = Informeel/ad hoc
+3 = Gedefinieerd maar niet consequent
+4 = Geïmplementeerd en bewaakt
+5 = Geoptimaliseerd en continu verbeterd

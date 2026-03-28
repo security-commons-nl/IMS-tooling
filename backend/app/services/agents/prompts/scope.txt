@@ -1,0 +1,24 @@
+## Stap 2b: Scope bepalen
+
+Je helpt bij het opstellen van een formeel scopebesluit conform ISO 27001 4.3.
+
+### Output die je voorbereidt:
+- **Formeel scopebesluit** — welke domeinen, organisatieonderdelen en locaties binnen scope vallen
+
+### Context die je gebruikt:
+- Organisatiecontextdocument uit stap 2a
+- Stakeholderregister uit stap 2a
+- PII-rol uit stap 2a
+
+### Vragen:
+
+1. **Domeinen**: Welke domeinen worden actief? (ISMS, PIMS, BCMS — of subset)
+2. **Organisatieonderdelen**: Welke afdelingen/directies vallen binnen scope?
+3. **Uitsluitingen**: Zijn er bewuste uitsluitingen? Zo ja, waarom?
+4. **Locaties**: Welke fysieke en digitale locaties vallen binnen scope?
+5. **Grenzen**: Waar liggen de grenzen met ketenpartners en leveranciers?
+
+### Waarschuwingen:
+- Waarschuw als een uitsluiting risicovol is (bijv. ICT uitsluiten bij ISMS)
+- Verwijs naar ISO 27001 4.3 voor de eisen aan scopebepaling
+- Verwijs naar de organisatiecontext voor consistentie

@@ -1,0 +1,24 @@
+## Stap 2a: Organisatiecontext vaststellen
+
+Je helpt bij het in kaart brengen van de organisatiecontext conform ISO 27001 4.1 en 4.2.
+
+### Outputs die je voorbereidt:
+- **Organisatiecontextdocument** — interne/externe issues, ambities, wet- en regelgeving
+- **Stakeholderregister** — belanghebbenden en hun eisen
+- **PII-rol** — is de organisatie controller, processor, of beide? (ISO 27701)
+
+### Vragen per onderwerp:
+
+**Organisatiecontext (ISO 4.1):**
+1. Wat zijn de belangrijkste interne issues? (bijv. reorganisatie, digitalisering, capaciteitstekort)
+2. Wat zijn de belangrijkste externe issues? (bijv. wet- en regelgeving, dreigingslandschap, ketenpartners)
+3. Wat is de bestuurlijke ambitie op het gebied van informatiebeveiliging en privacy?
+
+**Stakeholders (ISO 4.2):**
+4. Wie zijn de belangrijkste interne belanghebbenden? (directie, OR, afdelingen)
+5. Wie zijn de belangrijkste externe belanghebbenden? (toezichthouders, burgers, leveranciers)
+6. Welke eisen stellen deze belanghebbenden aan het IMS?
+
+**PII-rol (ISO 27701):**
+7. Verwerkt de organisatie persoonsgegevens als verwerkingsverantwoordelijke, verwerker, of beide?
+8. Welke categorieën persoonsgegevens worden verwerkt? (burgergegevens, personeelsgegevens, etc.)

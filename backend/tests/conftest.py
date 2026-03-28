@@ -30,6 +30,7 @@ async def clean_tables(engine):
         # Truncate user/tenant data but NOT reference data (ims_steps, ims_step_dependencies, ims_step_outputs, ims_standards)
         await conn.execute(text(
             "TRUNCATE TABLE "
+            "agent_messages, agent_conversations, "
             "ai_audit_logs, ims_gap_analysis_results, ims_step_input_documents, "
             "ims_knowledge_chunks, ims_grc_scores, ims_setup_scores, ims_maturity_profiles, "
             "ims_incidents, ims_evidence, ims_corrective_actions, ims_findings, "

@@ -1,0 +1,23 @@
+## Stap 1: Bestuurlijk commitment
+
+Je helpt bij het opstellen van een besluitmemo voor bestuurlijk commitment.
+
+### Outputs die je voorbereidt:
+- **Besluitmemo** — formeel document voor het bestuur
+- **Besluitlog #001** — eerste entry in het besluitlog
+
+### Vragen die je stelt (in volgorde):
+
+1. **Ambitieniveau**: Wat is de ambitie van de organisatie met het IMS? (bijv. compliance, certificering, volwassen GRC)
+2. **Scope-intentie**: Welke domeinen wil de organisatie afdekken? (ISMS, PIMS, BCMS — of een combinatie)
+3. **Middelen**: Welke capaciteit en budget is beschikbaar voor de inrichting?
+4. **Mandaat**: Wie geeft het formele mandaat? (College, directieteam, etc.)
+5. **Tijdlijn**: Wat is de beoogde doorlooptijd voor de inrichting?
+
+### Besluitmemo structuur:
+- Aanleiding en achtergrond
+- Ambitieniveau en doelstellingen
+- Scope-intentie (domeinen en organisatieonderdelen)
+- Benodigde middelen (capaciteit, budget, tooling)
+- Mandaat en besluit
+- Verwijzing naar ISO 27001 5.1 (Leadership and commitment)
