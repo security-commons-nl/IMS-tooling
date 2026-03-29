@@ -33,3 +33,4 @@ SERVER_ACCESS.md
 # IDE
 .vscode/
 .idea/
+.claude/worktrees/

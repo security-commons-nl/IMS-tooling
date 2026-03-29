@@ -143,7 +143,7 @@ frontend/
 ### Authentication & Authorization
 
 - **JWT** met dev-token (development) en agent-token (service accounts)
-- **RBAC**: 6 rollen met hiërarchie: admin > sims_lid > tims_lid > discipline_eigenaar > lijnmanager > viewer
+- **RBAC**: 6 rollen met hiërarchie: admin > strategisch_lid > tactisch_lid > discipline_eigenaar > lijnmanager > viewer
 - **RLS**: Row Level Security op 21 tenant-scoped tabellen
 - **OIDC-ready**: auth-laag is voorbereid op externe identity providers
 

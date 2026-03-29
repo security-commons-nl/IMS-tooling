@@ -58,7 +58,7 @@ async def get_standard(
 @router.post("/", response_model=StandardResponse, status_code=201)
 async def create_standard(
     data: StandardCreate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     standard = IMSStandard(**data.model_dump())
@@ -72,7 +72,7 @@ async def create_standard(
 async def update_standard(
     standard_id: UUID,
     data: StandardUpdate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(IMSStandard).where(IMSStandard.id == standard_id))
@@ -138,7 +138,7 @@ async def get_requirement(
 @router.post("/requirements/", response_model=RequirementResponse, status_code=201)
 async def create_requirement(
     data: RequirementCreate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     req = IMSRequirement(**data.model_dump())
@@ -152,7 +152,7 @@ async def create_requirement(
 async def update_requirement(
     requirement_id: UUID,
     data: RequirementUpdate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(IMSRequirement).where(IMSRequirement.id == requirement_id))
@@ -220,7 +220,7 @@ async def get_requirement_mapping(
 @router.post("/mappings/", response_model=RequirementMappingResponse, status_code=201)
 async def create_requirement_mapping(
     data: RequirementMappingCreate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     mapping = IMSRequirementMapping(**data.model_dump())
@@ -234,7 +234,7 @@ async def create_requirement_mapping(
 async def update_requirement_mapping(
     mapping_id: UUID,
     data: RequirementMappingUpdate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -289,7 +289,7 @@ async def list_tenant_normenkader(
 @router.post("/normenkader/", response_model=TenantNormenkaderResponse, status_code=201)
 async def create_tenant_normenkader(
     data: TenantNormenkaderCreate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     nk = IMSTenantNormenkader(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -303,7 +303,7 @@ async def create_tenant_normenkader(
 async def update_tenant_normenkader(
     nk_id: UUID,
     data: TenantNormenkaderUpdate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -372,7 +372,7 @@ async def get_standard_ingestion(
 @router.post("/ingestions/", response_model=StandardIngestionResponse, status_code=201)
 async def create_standard_ingestion(
     data: StandardIngestionCreate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     ingestion = IMSStandardIngestion(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -386,7 +386,7 @@ async def create_standard_ingestion(
 async def update_standard_ingestion(
     ingestion_id: UUID,
     data: StandardIngestionUpdate,
-    current_user: CurrentUser = Depends(require_role("sims_lid")),
+    current_user: CurrentUser = Depends(require_role("strategisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

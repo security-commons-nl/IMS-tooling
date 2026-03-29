@@ -22,14 +22,14 @@ async def test_dev_token(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_me_authenticated(client: AsyncClient):
-    token = make_token(role="tims_lid")
+    token = make_token(role="tactisch_lid")
     response = await client.get(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["role"] == "tims_lid"
+    assert data["role"] == "tactisch_lid"
 
 
 @pytest.mark.asyncio

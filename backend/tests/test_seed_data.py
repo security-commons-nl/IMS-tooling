@@ -112,5 +112,5 @@ async def test_step_1_details(client: AsyncClient):
 
     assert step1["name"] == "Bestuurlijk commitment"
     assert step1["phase"] == 0
-    assert step1["required_gremium"] == "sims"
+    assert step1["required_gremium"] == "strategisch"
     assert "mandaat" in step1["waarom_nu"].lower()

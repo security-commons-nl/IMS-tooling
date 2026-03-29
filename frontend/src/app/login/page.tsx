@@ -18,8 +18,8 @@ function generateUUID(): string {
 
 const ROLE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
-  { value: 'sims_lid', label: 'SIMS-lid' },
-  { value: 'tims_lid', label: 'TIMS-lid' },
+  { value: 'strategisch_lid', label: 'Strategisch lid' },
+  { value: 'tactisch_lid', label: 'Tactisch lid' },
   { value: 'discipline_eigenaar', label: 'Discipline-eigenaar' },
   { value: 'lijnmanager', label: 'Lijnmanager' },
   { value: 'viewer', label: 'Viewer' },

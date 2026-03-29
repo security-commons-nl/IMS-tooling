@@ -96,7 +96,7 @@ async def admin_token():
 async def test_tenant(client, admin_token):
     response = await client.post(
         "/api/v1/tenants/",
-        json={"name": "Gemeente Leiden", "type": "centrum"},
+        json={"name": "Voorbeeldgemeente", "type": "centrum"},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert response.status_code == 201, f"Failed to create tenant: {response.text}"
@@ -113,7 +113,7 @@ async def tenant_token(test_tenant):
 async def test_region(client, test_tenant, tenant_token):
     response = await client.post(
         "/api/v1/tenants/regions/",
-        json={"name": "Leidse Regio", "centrum_tenant_id": test_tenant["id"]},
+        json={"name": "Voorbeeldregio", "centrum_tenant_id": test_tenant["id"]},
         headers={"Authorization": f"Bearer {tenant_token}"},
     )
     assert response.status_code == 201, f"Failed to create region: {response.text}"
@@ -126,7 +126,7 @@ async def test_user(client, test_tenant, tenant_token):
         "/api/v1/tenants/users/",
         json={
             "name": "Test User",
-            "email": "test@leiden.nl",
+            "email": "test@ims.dev",
             "external_id": f"test-ext-{uuid.uuid4().hex[:8]}",
             "tenant_id": test_tenant["id"],
         },

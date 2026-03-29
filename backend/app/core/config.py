@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     ENVIRONMENT: str = "development"
-    DEFAULT_TENANT_ID: str = "leiden"
+    DEFAULT_TENANT_ID: str = "default"
     ALLOWED_ORIGINS: str = "http://localhost:3000"
 
     LANGFUSE_SECRET_KEY: str = ""

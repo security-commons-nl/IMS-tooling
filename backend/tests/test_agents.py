@@ -29,7 +29,7 @@ async def _create_agent_step(client, token, number="A.1"):
             "phase": 0,
             "name": f"Agent Test Step {number}",
             "waarom_nu": "Test",
-            "required_gremium": "sims",
+            "required_gremium": "strategisch",
         },
         headers={"Authorization": f"Bearer {token}"},
     )
@@ -279,7 +279,7 @@ async def test_submit_feedback_no_messages(client: AsyncClient, test_tenant, ten
 
 @pytest.mark.asyncio
 async def test_viewer_cannot_start_conversation(client: AsyncClient, test_tenant, tenant_token, viewer_token):
-    """Viewer role cannot start conversations (requires tims_lid)."""
+    """Viewer role cannot start conversations (requires tactisch_lid)."""
     step = await _create_agent_step(client, tenant_token, number="1")
     execution = await _create_execution(client, tenant_token, step["id"])
 

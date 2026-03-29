@@ -37,7 +37,7 @@ router = APIRouter()
 async def start_conversation(
     agent_name: str,
     data: ConversationStartRequest,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     # Validate agent exists
@@ -142,7 +142,7 @@ async def get_conversation(
 async def send_message(
     conversation_id: UUID,
     data: MessageCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     # Load conversation
@@ -226,7 +226,7 @@ async def submit_feedback(
 )
 async def generate_documents(
     conversation_id: UUID,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     # Load conversation

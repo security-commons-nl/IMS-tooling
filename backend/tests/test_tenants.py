@@ -49,7 +49,7 @@ async def test_get_tenant(client: AsyncClient, test_tenant, tenant_token):
         headers={"Authorization": f"Bearer {tenant_token}"},
     )
     assert response.status_code == 200
-    assert response.json()["name"] == "Gemeente Leiden"
+    assert response.json()["name"] == "Voorbeeldgemeente"
 
 
 @pytest.mark.asyncio
@@ -65,11 +65,11 @@ async def test_tenant_not_found(client: AsyncClient, admin_token):
 async def test_update_tenant(client: AsyncClient, test_tenant, tenant_token):
     response = await client.patch(
         f"/api/v1/tenants/{test_tenant['id']}",
-        json={"name": "Gemeente Leiden Updated"},
+        json={"name": "Voorbeeldgemeente Updated"},
         headers={"Authorization": f"Bearer {tenant_token}"},
     )
     assert response.status_code == 200
-    assert response.json()["name"] == "Gemeente Leiden Updated"
+    assert response.json()["name"] == "Voorbeeldgemeente Updated"
 
 
 @pytest.mark.asyncio

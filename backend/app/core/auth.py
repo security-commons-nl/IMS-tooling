@@ -18,7 +18,7 @@ security = HTTPBearer(auto_error=False)
 class TokenData(BaseModel):
     sub: UUID            # user_id
     tenant_id: UUID
-    role: str            # admin, sims_lid, tims_lid, discipline_eigenaar, lijnmanager, viewer
+    role: str            # admin, strategisch_lid, tactisch_lid, discipline_eigenaar, lijnmanager, viewer
     domain: Optional[str] = None  # ISMS, PIMS, BCMS, or None (all)
     token_type: str = "user"  # "user" or "agent"
     agent_name: Optional[str] = None  # only for agent tokens
@@ -94,13 +94,13 @@ async def get_current_user(
 def require_role(*roles: str):
     """Dependency that checks if the current user has one of the required roles.
 
-    Role hierarchy: admin > sims_lid > tims_lid > discipline_eigenaar > lijnmanager > viewer
+    Role hierarchy: admin > strategisch_lid > tactisch_lid > discipline_eigenaar > lijnmanager > viewer
     Higher roles inherit all permissions of lower roles.
     """
     ROLE_HIERARCHY = {
         "admin": 6,
-        "sims_lid": 5,
-        "tims_lid": 4,
+        "strategisch_lid": 5,
+        "tactisch_lid": 4,
         "discipline_eigenaar": 3,
         "lijnmanager": 2,
         "viewer": 1,

@@ -58,7 +58,7 @@ async def get_document(
 @router.post("/", response_model=DocumentResponse, status_code=201)
 async def create_document(
     data: DocumentCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     doc = IMSDocument(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -72,7 +72,7 @@ async def create_document(
 async def update_document(
     document_id: UUID,
     data: DocumentUpdate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(IMSDocument).where(IMSDocument.id == document_id))
@@ -139,7 +139,7 @@ async def get_document_version(
 @router.post("/versions/", response_model=DocumentVersionResponse, status_code=201)
 async def create_document_version(
     data: DocumentVersionCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     version = IMSDocumentVersion(**data.model_dump())
@@ -186,7 +186,7 @@ async def get_step_input_document(
 @router.post("/input-documents/", response_model=StepInputDocumentResponse, status_code=201)
 async def create_step_input_document(
     data: StepInputDocumentCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     doc = IMSStepInputDocument(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -200,7 +200,7 @@ async def create_step_input_document(
 async def update_step_input_document(
     input_doc_id: UUID,
     data: StepInputDocumentUpdate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -253,7 +253,7 @@ async def get_gap_analysis_result(
 @router.post("/gap-analysis/", response_model=GapAnalysisResultResponse, status_code=201)
 async def create_gap_analysis_result(
     data: GapAnalysisResultCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     gap = IMSGapAnalysisResult(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -267,7 +267,7 @@ async def create_gap_analysis_result(
 async def validate_gap_analysis_result(
     gap_id: UUID,
     data: GapAnalysisResultValidate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

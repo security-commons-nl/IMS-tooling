@@ -29,52 +29,52 @@ def upgrade() -> None:
         # (number, phase, name, waarom_nu, required_gremium, is_optional, domain)
         ("1", 0, "Bestuurlijk commitment",
          "Zonder formeel mandaat van het bestuur heeft het TIMS geen autoriteit om besluiten te nemen of middelen in te zetten. Dit is de juridische en bestuurlijke basis voor alles wat volgt.",
-         "sims", False, None),
+         "strategisch", False, None),
         ("2a", 0, "Organisatiecontext vaststellen",
          "De scope, de stakeholders en de PII-rol van de gemeente moeten bekend zijn voordat er iets wordt ingericht. Zonder context kiest iedereen zijn eigen referentiekader.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("2b", 0, "Scope bepalen",
          "De scope bepaalt op welke organisatieonderdelen en domeinen het IMS van toepassing is. Zonder vastgestelde scope kun je geen gap-analyse uitvoeren — je weet niet wat je moet meten.",
-         "sims", False, None),
+         "strategisch", False, None),
         ("3a", 0, "Governance- en beleidsvoorstel opstellen",
          "Nu de context en scope bekend zijn, kan het TIMS uitwerken hoe het IMS wordt bestuurd: wie zit waar, wie rapporteert aan wie, wat is het beleid. Dit is het ontwerp — nog geen besluit.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("3b", 0, "Governance en beleid vaststellen",
          "Het SIMS stelt het governance-voorstel van het TIMS formeel vast. Pas na dit besluit is de structuur gezaghebbend en kan lijnmanagement straks worden aangesproken op hun rol.",
-         "sims", False, None),
+         "strategisch", False, None),
         ("4", 0, "Gap-analyse",
          "Met governance vastgesteld en scope duidelijk kan de nulmeting beginnen: waar staan we nu ten opzichte van de norm? Deze meting is de basis voor alles wat daarna geprioriteerd wordt.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("5", 0, "Registers & risicobeoordeling",
          "De gap-analyse laat zien wat ontbreekt. Nu worden de basisregisters opgebouwd en de eerste risico's in kaart gebracht — zodat stap 6 controls kan selecteren op basis van echte risico's, niet op aannames.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("6", 0, "Normenkader & kerncontrols",
          "Het normenkader en de minimale werkset controls zijn de randvoorwaarde voor Fase 1. Zonder dit weet lijnmanagement niet op basis van welke maatregelen ze moeten werken.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("7", 1, "Onboarding & awareness lijnmanagement",
          "Het normenkader staat vast. Nu moet lijnmanagement weten wat er van hen verwacht wordt en in welke taal het IMS communiceert. Zonder awareness voeren ze stap 9 uit zonder te begrijpen waarom.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("8", 1, "Koppeling processen, systemen & verwerkingen",
          "Risicoanalyse (stap 9) vereist inzicht in welke processen welke systemen gebruiken en welke persoonsgegevens daarin zitten. Dit register legt die koppeling — zonder deze basis is de risicoanalyse incompleet.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("9", 1, "Risicoanalyse door lijnmanagement",
          "Het register is beschikbaar, de methodiek staat vast, lijnmanagement is onboarded. Nu kan de daadwerkelijke beoordeling plaatsvinden: wat zijn de risico's per afdeling/proces?",
          "lijnmanagement", False, None),
         ("10", 1, "Risicobehandeling & controls toewijzen",
          "De risico's zijn bekend. Nu wordt per risico bepaald: accepteren, mitigeren, overdragen of vermijden — en worden controls en eigenaren toegewezen. Zonder dit stap blijft het risicoregister een lijst zonder actie.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("11", 1, "Statement of Applicability (SoA)",
          "Met de risicoanalyse en controls in kaart kan worden vastgesteld welke ISO-controls van toepassing zijn en waarom. De SoA is het formele bewijs van een weloverwogen norm-keuze — vereist voor certificering.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("12", 1, "Monitoring & rapportage inrichten",
          "Het IMS is ingericht. Nu moet de infrastructuur staan om het ook te kunnen bewaken: KPI's, rapportagelijnen, dashboards. Zonder dit kan het SIMS in Fase 2 niet sturen op resultaten.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("13", 2, "Interne audit plannen & uitvoeren",
          "Het IMS draait. Nu moet onafhankelijk worden getoetst of de controls ook daadwerkelijk werken. De audit levert de input voor de management review en toont aan dat het systeem zichzelf bewaakt.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("14", 2, "Management review",
          "De auditresultaten, risicostatussen en KPI's zijn beschikbaar. Het SIMS beoordeelt het geheel en neemt verbeterbeslissingen. Dit is het moment waarop de PDCA-cirkel sluit op strategisch niveau.",
-         "sims", False, None),
+         "strategisch", False, None),
         ("15", 2, "Afwijkingen, incidenten & corrigerende maatregelen",
          "Afwijkingen en incidenten doen zich voor wanneer ze zich voordoen — niet op een gepland moment. Dit is de event-driven stap die ervoor zorgt dat problemen worden geregistreerd, geanalyseerd en opgevolgd.",
          "discipline_eigenaar", False, None),
@@ -83,22 +83,22 @@ def upgrade() -> None:
          "discipline_eigenaar", False, None),
         ("17", 2, "PDCA-cyclus formaliseren",
          "Aan het einde van de cyclus wordt de volgende cyclus gepland. Stap 17 zorgt dat de PDCA niet stopt na een ronde maar structureel verankerd is in de jaarplanning.",
-         "tims", False, None),
+         "tactisch", False, None),
         ("18", 3, "Certificeringsgereedheid",
          "De organisatie wil externe validatie van het IMS. Een pre-audit brengt resterende gaps in beeld zodat de certificeringsaanvraag met vertrouwen kan worden ingediend.",
-         "sims", True, None),
+         "strategisch", True, None),
         ("19", 3, "Geavanceerde analytics & rapportage",
          "Het IMS heeft genoeg historische data opgebouwd om trends te zien. Predictive risk en geautomatiseerde rapportages maken het IMS proactief in plaats van reactief.",
-         "tims", True, None),
+         "tactisch", True, None),
         ("20", 3, "Externe integraties",
          "De organisatie werkt intensief samen met ketenpartners of leveranciers. Koppelingen maken data-uitwisseling gestructureerd en controleerbaar in plaats van handmatig.",
-         "tims", True, None),
+         "tactisch", True, None),
         ("21", 3, "Multi-framework optimalisatie",
          "De organisatie werkt met meerdere normen (BIO, AVG, BCM). Cross-mapping elimineert dubbel werk: een control dekt meerdere normeisen.",
-         "tims", True, None),
+         "tactisch", True, None),
         ("22", 3, "Benchmarking & kennisdeling",
          "Meerdere gemeenten gebruiken het platform. Vergelijking en kennisdeling versnellen volwassenheid in de regio en maken gezamenlijk leren mogelijk.",
-         "sims", True, None),
+         "strategisch", True, None),
     ]
 
     for number, phase, name, waarom_nu, gremium, is_optional, domain in step_data:
@@ -165,33 +165,33 @@ def upgrade() -> None:
     # ------------------------------------------------------------------
     # Default tenant + region + admin user (development)
     # ------------------------------------------------------------------
-    leiden_id = "00000000-0000-0000-0000-000000000001"
+    default_id = "00000000-0000-0000-0000-000000000001"
     region_id = _uuid()
     admin_user_id = "00000000-0000-0000-0000-000000000002"
 
     op.execute(sa.text(
         "INSERT INTO regions (id, name, created_at, updated_at) "
-        "VALUES (:id, 'Leidse Regio', now(), now())"
+        "VALUES (:id, 'Voorbeeldregio', now(), now())"
     ).bindparams(id=region_id))
 
     op.execute(sa.text(
         "INSERT INTO tenants (id, name, type, region_id, is_active, created_at, updated_at) "
-        "VALUES (:id, 'Gemeente Leiden', 'centrum', :region_id, true, now(), now())"
-    ).bindparams(id=leiden_id, region_id=region_id))
+        "VALUES (:id, 'Voorbeeldgemeente', 'centrum', :region_id, true, now(), now())"
+    ).bindparams(id=default_id, region_id=region_id))
 
     op.execute(sa.text(
         "UPDATE regions SET centrum_tenant_id = :tenant_id WHERE id = :region_id"
-    ).bindparams(tenant_id=leiden_id, region_id=region_id))
+    ).bindparams(tenant_id=default_id, region_id=region_id))
 
     op.execute(sa.text(
         "INSERT INTO users (id, tenant_id, external_id, name, email, is_active, created_at, updated_at) "
         "VALUES (:id, :tenant_id, 'dev-admin', 'Beheerder (dev)', 'admin@ims.dev', true, now(), now())"
-    ).bindparams(id=admin_user_id, tenant_id=leiden_id))
+    ).bindparams(id=admin_user_id, tenant_id=default_id))
 
     op.execute(sa.text(
         "INSERT INTO user_tenant_roles (id, user_id, tenant_id, role, created_at, updated_at) "
         "VALUES (:id, :user_id, :tenant_id, 'admin', now(), now())"
-    ).bindparams(id=_uuid(), user_id=admin_user_id, tenant_id=leiden_id))
+    ).bindparams(id=_uuid(), user_id=admin_user_id, tenant_id=default_id))
 
     # ------------------------------------------------------------------
     # Base standards (normenkaders)

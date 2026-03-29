@@ -48,8 +48,8 @@ class TenantType(str, enum.Enum):
 
 class TenantRoleEnum(str, enum.Enum):
     admin = "admin"
-    sims_lid = "sims_lid"
-    tims_lid = "tims_lid"
+    strategisch_lid = "strategisch_lid"
+    tactisch_lid = "tactisch_lid"
     discipline_eigenaar = "discipline_eigenaar"
     lijnmanager = "lijnmanager"
     viewer = "viewer"
@@ -77,8 +77,8 @@ class AIFeedbackEnum(str, enum.Enum):
 
 
 class GremiumEnum(str, enum.Enum):
-    sims = "sims"
-    tims = "tims"
+    strategisch = "strategisch"
+    tactisch = "tactisch"
     lijnmanagement = "lijnmanagement"
     discipline_eigenaar = "discipline_eigenaar"
 

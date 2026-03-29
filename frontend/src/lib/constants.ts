@@ -3,8 +3,8 @@ export const API_BASE_URL =
 
 export const ROLE_HIERARCHY: Record<string, number> = {
   admin: 6,
-  sims_lid: 5,
-  tims_lid: 4,
+  strategisch_lid: 5,
+  tactisch_lid: 4,
   discipline_eigenaar: 3,
   lijnmanager: 2,
   viewer: 1,
@@ -16,8 +16,8 @@ export function hasMinRole(userRole: string, requiredRole: string): boolean {
 
 export const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
-  sims_lid: 'SIMS-lid',
-  tims_lid: 'TIMS-lid',
+  strategisch_lid: 'Strategisch lid',
+  tactisch_lid: 'Tactisch lid',
   discipline_eigenaar: 'Discipline-eigenaar',
   lijnmanager: 'Lijnmanager',
   viewer: 'Viewer',

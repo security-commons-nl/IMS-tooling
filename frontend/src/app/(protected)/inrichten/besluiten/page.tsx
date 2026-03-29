@@ -36,15 +36,15 @@ const DECISION_TYPE_FORM_OPTIONS = [
 
 const GREMIUM_OPTIONS = [
   { value: '', label: 'Alle gremia' },
-  { value: 'SIMS', label: 'SIMS' },
-  { value: 'TIMS', label: 'TIMS' },
+  { value: 'Strategisch', label: 'Strategisch' },
+  { value: 'Tactisch', label: 'Tactisch' },
   { value: 'Lijnmanagement', label: 'Lijnmanagement' },
 ];
 
 const GREMIUM_FORM_OPTIONS = [
   { value: '', label: 'Selecteer gremium...' },
-  { value: 'SIMS', label: 'SIMS' },
-  { value: 'TIMS', label: 'TIMS' },
+  { value: 'Strategisch', label: 'Strategisch' },
+  { value: 'Tactisch', label: 'Tactisch' },
   { value: 'Lijnmanagement', label: 'Lijnmanagement' },
 ];
 

@@ -13,7 +13,7 @@ async def _create_step(client, token, number="O.1", **kwargs):
         "phase": 0,
         "name": f"Test Step {number}",
         "waarom_nu": "Test",
-        "required_gremium": "sims",
+        "required_gremium": "strategisch",
     }
     defaults.update(kwargs)
     resp = await client.post(
@@ -50,7 +50,7 @@ async def _create_decision(client, token, execution_id, tenant_id):
             "decision_type": "normaal",
             "content": "Test besluit",
             "grondslag": "Test",
-            "gremium": "sims",
+            "gremium": "strategisch",
             "decided_by_name": "Test User",
             "decided_by_role": "admin",
             "decided_at": "2026-03-28T10:00:00Z",

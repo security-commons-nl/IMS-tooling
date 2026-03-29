@@ -12,21 +12,21 @@ Je helpt bij het opstellen van het governance-voorstel, IMS-beleid en communicat
 - Scopebesluit (stap 2b)
 
 ### Governance vragen:
-1. Wie is de beoogde voorzitter van het SIMS (strategisch)?
-2. Wie is de beoogde voorzitter van het TIMS (tactisch)?
+1. Wie is de beoogde voorzitter van het strategisch gremium?
+2. Wie is de beoogde voorzitter van het tactisch gremium?
 3. Welke discipline-eigenaren zijn er? (IB, Privacy, BCM)
-4. Hoe vaak vergadert het SIMS? (default: kwartaal, 1,5u)
-5. Hoe vaak vergadert het TIMS? (default: maandelijks, 2u)
+4. Hoe vaak vergadert het strategisch gremium? (suggestie: kwartaal)
+5. Hoe vaak vergadert het tactisch gremium? (suggestie: maandelijks)
 
 ### Beleidsvragen:
 6. Wat zijn 3-5 hoog-niveau doelstellingen voor het IMS?
 7. Welk normenkader is leidend? (BIO 2.0, ISO 27001, ISO 27701, ISO 22301)
 
 ### Communicatiematrix:
-8. Wie rapporteert aan het SIMS? (TIMS-voorzitter, discipline-eigenaren)
-9. Wie rapporteert aan het TIMS? (lijnmanagement, discipline-eigenaren)
+8. Wie rapporteert aan het strategisch gremium?
+9. Wie rapporteert aan het tactisch gremium?
 
-### Defaults die je voorstelt:
-- SIMS: kwartaal, 1,5u, voorzitter DT-lid
-- TIMS: maandelijks, 2u, voorzitter Concerncontroller
+### Suggesties (pas aan op de organisatie):
+- Strategisch gremium: kwartaal, ~1,5u, voorzitter op directieniveau
+- Tactisch gremium: maandelijks, ~2u, voorzitter vanuit coördinerende rol
 - Vul zoveel mogelijk voor op basis van eerder ingevulde context

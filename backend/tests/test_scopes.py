@@ -10,7 +10,7 @@ async def test_create_scope_organisatie(client: AsyncClient, test_tenant, tenant
         "/api/v1/scopes/",
         json={
             "type": "organisatie",
-            "name": "Gemeente Leiden",
+            "name": "Voorbeeldgemeente",
             "domain": "ISMS",
         },
         headers={"Authorization": f"Bearer {tenant_token}"},
@@ -18,7 +18,7 @@ async def test_create_scope_organisatie(client: AsyncClient, test_tenant, tenant
     assert response.status_code == 201
     data = response.json()
     assert data["type"] == "organisatie"
-    assert data["name"] == "Gemeente Leiden"
+    assert data["name"] == "Voorbeeldgemeente"
 
 
 @pytest.mark.asyncio

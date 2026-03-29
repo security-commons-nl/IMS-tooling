@@ -31,7 +31,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(for f in /c/Users/shgst/.claude/skills/mcp-builder/references/*.md)",
       "Bash(done)",
-      "Bash(claude mcp add:*)"
+      "Bash(claude mcp add:*)",
+      "Bash(grep -r generate_document /x/IMS/IMS-tooling/backend --include=*.py)"
     ]
   },
   "enableAllProjectMcpServers": true,

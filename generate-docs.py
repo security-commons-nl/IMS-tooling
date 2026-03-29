@@ -2,7 +2,7 @@
 """Auto-generate platform documentation from codebase introspection.
 
 Generates:
-  docs/platform-overzicht.html  — Functioneel (voor TIMS/stakeholders)
+  docs/platform-overzicht.html  — Functioneel (voor tactisch gremium/stakeholders)
   docs/architectuur.html        — Technisch (voor developers/beheerders)
 
 Usage:
@@ -130,30 +130,30 @@ def get_steps_and_outputs():
     # Parse seed data from migration files instead of DB
     steps = []
     step_data = [
-        ("1", 0, "Bestuurlijk commitment", "sims"),
-        ("2a", 0, "Organisatiecontext vaststellen", "tims"),
-        ("2b", 0, "Scope bepalen", "sims"),
-        ("3a", 0, "Governance- en beleidsvoorstel opstellen", "tims"),
-        ("3b", 0, "Governance en beleid vaststellen", "sims"),
-        ("4", 0, "Gap-analyse", "tims"),
-        ("5", 0, "Registers & risicobeoordeling", "tims"),
-        ("6", 0, "Normenkader & kerncontrols", "tims"),
-        ("7", 1, "Onboarding & awareness lijnmanagement", "tims"),
-        ("8", 1, "Koppeling processen, systemen & verwerkingen", "tims"),
+        ("1", 0, "Bestuurlijk commitment", "strategisch"),
+        ("2a", 0, "Organisatiecontext vaststellen", "tactisch"),
+        ("2b", 0, "Scope bepalen", "strategisch"),
+        ("3a", 0, "Governance- en beleidsvoorstel opstellen", "tactisch"),
+        ("3b", 0, "Governance en beleid vaststellen", "strategisch"),
+        ("4", 0, "Gap-analyse", "tactisch"),
+        ("5", 0, "Registers & risicobeoordeling", "tactisch"),
+        ("6", 0, "Normenkader & kerncontrols", "tactisch"),
+        ("7", 1, "Onboarding & awareness lijnmanagement", "tactisch"),
+        ("8", 1, "Koppeling processen, systemen & verwerkingen", "tactisch"),
         ("9", 1, "Risicoanalyse door lijnmanagement", "lijnmanagement"),
-        ("10", 1, "Risicobehandeling & controls toewijzen", "tims"),
-        ("11", 1, "Statement of Applicability (SoA)", "tims"),
-        ("12", 1, "Monitoring & rapportage inrichten", "tims"),
-        ("13", 2, "Interne audit plannen & uitvoeren", "tims"),
-        ("14", 2, "Management review", "sims"),
+        ("10", 1, "Risicobehandeling & controls toewijzen", "tactisch"),
+        ("11", 1, "Statement of Applicability (SoA)", "tactisch"),
+        ("12", 1, "Monitoring & rapportage inrichten", "tactisch"),
+        ("13", 2, "Interne audit plannen & uitvoeren", "tactisch"),
+        ("14", 2, "Management review", "strategisch"),
         ("15", 2, "Afwijkingen, incidenten & corrigerende maatregelen", "discipline_eigenaar"),
         ("16", 2, "Evidence-verzameling & control-monitoring", "discipline_eigenaar"),
-        ("17", 2, "PDCA-cyclus formaliseren", "tims"),
-        ("18", 3, "Certificeringsgereedheid", "sims"),
-        ("19", 3, "Geavanceerde analytics & rapportage", "tims"),
-        ("20", 3, "Externe integraties", "tims"),
-        ("21", 3, "Multi-framework optimalisatie", "tims"),
-        ("22", 3, "Benchmarking & kennisdeling", "sims"),
+        ("17", 2, "PDCA-cyclus formaliseren", "tactisch"),
+        ("18", 3, "Certificeringsgereedheid", "strategisch"),
+        ("19", 3, "Geavanceerde analytics & rapportage", "tactisch"),
+        ("20", 3, "Externe integraties", "tactisch"),
+        ("21", 3, "Multi-framework optimalisatie", "tactisch"),
+        ("22", 3, "Benchmarking & kennisdeling", "strategisch"),
     ]
     for num, phase, name, gremium in step_data:
         steps.append({"number": num, "phase": phase, "name": name, "gremium": gremium})

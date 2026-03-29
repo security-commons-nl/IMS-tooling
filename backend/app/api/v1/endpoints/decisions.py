@@ -51,10 +51,10 @@ async def create_decision(
 ):
     # Mandatering validation
     if data.decision_type in ("restrisico_acceptatie", "beleidsafwijking"):
-        if data.gremium != "sims":
+        if data.gremium != "strategisch":
             raise HTTPException(
                 status_code=422,
-                detail="Restrisico/beleidsafwijking vereist SIMS-accordering",
+                detail="Restrisico/beleidsafwijking vereist strategisch gremium-accordering",
             )
 
     decision = IMSDecision(tenant_id=current_user.tenant_id, **data.model_dump())

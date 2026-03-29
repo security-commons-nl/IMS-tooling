@@ -52,7 +52,7 @@ async def get_maturity_profile(
 @router.post("/maturity-profiles/", response_model=MaturityProfileResponse, status_code=201)
 async def create_maturity_profile(
     data: MaturityProfileCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     profile = IMSMaturityProfile(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -66,7 +66,7 @@ async def create_maturity_profile(
 async def update_maturity_profile(
     profile_id: UUID,
     data: MaturityProfileUpdate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -136,7 +136,7 @@ async def get_setup_score(
 @router.post("/setup-scores/", response_model=SetupScoreResponse, status_code=201)
 async def create_setup_score(
     data: SetupScoreCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     score = IMSSetupScore(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -150,7 +150,7 @@ async def create_setup_score(
 async def update_setup_score(
     score_id: UUID,
     data: SetupScoreUpdate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(IMSSetupScore).where(IMSSetupScore.id == score_id))
@@ -216,7 +216,7 @@ async def get_grc_score(
 @router.post("/grc-scores/", response_model=GRCScoreResponse, status_code=201)
 async def create_grc_score(
     data: GRCScoreCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     score = IMSGRCScore(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -230,7 +230,7 @@ async def create_grc_score(
 async def update_grc_score(
     score_id: UUID,
     data: GRCScoreUpdate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(IMSGRCScore).where(IMSGRCScore.id == score_id))

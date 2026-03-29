@@ -203,7 +203,7 @@ async def get_step_execution(
 @router.post("/executions/", response_model=StepExecutionResponse, status_code=201)
 async def create_step_execution(
     data: StepExecutionCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     execution = IMSStepExecution(tenant_id=current_user.tenant_id, **data.model_dump())
@@ -217,7 +217,7 @@ async def create_step_execution(
 async def update_step_execution(
     execution_id: UUID,
     data: StepExecutionUpdate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(IMSStepExecution).where(IMSStepExecution.id == execution_id))
@@ -389,7 +389,7 @@ async def list_fulfillments(
 async def create_fulfillment(
     execution_id: UUID,
     data: StepOutputFulfillmentCreate,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     # Verify execution exists
@@ -449,7 +449,7 @@ async def create_fulfillment(
 @router.delete("/fulfillments/{fulfillment_id}", status_code=204)
 async def delete_fulfillment(
     fulfillment_id: UUID,
-    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    current_user: CurrentUser = Depends(require_role("tactisch_lid")),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

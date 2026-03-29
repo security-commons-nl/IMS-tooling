@@ -103,7 +103,7 @@ async def test_create_step_input_document(client: AsyncClient, test_tenant, test
             "phase": 1,
             "name": "Input Doc Step",
             "waarom_nu": "Test",
-            "required_gremium": "sims",
+            "required_gremium": "strategisch",
         },
         headers={"Authorization": f"Bearer {tenant_token}"},
     )
@@ -143,7 +143,7 @@ async def test_create_gap_analysis_result(client: AsyncClient, test_tenant, test
             "phase": 1,
             "name": "Gap Analysis Step",
             "waarom_nu": "Test",
-            "required_gremium": "sims",
+            "required_gremium": "strategisch",
         },
         headers={"Authorization": f"Bearer {tenant_token}"},
     )
@@ -192,7 +192,7 @@ async def test_validate_gap_analysis_result(client: AsyncClient, test_tenant, te
             "phase": 1,
             "name": "Gap Validate Step",
             "waarom_nu": "Test",
-            "required_gremium": "sims",
+            "required_gremium": "strategisch",
         },
         headers={"Authorization": f"Bearer {tenant_token}"},
     )
