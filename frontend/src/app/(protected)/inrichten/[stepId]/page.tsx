@@ -19,6 +19,7 @@ import { Select } from '@/components/ui/select';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { WaaromTooltip } from '@/components/shared/waarom-tooltip';
 import { CardSkeleton } from '@/components/ui/loading-skeleton';
+import { ChatIsland } from '@/components/ai/chat-island';
 import { api, apiFetch, ApiError } from '@/lib/api-client';
 import type {
   StepResponse,
@@ -482,6 +483,11 @@ export default function StepDetailPage({
           )}
         </div>
       </div>
+
+      {/* AI Chat Island — visible when step is active */}
+      {step && executionId && (currentStatus === 'in_uitvoering' || currentStatus === 'concept') && (
+        <ChatIsland stepNumber={step.number} executionId={executionId} />
+      )}
     </PageWrapper>
   );
 }

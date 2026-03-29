@@ -117,6 +117,29 @@ export interface StepReadiness {
   can_advance: boolean;
 }
 
+// ── Agent Conversations ─────────────────────────────────────────────────────
+
+export interface AgentMessageResponse {
+  id: string;
+  conversation_id: string;
+  role: string;
+  content: string;
+  metadata_json?: unknown;
+  audit_log_id?: string | null;
+  created_at: string;
+}
+
+export interface AgentConversationResponse {
+  id: string;
+  tenant_id: string;
+  step_execution_id: string;
+  agent_name: string;
+  status: string;
+  messages: AgentMessageResponse[];
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Decisions ───────────────────────────────────────────────────────────────
 
 export interface DecisionResponse {

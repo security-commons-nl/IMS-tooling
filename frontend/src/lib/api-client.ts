@@ -9,6 +9,8 @@ import type {
   StepDependencyResponse,
   StepReadiness,
   StepOutputFulfillmentResponse,
+  AgentConversationResponse,
+  AgentMessageResponse,
   DecisionResponse,
   DocumentResponse,
   DocumentVersionResponse,
@@ -102,6 +104,30 @@ export const api = {
       apiFetch<void>(`/steps/fulfillments/${fulfillmentId}`, {
         method: 'DELETE',
       }),
+  },
+  agents: {
+    startConversation: (agentName: string, data: { step_execution_id: string }) =>
+      apiFetch<AgentConversationResponse>(
+        `/agents/${agentName}/conversations`,
+        { method: 'POST', body: JSON.stringify(data) }
+      ),
+    getConversation: (conversationId: string) =>
+      apiFetch<AgentConversationResponse>(
+        `/agents/conversations/${conversationId}`
+      ),
+    sendMessage: (conversationId: string, data: { content: string }) =>
+      apiFetch<AgentMessageResponse>(
+        `/agents/conversations/${conversationId}/messages`,
+        { method: 'POST', body: JSON.stringify(data) }
+      ),
+    submitFeedback: (
+      conversationId: string,
+      data: { feedback: string; comment?: string }
+    ) =>
+      apiFetch<void>(
+        `/agents/conversations/${conversationId}/feedback`,
+        { method: 'POST', body: JSON.stringify(data) }
+      ),
   },
   decisions: {
     list: () => apiFetch<DecisionResponse[]>('/decisions/'),

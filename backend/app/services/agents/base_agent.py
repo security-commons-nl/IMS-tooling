@@ -18,6 +18,7 @@ from app.models.core_models import (
     IMSDocumentVersion,
 )
 from app.services import llm_client
+from app.services.rag.retrieval_service import search_knowledge
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +62,25 @@ class BaseAgent:
             execution.tenant_id, db
         )
 
+        # RAG: retrieve relevant knowledge chunks
+        rag_context = []
+        try:
+            chunks = await search_knowledge(
+                query=f"{step.name} {step.waarom_nu}",
+                tenant_id=execution.tenant_id,
+                db=db,
+                top_k=3,
+            )
+            rag_context = [c.content for c in chunks]
+        except Exception:
+            pass  # RAG is optional — don't block agent if it fails
+
         return {
             "step": step,
             "execution": execution,
             "tenant_id": execution.tenant_id,
             "prerequisite_docs": prerequisite_docs,
+            "rag_context": rag_context,
         }
 
     async def _load_prerequisite_outputs(
@@ -107,6 +122,12 @@ class BaseAgent:
             f"Waarom nu: {step.waarom_nu}\n"
             f"Gremium: {step.required_gremium}"
         )
+
+        # Add RAG context (normative knowledge)
+        if context.get("rag_context"):
+            parts.append("\n\n--- Relevante normteksten ---")
+            for chunk in context["rag_context"]:
+                parts.append(f"\n{chunk}")
 
         # Add prerequisite context
         if context.get("prerequisite_docs"):
