@@ -41,6 +41,20 @@ async def clean_tables(engine):
             "user_region_roles, user_tenant_roles, users, tenants, regions "
             "CASCADE"
         ))
+        # Clean up test-created steps AFTER truncating FKs (executions, fulfillments, etc.)
+        await conn.execute(text(
+            "DELETE FROM ims_step_outputs WHERE step_id IN "
+            "(SELECT id FROM ims_steps WHERE name LIKE 'Agent Test%' OR name LIKE 'Test Step%')"
+        ))
+        await conn.execute(text(
+            "DELETE FROM ims_step_dependencies WHERE step_id IN "
+            "(SELECT id FROM ims_steps WHERE name LIKE 'Agent Test%' OR name LIKE 'Test Step%') "
+            "OR depends_on_step_id IN "
+            "(SELECT id FROM ims_steps WHERE name LIKE 'Agent Test%' OR name LIKE 'Test Step%')"
+        ))
+        await conn.execute(text(
+            "DELETE FROM ims_steps WHERE name LIKE 'Agent Test%' OR name LIKE 'Test Step%'"
+        ))
     yield
 
 
