@@ -6,6 +6,7 @@ import {
   PaperAirplaneIcon,
   HandThumbUpIcon,
   HandThumbDownIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,8 @@ interface ChatPanelProps {
 export function ChatPanel({ conversation, onClose, onUpdate }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateResult, setGenerateResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +63,28 @@ export function ChatPanel({ conversation, onClose, onUpdate }: ChatPanelProps) {
       await api.agents.submitFeedback(conversation.id, { feedback });
     } catch {
       // Silent fail for feedback
+    }
+  }
+
+  async function handleGenerate() {
+    setIsGenerating(true);
+    setError(null);
+    setGenerateResult(null);
+
+    try {
+      const result = await api.agents.generateDocuments(conversation.id);
+      setGenerateResult(result.message);
+      onUpdate();
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const detail =
+          (err.body as Record<string, unknown>)?.detail || 'Generatie mislukt';
+        setError(String(detail));
+      } else {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      setIsGenerating(false);
     }
   }
 
@@ -112,6 +137,28 @@ export function ChatPanel({ conversation, onClose, onUpdate }: ChatPanelProps) {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Generate button */}
+      {conversation.status === 'active' && conversation.messages.length > 1 && (
+        <div className="mx-4 mb-2">
+          {generateResult ? (
+            <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
+              {generateResult}
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={isGenerating || isSending}
+              onClick={handleGenerate}
+              className="w-full"
+            >
+              <DocumentArrowDownIcon className="mr-1.5 h-4 w-4" />
+              {isGenerating ? 'Documenten genereren...' : 'Genereer concept-documenten'}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Error */}
       {error && (

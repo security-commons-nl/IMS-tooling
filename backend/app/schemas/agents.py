@@ -44,10 +44,16 @@ class ConversationResponse(BaseModel):
 # ── Document generation ──────────────────────────────────────────────────
 
 
-class DocumentGenerateResponse(BaseModel):
+class GeneratedDocumentItem(BaseModel):
     document_id: UUID
     version_id: UUID
+    output_name: str
     content_json: Any
+
+
+class GenerateDocumentsResponse(BaseModel):
+    documents: List[GeneratedDocumentItem]
+    message: str
 
 
 # ── Feedback ─────────────────────────────────────────────────────────────

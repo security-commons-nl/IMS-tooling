@@ -22,6 +22,8 @@ from app.schemas.agents import (
     MessageCreate,
     MessageResponse,
     FeedbackCreate,
+    GenerateDocumentsResponse,
+    GeneratedDocumentItem,
 )
 from app.services.agents.registry import get_agent_by_name
 
@@ -213,3 +215,62 @@ async def submit_feedback(
         audit_log.feedback = data.feedback
         audit_log.feedback_comment = data.comment
         await db.flush()
+
+
+# ── Generate documents ───────────────────────────────────────────────────
+
+
+@router.post(
+    "/conversations/{conversation_id}/generate",
+    response_model=GenerateDocumentsResponse,
+)
+async def generate_documents(
+    conversation_id: UUID,
+    current_user: CurrentUser = Depends(require_role("tims_lid")),
+    db: AsyncSession = Depends(get_db),
+):
+    # Load conversation
+    result = await db.execute(
+        select(AgentConversation)
+        .options(selectinload(AgentConversation.messages))
+        .where(AgentConversation.id == conversation_id)
+    )
+    conversation = result.scalar_one_or_none()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversatie niet gevonden")
+
+    if conversation.status != "active":
+        raise HTTPException(
+            status_code=422,
+            detail="Conversatie is niet meer actief",
+        )
+
+    # Get agent
+    agent = get_agent_by_name(conversation.agent_name)
+    if not agent:
+        raise HTTPException(status_code=500, detail="Agent niet gevonden")
+
+    # Get context and generate
+    context = await agent.get_context(conversation.step_execution_id, db)
+    results = await agent.generate_document(conversation, context, db)
+
+    if not results:
+        raise HTTPException(
+            status_code=422,
+            detail="Geen document-outputs om te genereren (alle outputs zijn al ingevuld, of er zijn alleen besluit-outputs)",
+        )
+
+    documents = [
+        GeneratedDocumentItem(
+            document_id=r["document_id"],
+            version_id=r["version_id"],
+            output_name=r["output_name"],
+            content_json=r["content_json"],
+        )
+        for r in results
+    ]
+
+    return GenerateDocumentsResponse(
+        documents=documents,
+        message=f"{len(documents)} concept-document(en) gegenereerd",
+    )

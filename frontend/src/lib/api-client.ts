@@ -11,6 +11,7 @@ import type {
   StepOutputFulfillmentResponse,
   AgentConversationResponse,
   AgentMessageResponse,
+  GenerateDocumentsResponse,
   DecisionResponse,
   DocumentResponse,
   DocumentVersionResponse,
@@ -127,6 +128,11 @@ export const api = {
       apiFetch<void>(
         `/agents/conversations/${conversationId}/feedback`,
         { method: 'POST', body: JSON.stringify(data) }
+      ),
+    generateDocuments: (conversationId: string) =>
+      apiFetch<GenerateDocumentsResponse>(
+        `/agents/conversations/${conversationId}/generate`,
+        { method: 'POST' }
       ),
   },
   decisions: {

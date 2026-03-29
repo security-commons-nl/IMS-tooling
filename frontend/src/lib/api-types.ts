@@ -129,6 +129,18 @@ export interface AgentMessageResponse {
   created_at: string;
 }
 
+export interface GeneratedDocumentItem {
+  document_id: string;
+  version_id: string;
+  output_name: string;
+  content_json: unknown;
+}
+
+export interface GenerateDocumentsResponse {
+  documents: GeneratedDocumentItem[];
+  message: string;
+}
+
 export interface AgentConversationResponse {
   id: string;
   tenant_id: string;

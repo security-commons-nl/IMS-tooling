@@ -12,10 +12,12 @@ from app.models.core_models import (
     AgentConversation,
     AgentMessage,
     AIAuditLog,
+    IMSDocument,
+    IMSDocumentVersion,
     IMSStep,
     IMSStepExecution,
+    IMSStepOutput,
     IMSStepOutputFulfillment,
-    IMSDocumentVersion,
 )
 from app.services import llm_client
 from app.services.rag.retrieval_service import search_knowledge
@@ -202,6 +204,169 @@ class BaseAgent:
         await db.refresh(assistant_msg)
 
         return assistant_msg
+
+    async def generate_document(
+        self,
+        conversation: AgentConversation,
+        context: dict,
+        db: AsyncSession,
+    ) -> list[dict]:
+        """Generate concept documents for all document/register outputs of this step.
+
+        Decision outputs are skipped — those must be created manually by the gremium.
+        Returns a list of {document_id, version_id, output_name, content_json} dicts.
+        """
+        import json as _json
+
+        step = context["step"]
+        execution = context["execution"]
+
+        # Filter: only document and register outputs (not decisions)
+        doc_outputs = [
+            o for o in step.outputs
+            if o.output_type in ("document", "register")
+        ]
+
+        if not doc_outputs:
+            return []
+
+        # Check which outputs are already fulfilled
+        result = await db.execute(
+            select(IMSStepOutputFulfillment).where(
+                IMSStepOutputFulfillment.step_execution_id == execution.id,
+            )
+        )
+        fulfilled_ids = {f.step_output_id for f in result.scalars().all()}
+
+        unfulfilled = [o for o in doc_outputs if o.id not in fulfilled_ids]
+        if not unfulfilled:
+            return []
+
+        # Build generation prompt
+        output_names = ", ".join(o.name for o in unfulfilled)
+        system_prompt = self.build_system_prompt(context)
+
+        gen_prompt = (
+            f"Genereer nu de volgende concept-documenten op basis van ons gesprek:\n"
+            f"{output_names}\n\n"
+            f"Geef je antwoord als JSON object met per document een key (de output-naam) "
+            f"en als value een object met 'sections' (array van {{title, content}}) "
+            f"en 'metadata' ({{confidence_note: 'AI CONCEPT — verifieer handmatig'}}).\n\n"
+            f"Voorbeeld format:\n"
+            f'{{"Besluitmemo": {{"sections": [{{"title": "Aanleiding", "content": "..."}}], '
+            f'"metadata": {{"confidence_note": "AI CONCEPT"}}}}}}\n\n'
+            f"Antwoord ALLEEN met de JSON, geen andere tekst."
+        )
+
+        # Build messages including conversation history
+        messages = [{"role": "system", "content": system_prompt}]
+        for msg in conversation.messages:
+            if msg.role == "system":
+                continue
+            messages.append({"role": msg.role, "content": msg.content})
+        messages.append({"role": "user", "content": gen_prompt})
+
+        response = await llm_client.chat_completion(messages, temperature=0.2)
+
+        # Create audit log
+        audit_log = AIAuditLog(
+            tenant_id=context["tenant_id"],
+            agent_name=self.agent_name,
+            step_execution_id=execution.id,
+            model=response["model"],
+            prompt_tokens=response["prompt_tokens"],
+            completion_tokens=response["completion_tokens"],
+        )
+        db.add(audit_log)
+
+        # Parse LLM response
+        content_text = response["content"].strip()
+        if content_text.startswith("```"):
+            content_text = content_text.split("\n", 1)[1] if "\n" in content_text else content_text
+            if content_text.endswith("```"):
+                content_text = content_text[:-3]
+            content_text = content_text.strip()
+
+        try:
+            generated = _json.loads(content_text)
+        except _json.JSONDecodeError:
+            logger.warning(f"Failed to parse generate response: {content_text[:200]}")
+            # Fallback: use raw text as single document
+            generated = {
+                unfulfilled[0].name: {
+                    "sections": [{"title": "Gegenereerd document", "content": content_text}],
+                    "metadata": {"confidence_note": "AI CONCEPT — verifieer handmatig"},
+                }
+            }
+
+        results = []
+        for output in unfulfilled:
+            content_json = generated.get(output.name)
+            if not content_json:
+                # Try to find a close match
+                for key in generated:
+                    if key.lower() in output.name.lower() or output.name.lower() in key.lower():
+                        content_json = generated[key]
+                        break
+
+            if not content_json:
+                content_json = {
+                    "sections": [{"title": output.name, "content": "Nog niet gegenereerd."}],
+                    "metadata": {"confidence_note": "AI CONCEPT — onvolledig"},
+                }
+
+            # Create document
+            doc = IMSDocument(
+                tenant_id=context["tenant_id"],
+                step_execution_id=execution.id,
+                document_type="overig",
+                title=output.name,
+                visibility="privé",
+            )
+            db.add(doc)
+            await db.flush()
+
+            # Create version
+            version = IMSDocumentVersion(
+                document_id=doc.id,
+                version_number="1.0",
+                content_json=content_json,
+                status="concept",
+                generated_by_agent=self.agent_name,
+            )
+            db.add(version)
+            await db.flush()
+
+            # Create fulfillment
+            fulfillment = IMSStepOutputFulfillment(
+                tenant_id=context["tenant_id"],
+                step_output_id=output.id,
+                step_execution_id=execution.id,
+                document_id=doc.id,
+            )
+            db.add(fulfillment)
+
+            results.append({
+                "document_id": doc.id,
+                "version_id": version.id,
+                "output_name": output.name,
+                "content_json": content_json,
+            })
+
+        # Save assistant message about generation
+        gen_msg = AgentMessage(
+            conversation_id=conversation.id,
+            role="assistant",
+            content=f"Ik heb {len(results)} concept-document(en) gegenereerd: "
+                    + ", ".join(r["output_name"] for r in results)
+                    + ". Deze zijn als concept gekoppeld aan de stap-outputs. "
+                    + "Besluiten moeten handmatig worden vastgelegd door het bevoegde gremium.",
+            audit_log_id=audit_log.id,
+        )
+        db.add(gen_msg)
+        await db.flush()
+
+        return results
 
     def get_greeting(self) -> str:
         """Initial greeting when conversation starts."""

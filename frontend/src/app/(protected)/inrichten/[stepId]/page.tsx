@@ -25,6 +25,8 @@ import type {
   StepResponse,
   StepExecutionResponse,
   StepReadiness,
+  DecisionResponse,
+  DocumentResponse,
 } from '@/lib/api-types';
 
 // Pure UI labels — no process logic
@@ -50,6 +52,7 @@ export default function StepDetailPage({
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFile, setUploadFile] = useState('');
   const [uploadType, setUploadType] = useState('pdf');
+  const [linkingOutputId, setLinkingOutputId] = useState<string | null>(null);
 
   const { data: step, isLoading: stepLoading } = useSWR<StepResponse>(
     `/steps/${stepId}`,
@@ -78,8 +81,46 @@ export default function StepDetailPage({
     () => (executionId ? api.steps.getReadiness(executionId) : null!),
   );
 
+  // Load decisions and documents for fulfillment linking
+  const { data: decisions = [] } = useSWR<DecisionResponse[]>(
+    executionId ? `/decisions-for-${executionId}` : null,
+    () => api.decisions.list(),
+  );
+  const { data: documents = [] } = useSWR<DocumentResponse[]>(
+    executionId ? `/documents-for-${executionId}` : null,
+    () => api.documents.list(),
+  );
+
   const isBlocked = readiness ? !readiness.dependencies_met : false;
   const allowedTransitions = readiness?.allowed_transitions || [];
+
+  // Filter to this step's execution
+  const stepDecisions = decisions.filter((d) => d.step_execution_id === executionId);
+  const stepDocuments = documents.filter((d) => d.step_execution_id === executionId);
+
+  async function handleLinkFulfillment(outputId: string, outputType: string, linkedId: string) {
+    if (!executionId) return;
+    setIsUpdating(true);
+    setError(null);
+    try {
+      const payload: Record<string, string> = { step_output_id: outputId };
+      if (outputType === 'decision') {
+        payload.decision_id = linkedId;
+      } else {
+        payload.document_id = linkedId;
+      }
+      await api.steps.createFulfillment(executionId, payload);
+      await mutateReadiness();
+      setLinkingOutputId(null);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const detail = (err.body as Record<string, unknown>)?.detail || 'Koppelen mislukt';
+        setError(String(detail));
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  }
 
   async function handleTransition(targetStatus: string) {
     setIsUpdating(true);
@@ -272,13 +313,13 @@ export default function StepDetailPage({
                 </div>
               )}
 
-              {/* Outputs from API (step.outputs) */}
+              {/* Outputs from API (step.outputs) with link buttons */}
               {step.outputs && step.outputs.length > 0 && (
                 <div className="pt-2 border-t border-neutral-100">
                   <p className="text-xs text-neutral-500 mb-2">
-                    Verplichte outputs ({readiness ? `${readiness.required_fulfilled}/${readiness.required_total}` : '...'})
+                    Outputs ({readiness ? `${readiness.required_fulfilled}/${readiness.required_total}` : '...'})
                   </p>
-                  <ul className="space-y-1.5">
+                  <ul className="space-y-2">
                     {step.outputs
                       .sort((a, b) => a.sort_order - b.sort_order)
                       .map((output) => {
@@ -286,34 +327,79 @@ export default function StepDetailPage({
                           (o) => o.output.id === output.id,
                         );
                         const fulfilled = item?.fulfilled || false;
+                        const isLinking = linkingOutputId === output.id;
+                        const canLink = executionId && !fulfilled && !isCompleted;
+                        const isDecisionType = output.output_type === 'decision';
+                        const linkOptions = isDecisionType ? stepDecisions : stepDocuments;
+
                         return (
-                          <li
-                            key={output.id}
-                            className="text-xs flex items-start gap-1.5"
-                          >
-                            <span
-                              className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
-                                fulfilled
-                                  ? 'bg-green-500'
-                                  : output.requirement === 'V'
-                                    ? 'bg-red-400'
-                                    : 'bg-neutral-300'
-                              }`}
-                            />
-                            <span
-                              className={
-                                fulfilled
-                                  ? 'text-green-700'
-                                  : 'text-neutral-600'
-                              }
-                            >
-                              {output.name}
-                              {output.requirement === 'V' && (
-                                <span className="ml-1 text-neutral-400">
-                                  (V)
-                                </span>
+                          <li key={output.id} className="text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                                  fulfilled
+                                    ? 'bg-green-500'
+                                    : output.requirement === 'V'
+                                      ? 'bg-red-400'
+                                      : 'bg-neutral-300'
+                                }`}
+                              />
+                              <span
+                                className={`flex-1 ${
+                                  fulfilled ? 'text-green-700' : 'text-neutral-600'
+                                }`}
+                              >
+                                {output.name}
+                                {output.requirement === 'V' && (
+                                  <span className="ml-1 text-neutral-400">(V)</span>
+                                )}
+                              </span>
+                              {canLink && !isLinking && (
+                                <button
+                                  onClick={() => setLinkingOutputId(output.id)}
+                                  className="text-primary-600 hover:text-primary-800 font-medium"
+                                >
+                                  Koppel
+                                </button>
                               )}
-                            </span>
+                            </div>
+
+                            {/* Inline picker */}
+                            {isLinking && (
+                              <div className="mt-1.5 ml-3.5 space-y-1">
+                                {linkOptions.length === 0 ? (
+                                  <p className="text-neutral-400 italic">
+                                    Geen {isDecisionType ? 'besluiten' : 'documenten'} beschikbaar.
+                                    Maak er eerst een aan.
+                                  </p>
+                                ) : (
+                                  linkOptions.map((item) => (
+                                    <button
+                                      key={item.id}
+                                      onClick={() =>
+                                        handleLinkFulfillment(
+                                          output.id,
+                                          output.output_type,
+                                          item.id,
+                                        )
+                                      }
+                                      disabled={isUpdating}
+                                      className="block w-full text-left rounded px-2 py-1 hover:bg-primary-50 text-neutral-700"
+                                    >
+                                      {'content' in item
+                                        ? (item as DecisionResponse).content?.slice(0, 50)
+                                        : (item as DocumentResponse).title}
+                                    </button>
+                                  ))
+                                )}
+                                <button
+                                  onClick={() => setLinkingOutputId(null)}
+                                  className="text-neutral-400 hover:text-neutral-600"
+                                >
+                                  Annuleren
+                                </button>
+                              </div>
+                            )}
                           </li>
                         );
                       })}
