@@ -7,6 +7,8 @@ import type {
   StepResponse,
   StepExecutionResponse,
   StepDependencyResponse,
+  UserResponse,
+  UserTenantRoleResponse,
   StepReadiness,
   StepOutputFulfillmentResponse,
   AgentConversationResponse,
@@ -103,6 +105,33 @@ export const api = {
       ),
     deleteFulfillment: (fulfillmentId: string) =>
       apiFetch<void>(`/steps/fulfillments/${fulfillmentId}`, {
+        method: 'DELETE',
+      }),
+  },
+  tenants: {
+    listUsers: (tenantId: string) =>
+      apiFetch<UserResponse[]>(`/tenants/users/?tenant_id=${tenantId}`),
+    createUser: (data: Record<string, unknown>) =>
+      apiFetch<UserResponse>('/tenants/users/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    updateUser: (id: string, data: Record<string, unknown>) =>
+      apiFetch<UserResponse>(`/tenants/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    listRoles: (tenantId: string) =>
+      apiFetch<UserTenantRoleResponse[]>(
+        `/tenants/user-tenant-roles/?tenant_id=${tenantId}`
+      ),
+    createRole: (data: Record<string, unknown>) =>
+      apiFetch<UserTenantRoleResponse>('/tenants/user-tenant-roles/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    deleteRole: (id: string) =>
+      apiFetch<void>(`/tenants/user-tenant-roles/${id}`, {
         method: 'DELETE',
       }),
   },

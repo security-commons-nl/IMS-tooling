@@ -34,6 +34,29 @@ export interface TenantResponse {
   updated_at: string;
 }
 
+// ── Users & Roles ──────────────────────────────────────────────────────────
+
+export interface UserResponse {
+  id: string;
+  tenant_id: string;
+  external_id: string;
+  name: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserTenantRoleResponse {
+  id: string;
+  user_id: string;
+  tenant_id: string;
+  role: string;
+  domain?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Steps ───────────────────────────────────────────────────────────────────
 
 export interface StepOutputResponse {
