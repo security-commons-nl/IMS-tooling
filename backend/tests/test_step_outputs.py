@@ -296,7 +296,8 @@ async def test_transition_to_vastgesteld_blocked_without_outputs(client: AsyncCl
     if not steps_with_outputs:
         pytest.skip("No seeded steps with outputs available")
 
-    step = steps_with_outputs[0]
+    # Use step 1 (no blocking dependencies)
+    step = next((s for s in steps_with_outputs if s["number"] == "1"), steps_with_outputs[0])
     execution = await _create_execution(client, tenant_token, step["id"])
 
     # Move through states

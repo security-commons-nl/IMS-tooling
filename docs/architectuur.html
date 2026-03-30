@@ -103,7 +103,7 @@
 </head><body>
 <h1>IMS Platform — Technische Architectuur</h1>
 <p class="subtitle">Datamodel · API · Services · Tests</p>
-<p class="generated">Auto-generated op 2026-03-30 17:01 uit codebase</p>
+<p class="generated">Auto-generated op 2026-03-30 22:12 uit codebase</p>
 
 <div class="nav">
   <a href="#stats">Statistieken</a>
@@ -117,8 +117,8 @@
 <h2 id="stats">Statistieken</h2>
 <div class="grid">
   <div class="card stat"><div class="stat-value">36</div><div class="stat-label">Database tabellen</div></div>
-  <div class="card stat"><div class="stat-value">156</div><div class="stat-label">API Endpoints</div></div>
-  <div class="card stat"><div class="stat-value">7</div><div class="stat-label">Migraties</div></div>
+  <div class="card stat"><div class="stat-value">157</div><div class="stat-label">API Endpoints</div></div>
+  <div class="card stat"><div class="stat-value">8</div><div class="stat-label">Migraties</div></div>
   <div class="card stat"><div class="stat-value">128</div><div class="stat-label">Tests</div></div>
 </div>
 
@@ -300,8 +300,8 @@
 
           <div class="card">
             <div style="font-weight:600;font-family:monospace;color:var(--accent)">ims_steps</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin:0.3rem 0">10 kolommen</div>
-            <table><tr><td><code>id</code> 🔑</td><td style="color:var(--text-muted)">UUID</td></tr><tr><td><code>number</code></td><td style="color:var(--text-muted)">VARCHAR(10)</td></tr><tr><td><code>phase</code></td><td style="color:var(--text-muted)">INTEGER</td></tr><tr><td><code>name</code></td><td style="color:var(--text-muted)">VARCHAR(200)</td></tr><tr><td><code>waarom_nu</code></td><td style="color:var(--text-muted)">TEXT</td></tr><tr><td><code>required_gremium</code></td><td style="color:var(--text-muted)">VARCHAR(50)</td></tr><tr><td><code>is_optional</code></td><td style="color:var(--text-muted)">BOOLEAN</td></tr><tr><td><code>domain</code></td><td style="color:var(--text-muted)">VARCHAR(10) (nullable)</td></tr><tr><td><code>created_at</code></td><td style="color:var(--text-muted)">DATETIME</td></tr><tr><td><code>updated_at</code></td><td style="color:var(--text-muted)">DATETIME</td></tr></table>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin:0.3rem 0">12 kolommen</div>
+            <table><tr><td><code>id</code> 🔑</td><td style="color:var(--text-muted)">UUID</td></tr><tr><td><code>number</code></td><td style="color:var(--text-muted)">VARCHAR(10)</td></tr><tr><td><code>phase</code></td><td style="color:var(--text-muted)">INTEGER</td></tr><tr><td><code>name</code></td><td style="color:var(--text-muted)">VARCHAR(200)</td></tr><tr><td><code>waarom_nu</code></td><td style="color:var(--text-muted)">TEXT</td></tr><tr><td><code>uitleg</code></td><td style="color:var(--text-muted)">TEXT (nullable)</td></tr><tr><td><code>voorbeeld_content</code></td><td style="color:var(--text-muted)">JSONB (nullable)</td></tr><tr><td><code>required_gremium</code></td><td style="color:var(--text-muted)">VARCHAR(50)</td></tr><tr><td><code>is_optional</code></td><td style="color:var(--text-muted)">BOOLEAN</td></tr><tr><td><code>domain</code></td><td style="color:var(--text-muted)">VARCHAR(10) (nullable)</td></tr><tr><td><code>created_at</code></td><td style="color:var(--text-muted)">DATETIME</td></tr><tr><td><code>updated_at</code></td><td style="color:var(--text-muted)">DATETIME</td></tr></table>
           </div>
 
           <div class="card">
@@ -385,6 +385,7 @@
 <tr><td><span class="badge badge-method">GET</span></td><td><code>/api/v1/documents/versions/</code></td><td style="color:var(--text-muted)">list_document_versions</td></tr>
 <tr><td><span class="badge badge-method">POST</span></td><td><code>/api/v1/documents/versions/</code></td><td style="color:var(--text-muted)">create_document_version</td></tr>
 <tr><td><span class="badge badge-method">GET</span></td><td><code>/api/v1/documents/versions/{version_id}</code></td><td style="color:var(--text-muted)">get_document_version</td></tr>
+<tr><td><span class="badge badge-method">GET</span></td><td><code>/api/v1/documents/versions/{version_id}/export</code></td><td style="color:var(--text-muted)">export_document_version</td></tr>
 <tr><td><span class="badge badge-method">GET</span></td><td><code>/api/v1/documents/{document_id}</code></td><td style="color:var(--text-muted)">get_document</td></tr>
 <tr><td><span class="badge badge-method">PATCH</span></td><td><code>/api/v1/documents/{document_id}</code></td><td style="color:var(--text-muted)">update_document</td></tr>
 <tr><td><span class="badge badge-method">DELETE</span></td><td><code>/api/v1/documents/{document_id}</code></td><td style="color:var(--text-muted)">delete_document</td></tr>
@@ -506,6 +507,7 @@
 <tr><td><code>005_seed_step_outputs.py</code></td><td>Seed step output definitions for all 22 steps</td></tr>
 <tr><td><code>006_agent_conversations.py</code></td><td>Add agent conversation and message tables</td></tr>
 <tr><td><code>007_rename_terminology.py</code></td><td>Rename SIMS/TIMS to strategisch/tactisch gremium</td></tr>
+<tr><td><code>008_step_uitleg_voorbeeld.py</code></td><td>Add uitleg and voorbeeld_content to ims_steps</td></tr>
 </table>
 <h2 id="tests">Tests (128 totaal)</h2><div class="grid">
 

@@ -180,6 +180,22 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    exportVersion: (versionId: string, format: 'md' | 'html' = 'html') => {
+      const token = getToken();
+      return fetch(`${API_BASE_URL}/documents/versions/${versionId}/export?format=${format}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).then((res) => {
+        if (!res.ok) throw new ApiError(res.status, null);
+        return res.blob();
+      }).then((blob) => {
+        const ext = format === 'md' ? 'md' : 'html';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `concept-document.${ext}`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    },
     listVersions: (docId: string) =>
       apiFetch<DocumentVersionResponse[]>(`/documents/versions/?document_id=${docId}`),
     createVersion: (docId: string, data: Record<string, unknown>) =>

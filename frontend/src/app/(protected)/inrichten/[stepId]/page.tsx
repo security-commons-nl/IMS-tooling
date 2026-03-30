@@ -9,6 +9,8 @@ import {
   LockClosedIcon,
   ArrowUpTrayIcon,
   DocumentTextIcon,
+  ChevronDownIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { Card } from '@/components/ui/card';
@@ -54,6 +56,7 @@ export default function StepDetailPage({
   const [uploadFile, setUploadFile] = useState('');
   const [uploadType, setUploadType] = useState('pdf');
   const [linkingOutputId, setLinkingOutputId] = useState<string | null>(null);
+  const [voorbeeldOpen, setVoorbeeldOpen] = useState(false);
 
   const { data: step, isLoading: stepLoading } = useSWR<StepResponse>(
     `/steps/${stepId}`,
@@ -428,6 +431,91 @@ export default function StepDetailPage({
               </p>
             </div>
           </Card>
+
+          {/* Uitleg — simpele uitleg van de stap */}
+          {step.uitleg && (
+            <Card>
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900 mb-2">
+                  Wat ga je doen?
+                </h3>
+                <p className="text-sm text-neutral-600 leading-relaxed">
+                  {step.uitleg}
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Voorbeeld — inklapbaar voorbeelddocument */}
+          {step.voorbeeld_content && (
+            <Card>
+              <button
+                type="button"
+                onClick={() => setVoorbeeldOpen(!voorbeeldOpen)}
+                className="flex w-full items-center justify-between text-left"
+              >
+                <h3 className="text-base font-semibold text-neutral-900">
+                  Zo kan het eruitzien
+                </h3>
+                <ChevronDownIcon
+                  className={`h-5 w-5 text-neutral-400 transition-transform ${
+                    voorbeeldOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {voorbeeldOpen && (
+                <div className="mt-4 space-y-4 border-t border-neutral-100 pt-4">
+                  <h4 className="text-sm font-semibold text-neutral-700">
+                    {step.voorbeeld_content.title}
+                  </h4>
+                  {step.voorbeeld_content.sections.map((section, i) => (
+                    <div key={i}>
+                      <p className="text-xs font-medium text-neutral-800 mb-1">
+                        {section.title}
+                      </p>
+                      <p className="text-xs text-neutral-600 leading-relaxed whitespace-pre-line">
+                        {section.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Export — gegenereerde documenten downloaden */}
+          {stepDocuments.length > 0 && (currentStatus === 'concept' || currentStatus === 'in_review') && (
+            <Card>
+              <h4 className="text-sm font-medium text-neutral-800 mb-3">
+                Gegenereerde documenten
+              </h4>
+              <div className="space-y-2">
+                {stepDocuments.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2">
+                    <span className="text-sm text-neutral-700">{doc.title}</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => api.documents.exportVersion(doc.id, 'html')}
+                      >
+                        <ArrowDownTrayIcon className="mr-1 h-3.5 w-3.5" />
+                        HTML
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => api.documents.exportVersion(doc.id, 'md')}
+                      >
+                        <ArrowDownTrayIcon className="mr-1 h-3.5 w-3.5" />
+                        Markdown
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
 
           {/* Action buttons (direct, no dropdown) */}
           {!isCompleted && !isBlocked && actions.length > 0 && (

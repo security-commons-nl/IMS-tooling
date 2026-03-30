@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
-from typing import Optional, List
+from typing import Any, Optional, List
 
 
 # ── IMSStep ─────────────────────────────────────────────────────────────────
@@ -12,6 +12,8 @@ class StepCreate(BaseModel):
     phase: int
     name: str
     waarom_nu: str
+    uitleg: Optional[str] = None
+    voorbeeld_content: Optional[Any] = None
     required_gremium: str
     is_optional: bool = False
     domain: Optional[str] = None
@@ -22,6 +24,8 @@ class StepUpdate(BaseModel):
     phase: Optional[int] = None
     name: Optional[str] = None
     waarom_nu: Optional[str] = None
+    uitleg: Optional[str] = None
+    voorbeeld_content: Optional[Any] = None
     required_gremium: Optional[str] = None
     is_optional: Optional[bool] = None
     domain: Optional[str] = None
@@ -33,6 +37,8 @@ class StepResponse(BaseModel):
     phase: int
     name: str
     waarom_nu: str
+    uitleg: Optional[str] = None
+    voorbeeld_content: Optional[Any] = None
     required_gremium: str
     is_optional: bool
     domain: Optional[str]

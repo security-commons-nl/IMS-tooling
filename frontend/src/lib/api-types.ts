@@ -76,6 +76,11 @@ export interface StepResponse {
   phase: number;
   name: string;
   waarom_nu?: string;
+  uitleg?: string | null;
+  voorbeeld_content?: {
+    title: string;
+    sections: { title: string; content: string }[];
+  } | null;
   required_gremium: string;
   is_optional: boolean;
   domain?: string | null;

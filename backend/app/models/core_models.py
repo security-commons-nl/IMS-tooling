@@ -516,6 +516,8 @@ class IMSStep(Base):
     phase: Mapped[int] = mapped_column(Integer, nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     waarom_nu: Mapped[str] = mapped_column(Text, nullable=False)
+    uitleg: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    voorbeeld_content: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
     required_gremium: Mapped[GremiumEnum] = mapped_column(String(50), nullable=False)
     is_optional: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     domain: Mapped[Optional[DomainEnum]] = mapped_column(String(10), nullable=True)

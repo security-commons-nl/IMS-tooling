@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
@@ -134,6 +135,43 @@ async def get_document_version(
     if not version:
         raise HTTPException(status_code=404, detail="Documentversie niet gevonden")
     return version
+
+
+@router.get("/versions/{version_id}/export")
+async def export_document_version(
+    version_id: UUID,
+    format: str = Query("html", pattern="^(html|md)$"),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.document_export import content_json_to_markdown, content_json_to_html
+
+    result = await db.execute(
+        select(IMSDocumentVersion).where(IMSDocumentVersion.id == version_id)
+    )
+    version = result.scalar_one_or_none()
+    if not version:
+        raise HTTPException(status_code=404, detail="Documentversie niet gevonden")
+    if not version.content_json:
+        raise HTTPException(status_code=422, detail="Document heeft geen inhoud om te exporteren")
+
+    doc_type = version.content_json.get("type", "document")
+    if format == "md":
+        content = content_json_to_markdown(version.content_json)
+        filename = f"concept-{doc_type}-v{version.version_number}.md"
+        return Response(
+            content=content,
+            media_type="text/markdown; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    else:
+        content = content_json_to_html(version.content_json)
+        filename = f"concept-{doc_type}-v{version.version_number}.html"
+        return Response(
+            content=content,
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
 
 @router.post("/versions/", response_model=DocumentVersionResponse, status_code=201)
