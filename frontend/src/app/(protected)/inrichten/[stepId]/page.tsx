@@ -56,6 +56,8 @@ export default function StepDetailPage({
   const [uploadFile, setUploadFile] = useState('');
   const [uploadType, setUploadType] = useState('pdf');
   const [linkingOutputId, setLinkingOutputId] = useState<string | null>(null);
+  const [creatingDecisionForOutputId, setCreatingDecisionForOutputId] = useState<string | null>(null);
+  const [decisionForm, setDecisionForm] = useState({ content: '', decided_by_name: '', decided_by_role: '' });
   const [voorbeeldOpen, setVoorbeeldOpen] = useState(false);
   const [pendingTransition, setPendingTransition] = useState<string | null>(null);
 
@@ -121,6 +123,44 @@ export default function StepDetailPage({
       if (err instanceof ApiError) {
         const detail = (err.body as Record<string, unknown>)?.detail || 'Koppelen mislukt';
         setError(String(detail));
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  async function handleCreateDecision(outputId: string, outputName: string) {
+    if (!executionId || !step || !decisionForm.content || !decisionForm.decided_by_name || !decisionForm.decided_by_role) {
+      setError('Vul alle velden in.');
+      return;
+    }
+    setIsUpdating(true);
+    setError(null);
+    try {
+      const number = `B-${String((decisions?.length || 0) + 1).padStart(3, '0')}`;
+      const decision = await api.decisions.create({
+        number,
+        step_execution_id: executionId,
+        decision_type: 'normaal',
+        content: decisionForm.content,
+        grondslag: `Stap ${step.number}: ${step.name} — ${outputName}`,
+        gremium: step.required_gremium,
+        decided_by_name: decisionForm.decided_by_name,
+        decided_by_role: decisionForm.decided_by_role,
+        decided_at: new Date().toISOString(),
+      });
+      await api.steps.createFulfillment(executionId, {
+        step_output_id: outputId,
+        decision_id: decision.id,
+      });
+      await mutateReadiness();
+      setCreatingDecisionForOutputId(null);
+      setDecisionForm({ content: '', decided_by_name: '', decided_by_role: '' });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(`Fout: ${formatApiError(err.body)}`);
+      } else {
+        setError(`Fout: ${err instanceof Error ? err.message : String(err)}`);
       }
     } finally {
       setIsUpdating(false);
@@ -369,23 +409,82 @@ export default function StepDetailPage({
                                   <span className="ml-1 text-neutral-400">(V)</span>
                                 )}
                               </span>
-                              {canLink && !isLinking && (
-                                <button
-                                  onClick={() => setLinkingOutputId(output.id)}
-                                  className="text-primary-600 hover:text-primary-800 font-medium"
-                                >
-                                  Koppel
-                                </button>
+                              {canLink && !isLinking && creatingDecisionForOutputId !== output.id && (
+                                <div className="flex gap-1">
+                                  {isDecisionType && (
+                                    <button
+                                      onClick={() => {
+                                        setCreatingDecisionForOutputId(output.id);
+                                        setLinkingOutputId(null);
+                                      }}
+                                      className="text-primary-600 hover:text-primary-800 font-medium"
+                                    >
+                                      Vastleggen
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setLinkingOutputId(output.id);
+                                      setCreatingDecisionForOutputId(null);
+                                    }}
+                                    className="text-neutral-400 hover:text-neutral-600 font-medium"
+                                  >
+                                    Koppel
+                                  </button>
+                                </div>
                               )}
                             </div>
 
-                            {/* Inline picker */}
+                            {/* Inline decision form */}
+                            {creatingDecisionForOutputId === output.id && (
+                              <div className="mt-2 ml-3.5 space-y-2 rounded-md border border-primary-200 bg-primary-50/30 p-2">
+                                <p className="text-xs font-medium text-neutral-700">Besluit vastleggen</p>
+                                <textarea
+                                  className="block w-full rounded border border-neutral-200 px-2 py-1 text-xs"
+                                  rows={2}
+                                  placeholder="Wat is besloten?"
+                                  value={decisionForm.content}
+                                  onChange={(e) => setDecisionForm({ ...decisionForm, content: e.target.value })}
+                                />
+                                <input
+                                  className="block w-full rounded border border-neutral-200 px-2 py-1 text-xs"
+                                  placeholder="Wie heeft besloten? (naam)"
+                                  value={decisionForm.decided_by_name}
+                                  onChange={(e) => setDecisionForm({ ...decisionForm, decided_by_name: e.target.value })}
+                                />
+                                <input
+                                  className="block w-full rounded border border-neutral-200 px-2 py-1 text-xs"
+                                  placeholder="In welke rol? (bijv. Wethouder)"
+                                  value={decisionForm.decided_by_role}
+                                  onChange={(e) => setDecisionForm({ ...decisionForm, decided_by_role: e.target.value })}
+                                />
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleCreateDecision(output.id, output.name)}
+                                    disabled={isUpdating}
+                                    className="rounded bg-primary-600 px-2 py-1 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                                  >
+                                    {isUpdating ? 'Bezig...' : 'Opslaan'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setCreatingDecisionForOutputId(null);
+                                      setDecisionForm({ content: '', decided_by_name: '', decided_by_role: '' });
+                                    }}
+                                    className="text-xs text-neutral-400 hover:text-neutral-600"
+                                  >
+                                    Annuleren
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Inline picker for existing items */}
                             {isLinking && (
                               <div className="mt-1.5 ml-3.5 space-y-1">
                                 {linkOptions.length === 0 ? (
                                   <p className="text-neutral-400 italic">
                                     Geen {isDecisionType ? 'besluiten' : 'documenten'} beschikbaar.
-                                    Maak er eerst een aan.
                                   </p>
                                 ) : (
                                   linkOptions.map((item) => (
