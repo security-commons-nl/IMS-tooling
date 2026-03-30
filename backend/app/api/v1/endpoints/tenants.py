@@ -41,7 +41,7 @@ async def get_tenant(
     result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = result.scalar_one_or_none()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Tenant niet gevonden")
     return tenant
 
 
@@ -68,7 +68,7 @@ async def update_tenant(
     result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = result.scalar_one_or_none()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Tenant niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(tenant, field, value)
     await db.flush()
@@ -85,7 +85,7 @@ async def delete_tenant(
     result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = result.scalar_one_or_none()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Tenant niet gevonden")
     await db.delete(tenant)
     await db.flush()
 
@@ -114,7 +114,7 @@ async def get_region(
     result = await db.execute(select(Region).where(Region.id == region_id))
     region = result.scalar_one_or_none()
     if not region:
-        raise HTTPException(status_code=404, detail="Region not found")
+        raise HTTPException(status_code=404, detail="Regio niet gevonden")
     return region
 
 
@@ -141,7 +141,7 @@ async def update_region(
     result = await db.execute(select(Region).where(Region.id == region_id))
     region = result.scalar_one_or_none()
     if not region:
-        raise HTTPException(status_code=404, detail="Region not found")
+        raise HTTPException(status_code=404, detail="Regio niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(region, field, value)
     await db.flush()
@@ -158,7 +158,7 @@ async def delete_region(
     result = await db.execute(select(Region).where(Region.id == region_id))
     region = result.scalar_one_or_none()
     if not region:
-        raise HTTPException(status_code=404, detail="Region not found")
+        raise HTTPException(status_code=404, detail="Regio niet gevonden")
     await db.delete(region)
     await db.flush()
 
@@ -188,7 +188,7 @@ async def get_user(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
     return user
 
 
@@ -215,7 +215,7 @@ async def update_user(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(user, field, value)
     await db.flush()
@@ -232,7 +232,7 @@ async def delete_user(
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Gebruiker niet gevonden")
     await db.delete(user)
     await db.flush()
 
@@ -275,7 +275,7 @@ async def delete_user_tenant_role(
     result = await db.execute(select(UserTenantRole).where(UserTenantRole.id == role_id))
     role = result.scalar_one_or_none()
     if not role:
-        raise HTTPException(status_code=404, detail="UserTenantRole not found")
+        raise HTTPException(status_code=404, detail="Gebruikersrol niet gevonden")
     await db.delete(role)
     await db.flush()
 
@@ -318,6 +318,6 @@ async def delete_user_region_role(
     result = await db.execute(select(UserRegionRole).where(UserRegionRole.id == role_id))
     role = result.scalar_one_or_none()
     if not role:
-        raise HTTPException(status_code=404, detail="UserRegionRole not found")
+        raise HTTPException(status_code=404, detail="Regionale gebruikersrol niet gevonden")
     await db.delete(role)
     await db.flush()

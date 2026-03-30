@@ -17,12 +17,12 @@ function generateUUID(): string {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin' },
+  { value: 'admin', label: 'Beheerder' },
   { value: 'strategisch_lid', label: 'Strategisch lid' },
   { value: 'tactisch_lid', label: 'Tactisch lid' },
   { value: 'discipline_eigenaar', label: 'Discipline-eigenaar' },
   { value: 'lijnmanager', label: 'Lijnmanager' },
-  { value: 'viewer', label: 'Viewer' },
+  { value: 'viewer', label: 'Alleen-lezen' },
 ];
 
 export default function LoginPage() {

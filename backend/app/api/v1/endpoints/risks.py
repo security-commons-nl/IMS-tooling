@@ -58,7 +58,7 @@ async def get_risk(
     result = await db.execute(select(IMSRisk).where(IMSRisk.id == risk_id))
     risk = result.scalar_one_or_none()
     if not risk:
-        raise HTTPException(status_code=404, detail="Risk not found")
+        raise HTTPException(status_code=404, detail="Risico niet gevonden")
     return risk
 
 
@@ -98,7 +98,7 @@ async def update_risk(
     result = await db.execute(select(IMSRisk).where(IMSRisk.id == risk_id))
     risk = result.scalar_one_or_none()
     if not risk:
-        raise HTTPException(status_code=404, detail="Risk not found")
+        raise HTTPException(status_code=404, detail="Risico niet gevonden")
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -126,7 +126,7 @@ async def delete_risk(
     result = await db.execute(select(IMSRisk).where(IMSRisk.id == risk_id))
     risk = result.scalar_one_or_none()
     if not risk:
-        raise HTTPException(status_code=404, detail="Risk not found")
+        raise HTTPException(status_code=404, detail="Risico niet gevonden")
     # Delete associated risk-control links first
     links_result = await db.execute(
         select(IMSRiskControlLink).where(IMSRiskControlLink.risk_id == risk_id)
@@ -189,6 +189,6 @@ async def delete_risk_control_link(
     )
     link = result.scalar_one_or_none()
     if not link:
-        raise HTTPException(status_code=404, detail="RiskControlLink not found")
+        raise HTTPException(status_code=404, detail="Risico-control koppeling niet gevonden")
     await db.delete(link)
     await db.flush()

@@ -47,7 +47,7 @@ async def get_knowledge_chunk(
     )
     chunk = result.scalar_one_or_none()
     if not chunk:
-        raise HTTPException(status_code=404, detail="KnowledgeChunk not found")
+        raise HTTPException(status_code=404, detail="Kennisartikel niet gevonden")
     return chunk
 
 
@@ -86,7 +86,7 @@ async def update_knowledge_chunk(
     )
     chunk = result.scalar_one_or_none()
     if not chunk:
-        raise HTTPException(status_code=404, detail="KnowledgeChunk not found")
+        raise HTTPException(status_code=404, detail="Kennisartikel niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(chunk, field, value)
     await db.flush()
@@ -105,6 +105,6 @@ async def delete_knowledge_chunk(
     )
     chunk = result.scalar_one_or_none()
     if not chunk:
-        raise HTTPException(status_code=404, detail="KnowledgeChunk not found")
+        raise HTTPException(status_code=404, detail="Kennisartikel niet gevonden")
     await db.delete(chunk)
     await db.flush()

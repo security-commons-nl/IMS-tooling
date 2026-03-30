@@ -39,7 +39,7 @@ async def get_evidence(
     result = await db.execute(select(IMSEvidence).where(IMSEvidence.id == evidence_id))
     evidence = result.scalar_one_or_none()
     if not evidence:
-        raise HTTPException(status_code=404, detail="Evidence not found")
+        raise HTTPException(status_code=404, detail="Bewijs niet gevonden")
     return evidence
 
 
@@ -66,7 +66,7 @@ async def update_evidence(
     result = await db.execute(select(IMSEvidence).where(IMSEvidence.id == evidence_id))
     evidence = result.scalar_one_or_none()
     if not evidence:
-        raise HTTPException(status_code=404, detail="Evidence not found")
+        raise HTTPException(status_code=404, detail="Bewijs niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(evidence, field, value)
     await db.flush()
@@ -83,6 +83,6 @@ async def delete_evidence(
     result = await db.execute(select(IMSEvidence).where(IMSEvidence.id == evidence_id))
     evidence = result.scalar_one_or_none()
     if not evidence:
-        raise HTTPException(status_code=404, detail="Evidence not found")
+        raise HTTPException(status_code=404, detail="Bewijs niet gevonden")
     await db.delete(evidence)
     await db.flush()

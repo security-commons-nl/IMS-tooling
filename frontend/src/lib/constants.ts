@@ -15,12 +15,12 @@ export function hasMinRole(userRole: string, requiredRole: string): boolean {
 }
 
 export const ROLE_LABELS: Record<string, string> = {
-  admin: 'Admin',
+  admin: 'Beheerder',
   strategisch_lid: 'Strategisch lid',
   tactisch_lid: 'Tactisch lid',
   discipline_eigenaar: 'Discipline-eigenaar',
   lijnmanager: 'Lijnmanager',
-  viewer: 'Viewer',
+  viewer: 'Alleen-lezen',
 };
 
 export const STATUS_LABELS: Record<string, string> = {

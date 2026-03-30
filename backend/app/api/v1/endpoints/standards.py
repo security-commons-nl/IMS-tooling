@@ -51,7 +51,7 @@ async def get_standard(
     result = await db.execute(select(IMSStandard).where(IMSStandard.id == standard_id))
     standard = result.scalar_one_or_none()
     if not standard:
-        raise HTTPException(status_code=404, detail="Standard not found")
+        raise HTTPException(status_code=404, detail="Standaard niet gevonden")
     return standard
 
 
@@ -78,7 +78,7 @@ async def update_standard(
     result = await db.execute(select(IMSStandard).where(IMSStandard.id == standard_id))
     standard = result.scalar_one_or_none()
     if not standard:
-        raise HTTPException(status_code=404, detail="Standard not found")
+        raise HTTPException(status_code=404, detail="Standaard niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(standard, field, value)
     await db.flush()
@@ -95,7 +95,7 @@ async def delete_standard(
     result = await db.execute(select(IMSStandard).where(IMSStandard.id == standard_id))
     standard = result.scalar_one_or_none()
     if not standard:
-        raise HTTPException(status_code=404, detail="Standard not found")
+        raise HTTPException(status_code=404, detail="Standaard niet gevonden")
     await db.delete(standard)
     await db.flush()
 
@@ -131,7 +131,7 @@ async def get_requirement(
     result = await db.execute(select(IMSRequirement).where(IMSRequirement.id == requirement_id))
     req = result.scalar_one_or_none()
     if not req:
-        raise HTTPException(status_code=404, detail="Requirement not found")
+        raise HTTPException(status_code=404, detail="Vereiste niet gevonden")
     return req
 
 
@@ -158,7 +158,7 @@ async def update_requirement(
     result = await db.execute(select(IMSRequirement).where(IMSRequirement.id == requirement_id))
     req = result.scalar_one_or_none()
     if not req:
-        raise HTTPException(status_code=404, detail="Requirement not found")
+        raise HTTPException(status_code=404, detail="Vereiste niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(req, field, value)
     await db.flush()
@@ -175,7 +175,7 @@ async def delete_requirement(
     result = await db.execute(select(IMSRequirement).where(IMSRequirement.id == requirement_id))
     req = result.scalar_one_or_none()
     if not req:
-        raise HTTPException(status_code=404, detail="Requirement not found")
+        raise HTTPException(status_code=404, detail="Vereiste niet gevonden")
     await db.delete(req)
     await db.flush()
 
@@ -213,7 +213,7 @@ async def get_requirement_mapping(
     )
     mapping = result.scalar_one_or_none()
     if not mapping:
-        raise HTTPException(status_code=404, detail="RequirementMapping not found")
+        raise HTTPException(status_code=404, detail="Vereiste-mapping niet gevonden")
     return mapping
 
 
@@ -242,7 +242,7 @@ async def update_requirement_mapping(
     )
     mapping = result.scalar_one_or_none()
     if not mapping:
-        raise HTTPException(status_code=404, detail="RequirementMapping not found")
+        raise HTTPException(status_code=404, detail="Vereiste-mapping niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(mapping, field, value)
     await db.flush()
@@ -261,7 +261,7 @@ async def delete_requirement_mapping(
     )
     mapping = result.scalar_one_or_none()
     if not mapping:
-        raise HTTPException(status_code=404, detail="RequirementMapping not found")
+        raise HTTPException(status_code=404, detail="Vereiste-mapping niet gevonden")
     await db.delete(mapping)
     await db.flush()
 
@@ -311,7 +311,7 @@ async def update_tenant_normenkader(
     )
     nk = result.scalar_one_or_none()
     if not nk:
-        raise HTTPException(status_code=404, detail="TenantNormenkader not found")
+        raise HTTPException(status_code=404, detail="Tenant-normenkader niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(nk, field, value)
     await db.flush()
@@ -330,7 +330,7 @@ async def delete_tenant_normenkader(
     )
     nk = result.scalar_one_or_none()
     if not nk:
-        raise HTTPException(status_code=404, detail="TenantNormenkader not found")
+        raise HTTPException(status_code=404, detail="Tenant-normenkader niet gevonden")
     await db.delete(nk)
     await db.flush()
 
@@ -365,7 +365,7 @@ async def get_standard_ingestion(
     )
     ingestion = result.scalar_one_or_none()
     if not ingestion:
-        raise HTTPException(status_code=404, detail="StandardIngestion not found")
+        raise HTTPException(status_code=404, detail="Standaard-ingestie niet gevonden")
     return ingestion
 
 
@@ -394,7 +394,7 @@ async def update_standard_ingestion(
     )
     ingestion = result.scalar_one_or_none()
     if not ingestion:
-        raise HTTPException(status_code=404, detail="StandardIngestion not found")
+        raise HTTPException(status_code=404, detail="Standaard-ingestie niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(ingestion, field, value)
     await db.flush()
@@ -413,6 +413,6 @@ async def delete_standard_ingestion(
     )
     ingestion = result.scalar_one_or_none()
     if not ingestion:
-        raise HTTPException(status_code=404, detail="StandardIngestion not found")
+        raise HTTPException(status_code=404, detail="Standaard-ingestie niet gevonden")
     await db.delete(ingestion)
     await db.flush()

@@ -45,7 +45,7 @@ async def get_maturity_profile(
     )
     profile = result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(status_code=404, detail="MaturityProfile not found")
+        raise HTTPException(status_code=404, detail="Volwassenheidsprofiel niet gevonden")
     return profile
 
 
@@ -74,7 +74,7 @@ async def update_maturity_profile(
     )
     profile = result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(status_code=404, detail="MaturityProfile not found")
+        raise HTTPException(status_code=404, detail="Volwassenheidsprofiel niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(profile, field, value)
     await db.flush()
@@ -93,7 +93,7 @@ async def delete_maturity_profile(
     )
     profile = result.scalar_one_or_none()
     if not profile:
-        raise HTTPException(status_code=404, detail="MaturityProfile not found")
+        raise HTTPException(status_code=404, detail="Volwassenheidsprofiel niet gevonden")
     await db.delete(profile)
     await db.flush()
 
@@ -129,7 +129,7 @@ async def get_setup_score(
     result = await db.execute(select(IMSSetupScore).where(IMSSetupScore.id == score_id))
     score = result.scalar_one_or_none()
     if not score:
-        raise HTTPException(status_code=404, detail="SetupScore not found")
+        raise HTTPException(status_code=404, detail="Inrichtingsscore niet gevonden")
     return score
 
 
@@ -156,7 +156,7 @@ async def update_setup_score(
     result = await db.execute(select(IMSSetupScore).where(IMSSetupScore.id == score_id))
     score = result.scalar_one_or_none()
     if not score:
-        raise HTTPException(status_code=404, detail="SetupScore not found")
+        raise HTTPException(status_code=404, detail="Inrichtingsscore niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(score, field, value)
     await db.flush()
@@ -173,7 +173,7 @@ async def delete_setup_score(
     result = await db.execute(select(IMSSetupScore).where(IMSSetupScore.id == score_id))
     score = result.scalar_one_or_none()
     if not score:
-        raise HTTPException(status_code=404, detail="SetupScore not found")
+        raise HTTPException(status_code=404, detail="Inrichtingsscore niet gevonden")
     await db.delete(score)
     await db.flush()
 
@@ -209,7 +209,7 @@ async def get_grc_score(
     result = await db.execute(select(IMSGRCScore).where(IMSGRCScore.id == score_id))
     score = result.scalar_one_or_none()
     if not score:
-        raise HTTPException(status_code=404, detail="GRCScore not found")
+        raise HTTPException(status_code=404, detail="GRC-score niet gevonden")
     return score
 
 
@@ -236,7 +236,7 @@ async def update_grc_score(
     result = await db.execute(select(IMSGRCScore).where(IMSGRCScore.id == score_id))
     score = result.scalar_one_or_none()
     if not score:
-        raise HTTPException(status_code=404, detail="GRCScore not found")
+        raise HTTPException(status_code=404, detail="GRC-score niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(score, field, value)
     await db.flush()
@@ -253,6 +253,6 @@ async def delete_grc_score(
     result = await db.execute(select(IMSGRCScore).where(IMSGRCScore.id == score_id))
     score = result.scalar_one_or_none()
     if not score:
-        raise HTTPException(status_code=404, detail="GRCScore not found")
+        raise HTTPException(status_code=404, detail="GRC-score niet gevonden")
     await db.delete(score)
     await db.flush()

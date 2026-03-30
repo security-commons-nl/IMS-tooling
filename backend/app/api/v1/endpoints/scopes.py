@@ -42,7 +42,7 @@ async def get_scope(
     result = await db.execute(select(IMSScope).where(IMSScope.id == scope_id))
     scope = result.scalar_one_or_none()
     if not scope:
-        raise HTTPException(status_code=404, detail="Scope not found")
+        raise HTTPException(status_code=404, detail="Scope niet gevonden")
     return scope
 
 
@@ -69,7 +69,7 @@ async def update_scope(
     result = await db.execute(select(IMSScope).where(IMSScope.id == scope_id))
     scope = result.scalar_one_or_none()
     if not scope:
-        raise HTTPException(status_code=404, detail="Scope not found")
+        raise HTTPException(status_code=404, detail="Scope niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(scope, field, value)
     await db.flush()
@@ -86,6 +86,6 @@ async def delete_scope(
     result = await db.execute(select(IMSScope).where(IMSScope.id == scope_id))
     scope = result.scalar_one_or_none()
     if not scope:
-        raise HTTPException(status_code=404, detail="Scope not found")
+        raise HTTPException(status_code=404, detail="Scope niet gevonden")
     await db.delete(scope)
     await db.flush()

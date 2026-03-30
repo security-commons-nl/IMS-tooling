@@ -42,7 +42,7 @@ async def get_incident(
     result = await db.execute(select(IMSIncident).where(IMSIncident.id == incident_id))
     incident = result.scalar_one_or_none()
     if not incident:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        raise HTTPException(status_code=404, detail="Incident niet gevonden")
     return incident
 
 
@@ -69,7 +69,7 @@ async def update_incident(
     result = await db.execute(select(IMSIncident).where(IMSIncident.id == incident_id))
     incident = result.scalar_one_or_none()
     if not incident:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        raise HTTPException(status_code=404, detail="Incident niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(incident, field, value)
     await db.flush()
@@ -86,6 +86,6 @@ async def delete_incident(
     result = await db.execute(select(IMSIncident).where(IMSIncident.id == incident_id))
     incident = result.scalar_one_or_none()
     if not incident:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        raise HTTPException(status_code=404, detail="Incident niet gevonden")
     await db.delete(incident)
     await db.flush()

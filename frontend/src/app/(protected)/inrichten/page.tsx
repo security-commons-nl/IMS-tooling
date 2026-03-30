@@ -62,7 +62,7 @@ export default function InrichtenOverzichtPage() {
           <EmptyState
             icon={Cog6ToothIcon}
             title="Geen stappen gevonden"
-            description="De inrichtingsstappen zijn nog niet geladen. Controleer de API-verbinding."
+            description="De inrichtingsstappen zijn nog niet geladen. Vernieuw de pagina of neem contact op met de beheerder."
           />
         </Card>
       )}

@@ -49,7 +49,7 @@ async def get_assessment(
     result = await db.execute(select(IMSAssessment).where(IMSAssessment.id == assessment_id))
     assessment = result.scalar_one_or_none()
     if not assessment:
-        raise HTTPException(status_code=404, detail="Assessment not found")
+        raise HTTPException(status_code=404, detail="Assessment niet gevonden")
     return assessment
 
 
@@ -76,7 +76,7 @@ async def update_assessment(
     result = await db.execute(select(IMSAssessment).where(IMSAssessment.id == assessment_id))
     assessment = result.scalar_one_or_none()
     if not assessment:
-        raise HTTPException(status_code=404, detail="Assessment not found")
+        raise HTTPException(status_code=404, detail="Assessment niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(assessment, field, value)
     await db.flush()
@@ -93,7 +93,7 @@ async def delete_assessment(
     result = await db.execute(select(IMSAssessment).where(IMSAssessment.id == assessment_id))
     assessment = result.scalar_one_or_none()
     if not assessment:
-        raise HTTPException(status_code=404, detail="Assessment not found")
+        raise HTTPException(status_code=404, detail="Assessment niet gevonden")
     await db.delete(assessment)
     await db.flush()
 
@@ -132,7 +132,7 @@ async def get_finding(
     result = await db.execute(select(IMSFinding).where(IMSFinding.id == finding_id))
     finding = result.scalar_one_or_none()
     if not finding:
-        raise HTTPException(status_code=404, detail="Finding not found")
+        raise HTTPException(status_code=404, detail="Bevinding niet gevonden")
     return finding
 
 
@@ -159,7 +159,7 @@ async def update_finding(
     result = await db.execute(select(IMSFinding).where(IMSFinding.id == finding_id))
     finding = result.scalar_one_or_none()
     if not finding:
-        raise HTTPException(status_code=404, detail="Finding not found")
+        raise HTTPException(status_code=404, detail="Bevinding niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(finding, field, value)
     await db.flush()
@@ -176,7 +176,7 @@ async def delete_finding(
     result = await db.execute(select(IMSFinding).where(IMSFinding.id == finding_id))
     finding = result.scalar_one_or_none()
     if not finding:
-        raise HTTPException(status_code=404, detail="Finding not found")
+        raise HTTPException(status_code=404, detail="Bevinding niet gevonden")
     await db.delete(finding)
     await db.flush()
 
@@ -217,7 +217,7 @@ async def get_corrective_action(
     )
     action = result.scalar_one_or_none()
     if not action:
-        raise HTTPException(status_code=404, detail="CorrectiveAction not found")
+        raise HTTPException(status_code=404, detail="Corrigerende maatregel niet gevonden")
     return action
 
 
@@ -246,7 +246,7 @@ async def update_corrective_action(
     )
     action = result.scalar_one_or_none()
     if not action:
-        raise HTTPException(status_code=404, detail="CorrectiveAction not found")
+        raise HTTPException(status_code=404, detail="Corrigerende maatregel niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(action, field, value)
     await db.flush()
@@ -265,6 +265,6 @@ async def delete_corrective_action(
     )
     action = result.scalar_one_or_none()
     if not action:
-        raise HTTPException(status_code=404, detail="CorrectiveAction not found")
+        raise HTTPException(status_code=404, detail="Corrigerende maatregel niet gevonden")
     await db.delete(action)
     await db.flush()

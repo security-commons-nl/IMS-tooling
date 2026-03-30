@@ -70,7 +70,7 @@ async def get_step(
     )
     step = result.scalar_one_or_none()
     if not step:
-        raise HTTPException(status_code=404, detail="Step not found")
+        raise HTTPException(status_code=404, detail="Stap niet gevonden")
     return step
 
 
@@ -97,7 +97,7 @@ async def update_step(
     result = await db.execute(select(IMSStep).where(IMSStep.id == step_id))
     step = result.scalar_one_or_none()
     if not step:
-        raise HTTPException(status_code=404, detail="Step not found")
+        raise HTTPException(status_code=404, detail="Stap niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(step, field, value)
     await db.flush()
@@ -114,7 +114,7 @@ async def delete_step(
     result = await db.execute(select(IMSStep).where(IMSStep.id == step_id))
     step = result.scalar_one_or_none()
     if not step:
-        raise HTTPException(status_code=404, detail="Step not found")
+        raise HTTPException(status_code=404, detail="Stap niet gevonden")
     await db.delete(step)
     await db.flush()
 
@@ -160,7 +160,7 @@ async def delete_step_dependency(
     result = await db.execute(select(IMSStepDependency).where(IMSStepDependency.id == dep_id))
     dep = result.scalar_one_or_none()
     if not dep:
-        raise HTTPException(status_code=404, detail="StepDependency not found")
+        raise HTTPException(status_code=404, detail="Stapafhankelijkheid niet gevonden")
     await db.delete(dep)
     await db.flush()
 
@@ -196,7 +196,7 @@ async def get_step_execution(
     result = await db.execute(select(IMSStepExecution).where(IMSStepExecution.id == execution_id))
     execution = result.scalar_one_or_none()
     if not execution:
-        raise HTTPException(status_code=404, detail="StepExecution not found")
+        raise HTTPException(status_code=404, detail="Stapuitvoering niet gevonden")
     return execution
 
 
@@ -223,7 +223,7 @@ async def update_step_execution(
     result = await db.execute(select(IMSStepExecution).where(IMSStepExecution.id == execution_id))
     execution = result.scalar_one_or_none()
     if not execution:
-        raise HTTPException(status_code=404, detail="StepExecution not found")
+        raise HTTPException(status_code=404, detail="Stapuitvoering niet gevonden")
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -270,7 +270,7 @@ async def delete_step_execution(
     result = await db.execute(select(IMSStepExecution).where(IMSStepExecution.id == execution_id))
     execution = result.scalar_one_or_none()
     if not execution:
-        raise HTTPException(status_code=404, detail="StepExecution not found")
+        raise HTTPException(status_code=404, detail="Stapuitvoering niet gevonden")
     await db.delete(execution)
     await db.flush()
 
@@ -290,7 +290,7 @@ async def get_step_readiness(
     )
     execution = result.scalar_one_or_none()
     if not execution:
-        raise HTTPException(status_code=404, detail="StepExecution not found")
+        raise HTTPException(status_code=404, detail="Stapuitvoering niet gevonden")
 
     # Load step with outputs
     result = await db.execute(
@@ -398,7 +398,7 @@ async def create_fulfillment(
     )
     execution = result.scalar_one_or_none()
     if not execution:
-        raise HTTPException(status_code=404, detail="StepExecution not found")
+        raise HTTPException(status_code=404, detail="Stapuitvoering niet gevonden")
 
     # Verify exactly one link is provided
     has_decision = data.decision_id is not None
@@ -415,7 +415,7 @@ async def create_fulfillment(
     )
     step_output = result.scalar_one_or_none()
     if not step_output:
-        raise HTTPException(status_code=404, detail="StepOutput not found")
+        raise HTTPException(status_code=404, detail="Stap-output niet gevonden")
     if step_output.step_id != execution.step_id:
         raise HTTPException(
             status_code=422,
@@ -459,7 +459,7 @@ async def delete_fulfillment(
     )
     fulfillment = result.scalar_one_or_none()
     if not fulfillment:
-        raise HTTPException(status_code=404, detail="Fulfillment not found")
+        raise HTTPException(status_code=404, detail="Fulfillment niet gevonden")
     await db.delete(fulfillment)
     await db.flush()
 

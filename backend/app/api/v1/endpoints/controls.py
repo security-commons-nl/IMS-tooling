@@ -42,7 +42,7 @@ async def get_control(
     result = await db.execute(select(IMSControl).where(IMSControl.id == control_id))
     control = result.scalar_one_or_none()
     if not control:
-        raise HTTPException(status_code=404, detail="Control not found")
+        raise HTTPException(status_code=404, detail="Control niet gevonden")
     return control
 
 
@@ -69,7 +69,7 @@ async def update_control(
     result = await db.execute(select(IMSControl).where(IMSControl.id == control_id))
     control = result.scalar_one_or_none()
     if not control:
-        raise HTTPException(status_code=404, detail="Control not found")
+        raise HTTPException(status_code=404, detail="Control niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(control, field, value)
     await db.flush()
@@ -86,7 +86,7 @@ async def delete_control(
     result = await db.execute(select(IMSControl).where(IMSControl.id == control_id))
     control = result.scalar_one_or_none()
     if not control:
-        raise HTTPException(status_code=404, detail="Control not found")
+        raise HTTPException(status_code=404, detail="Control niet gevonden")
     # Delete associated risk-control links first
     links_result = await db.execute(
         select(IMSRiskControlLink).where(IMSRiskControlLink.control_id == control_id)

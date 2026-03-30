@@ -51,7 +51,7 @@ async def get_document(
     result = await db.execute(select(IMSDocument).where(IMSDocument.id == document_id))
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
     return doc
 
 
@@ -78,7 +78,7 @@ async def update_document(
     result = await db.execute(select(IMSDocument).where(IMSDocument.id == document_id))
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(doc, field, value)
     await db.flush()
@@ -95,7 +95,7 @@ async def delete_document(
     result = await db.execute(select(IMSDocument).where(IMSDocument.id == document_id))
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
     await db.delete(doc)
     await db.flush()
 
@@ -132,7 +132,7 @@ async def get_document_version(
     )
     version = result.scalar_one_or_none()
     if not version:
-        raise HTTPException(status_code=404, detail="DocumentVersion not found")
+        raise HTTPException(status_code=404, detail="Documentversie niet gevonden")
     return version
 
 
@@ -179,7 +179,7 @@ async def get_step_input_document(
     )
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="StepInputDocument not found")
+        raise HTTPException(status_code=404, detail="Invoerdocument niet gevonden")
     return doc
 
 
@@ -208,7 +208,7 @@ async def update_step_input_document(
     )
     doc = result.scalar_one_or_none()
     if not doc:
-        raise HTTPException(status_code=404, detail="StepInputDocument not found")
+        raise HTTPException(status_code=404, detail="Invoerdocument niet gevonden")
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(doc, field, value)
     await db.flush()
@@ -246,7 +246,7 @@ async def get_gap_analysis_result(
     )
     gap = result.scalar_one_or_none()
     if not gap:
-        raise HTTPException(status_code=404, detail="GapAnalysisResult not found")
+        raise HTTPException(status_code=404, detail="Gap-analyse resultaat niet gevonden")
     return gap
 
 
@@ -275,7 +275,7 @@ async def validate_gap_analysis_result(
     )
     gap = result.scalar_one_or_none()
     if not gap:
-        raise HTTPException(status_code=404, detail="GapAnalysisResult not found")
+        raise HTTPException(status_code=404, detail="Gap-analyse resultaat niet gevonden")
 
     gap.validated = data.validated
     if data.validated:

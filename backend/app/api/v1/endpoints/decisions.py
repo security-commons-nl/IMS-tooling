@@ -39,7 +39,7 @@ async def get_decision(
     result = await db.execute(select(IMSDecision).where(IMSDecision.id == decision_id))
     decision = result.scalar_one_or_none()
     if not decision:
-        raise HTTPException(status_code=404, detail="Decision not found")
+        raise HTTPException(status_code=404, detail="Besluit niet gevonden")
     return decision
 
 
