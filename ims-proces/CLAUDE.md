@@ -78,8 +78,7 @@ Input verzamelen → AI agent genereert concept → Gremium reviewt → Output v
 
 ## Eerste invulling
 
-Gemeente Leiden (en regio). Alle Leiden-specifieke context staat in de Teams/SharePoint-folder:
-`Gemeente Leiden > Integrated Management System - General > IMS documenten`
+Gemeente Leiden (en regio). Organisatiespecifieke context staat in de interne SharePoint-omgeving van de gemeente.
 
 ## Normatief kader
 

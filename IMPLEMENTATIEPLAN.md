@@ -81,5 +81,5 @@
 | Architectuurprincipes | `reference-docs/architectuur-principes.md` |
 | Datamodel | `reference-docs/datamodel.md` |
 | Kritische analyse | `reference-docs/kritische-analyse-ontwerp.md` |
-| Rapportagemodel | SharePoint: `Rapporteren/Rapportagemodel IMS (geconsolideerd).md` |
-| KPI-definities | SharePoint: `Rapporteren/KPI-definities IMS (12 cellen).md` |
+| Rapportagemodel | Intern SharePoint |
+| KPI-definities | Intern SharePoint |

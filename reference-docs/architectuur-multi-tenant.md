@@ -9,8 +9,8 @@
 ║   ┌─────────────────────────────────────────────────────────────────┐   ║
 ║   │                   REGIONAAL DASHBOARD                           │   ║
 ║   │                                                                 │   ║
-║   │   Leiden ████████████ 78%      Leiderdorp ███████░░░ 61%       │   ║
-║   │   Oegstgeest ██████░░░░ 54%    Zoeterwoude ████░░░░░░ 43%      │   ║
+║   │   Gemeente A ████████████ 78%   Gemeente B ███████░░░ 61%       │   ║
+║   │   Gemeente C ██████░░░░ 54%    Gemeente D ████░░░░░░ 43%       │   ║
 ║   │                                                                 │   ║
 ║   │   Normenkader: BIO 2.0 (gedeeld)  ✓ alle 4 gemeenten           │   ║
 ║   └─────────────────────────────────────────────────────────────────┘   ║
@@ -90,10 +90,10 @@ Regionale gebruiker: gebruiker → rol → tenant  (eigen gemeente)
 
 | Gebruiker | Lokale rol | Regionale rol |
 |-----------|-----------|---------------|
-| Luuk de Leede | TIMS-voorzitter Gemeente Leiden | — |
-| Bas | CISO Gemeente Leiden (3e lijn) | Regionaal toezichthouder |
-| Robert (FG) | FG Gemeente Leiden (3e lijn) | Regionaal FG |
-| Leiderdorp TIMS | TIMS-voorzitter Leiderdorp | — |
+| TIMS-voorzitter | TIMS-voorzitter centrumgemeente | — |
+| de CISO | CISO centrumgemeente (3e lijn) | Regionaal toezichthouder |
+| Functionaris Gegevensbescherming | FG centrumgemeente (3e lijn) | Regionaal FG |
+| TIMS regiogemeente | TIMS-voorzitter regiogemeente | — |
 
 ### Wat een regionale rol geeft
 

@@ -761,12 +761,12 @@ B is gereserveerd voor technische onmogelijkheden — inputs die een agent echt 
 
 Twee afzonderlijke rollen, beide in het generieke model:
 
-| Rol | Karakter | Eindigt | Leiden-invulling |
-|-----|----------|---------|-----------------|
-| **TIMS-voorzitter** | Permanent, governance | Nooit | Luuk de Leede |
-| **Implementatiecoördinator / Projectleider** | Tijdelijk, operationele regie over de 22 stappen | Bij go/no-go Fase 2 → overdracht aan discipline-eigenaren | Bas Stevens (projectleider-hoed, niet CISO-hoed) |
+| Rol | Karakter | Eindigt |
+|-----|----------|---------|
+| **TIMS-voorzitter** | Permanent, governance | Nooit |
+| **Implementatiecoördinator / Projectleider** | Tijdelijk, operationele regie over de 22 stappen | Bij go/no-go Fase 2 → overdracht aan discipline-eigenaren |
 
-De CISO (Bas) heeft een 3e-lijn toezichtrol en staat buiten SIMS en TIMS. Als projectleider heeft hij een aparte, tijdelijke operationele rol. Het platform en de documentatie maken dit onderscheid expliciet.
+De CISO heeft een 3e-lijn toezichtrol en staat buiten SIMS en TIMS. Als projectleider heeft de CISO een aparte, tijdelijke operationele rol. Het platform en de documentatie maken dit onderscheid expliciet.
 
 **Relatie tot het platform:** de implementatiecoördinator is de primaire gebruiker tijdens de inrichtingsmodus. Zij triggeren stappen, reviewen agent-output en bewaken voortgang. De agents werken voor hen.
 
