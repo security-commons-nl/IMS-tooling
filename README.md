@@ -52,8 +52,8 @@ Laag 4: AI    (Support)  — Mistral/Ollama (EU) — altijd adviserend, nooit be
 
 ```bash
 # Clone en start
-git clone https://github.com/lugdunium/IMS-tooling.git
-cd IMS-tooling
+git clone https://github.com/security-commons-nl/grc-platform.git
+cd grc-platform
 cp .env.example .env    # Pas wachtwoorden aan
 docker-compose up -d --build
 
@@ -79,7 +79,7 @@ docker-compose exec api pytest --tb=short
 ## Repo-structuur
 
 ```
-IMS-tooling/
+grc-platform/
 ├── backend/                    # FastAPI backend
 │   ├── app/
 │   │   ├── main.py            # App + CORS + lifespan
@@ -95,10 +95,9 @@ IMS-tooling/
 │       ├── components/        # UI, layout, inrichten, beheer, ai, shared
 │       ├── lib/               # API client, types, hooks, auth
 │       └── providers/         # Auth, tenant, SWR
-├── ims-proces/                 # Procesbeschrijving (CONTEXT.md K1-K15)
-├── reference-docs/             # Architectuur, datamodel, analyses
-├── CLAUDE.md                   # Claude Code instructies
-├── IMPLEMENTATIEPLAN.md        # Voortgang en planning
+├── ims-proces/                 # Procesbeschrijving IMS-inrichtingswizard
+├── docs/                       # Gebruikers- en contributordocumentatie
+├── ROADMAP.md                  # Publieke roadmap
 └── docker-compose.yml          # 3 containers: db, api, frontend
 ```
 
