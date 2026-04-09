@@ -32,7 +32,6 @@ Schaalbaar naar meerdere organisaties en regio's.
 - [ ] Governance-tooling voor centrumgemeente-constructies
 - [ ] Uitgebreide rapportage-module
 - [ ] Community-bijdragen: templates, aanpakken, best practices
-- [ ] Integratie met [cisochat](https://github.com/security-commons-nl/cisochat) en [beleid-assistent](https://github.com/security-commons-nl/beleid-assistent)
 
 ---
 
