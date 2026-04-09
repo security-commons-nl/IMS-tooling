@@ -35,6 +35,21 @@ Schaalbaar naar meerdere organisaties en regio's.
 
 ---
 
+## Fase 4 — AI Governance Module
+
+Uitbreiding van het platform met AI-governance functionaliteit (EU AI Act, NIST AI RMF).
+
+- [ ] AI-systemenregister — catalogiseer alle AI-toepassingen per organisatie
+- [ ] EU AI Act risicoclassificatie per AI-systeem (verboden / hoog-risico / beperkt / minimaal)
+- [ ] NIST AI RMF als normenkader naast BIO 2.0 en ISO 27001
+- [ ] AI Conformiteitsbeoordeling als assessment-type
+- [ ] Non-Human Identity (NHI) support — agent-tokens met beperkte scope en TTL
+- [ ] AI-audit log uitbreiding — HITL-checkpoints en menselijk toezicht registratie
+
+Zie [docs/ai-governance-uitbreiding.md](docs/ai-governance-uitbreiding.md) voor gedetailleerde implementatievoorstellen.
+
+---
+
 ## Bijdragen
 
 Heb je ideeën, wil je een feature aanvragen of zelf bijdragen? Zie [CONTRIBUTING.md](https://github.com/security-commons-nl/.github/blob/main/CONTRIBUTING.md) of open een [issue](https://github.com/security-commons-nl/grc-platform/issues).
