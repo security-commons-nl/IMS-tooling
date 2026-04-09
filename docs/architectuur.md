@@ -58,9 +58,10 @@ Alle endpoints zijn asynchroon. De API volgt REST-conventies: `GET /risks`, `POS
 JWT (HS256). De token bevat `user_id`, `tenant_id` en `role`. Elke request die tenantdata raakt, haalt `tenant_id` uit de token en zet die als RLS-context op de databaseverbinding.
 
 ```python
-# Vereenvoudigd — zie backend/app/core/auth.py
+# Zie backend/app/core/auth.py
 async def set_tenant_context(db: AsyncSession, tenant_id: str):
-    await db.execute(text(f"SET app.current_tenant = '{tenant_id}'"))
+    # tenant_id komt uit een geverifieerde JWT — nooit direct uit user input
+    await db.execute(text("SET app.current_tenant = :tid"), {"tid": tenant_id})
 ```
 
 **RBAC**
@@ -139,6 +140,24 @@ Tests draaien altijd tegen een echte PostgreSQL-testdatabase (geen mocks). Dit v
 docker-compose exec api pytest --tb=short          # alle tests
 docker-compose exec api pytest tests/test_risks.py  # één module
 ```
+
+---
+
+## Auditbaarheid by design
+
+Elke beslissing en datamutatie in het platform is traceerbaar. Dit is geen feature maar een ontwerpvereiste — governance-tooling die zichzelf niet kan verantwoorden, is geen governance-tooling.
+
+Concreet in het datamodel:
+
+| Tabel | Wat het vastlegt |
+|-------|-----------------|
+| `assessments` + `findings` | Auditbevindingen per control, inclusief wie wat wanneer heeft vastgesteld |
+| `evidence_items` | Bewijsstukken gekoppeld aan controls, met vervaldatum |
+| `incidents` + `incident_timeline` | Tijdlijn van beveiligingsincidenten stap voor stap |
+| `step_responses` | Elke inrichtingsstap die een organisatie heeft doorlopen |
+| `risk_controls` | Welke controls aan welke risico's zijn gekoppeld, en wanneer |
+
+Alle tabellen hebben `created_at` en `updated_at` timestamps. Mutaties worden niet overschreven maar als nieuwe records toegevoegd waar de context dat vereist (bijv. `incident_timeline`).
 
 ---
 
