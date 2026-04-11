@@ -17,6 +17,7 @@ Het GRC-platform is functioneel voor de inrichtingsmodus én dagelijks GRC-gebru
 
 Klaar voor productie-gebruik bij gemeenten.
 
+- [x] Klikbaar likelihood-impact matrix-grid in risicoregister (vervangt dropdowns; heatmap boven tabel)
 - [ ] HTTPS via Caddy reverse proxy (documentatie)
 - [ ] Rate limiting op API-endpoints
 - [ ] Geautomatiseerde backup-strategie PostgreSQL

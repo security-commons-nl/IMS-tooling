@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardSkeleton } from '@/components/ui/loading-skeleton';
 import { StatusBadge } from '@/components/shared/status-badge';
+import { RiskMatrix } from '@/components/beheer/risk-matrix';
 import { useRisks } from '@/lib/hooks/use-risks';
 import { api, ApiError } from '@/lib/api-client';
 import { formatApiError } from '@/lib/format-error';
@@ -150,17 +151,18 @@ export default function RisicosPage() {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="Risicotitel"
               />
-              <Select
-                label="Kans *"
-                options={LIKELIHOOD_OPTIONS}
-                value={formData.likelihood}
-                onChange={(e) => setFormData({ ...formData, likelihood: e.target.value })}
-              />
-              <Select
-                label="Impact *"
-                options={IMPACT_OPTIONS}
-                value={formData.impact}
-                onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-800 mb-2">
+                Kans × Impact *
+              </label>
+              <RiskMatrix
+                mode="select"
+                value={{
+                  likelihood: formData.likelihood ? Number(formData.likelihood) : '',
+                  impact: formData.impact ? Number(formData.impact) : '',
+                }}
+                onChange={(l, i) => setFormData({ ...formData, likelihood: String(l), impact: String(i) })}
               />
             </div>
             <div>
@@ -210,6 +212,13 @@ export default function RisicosPage() {
             title="Nog geen risico's"
             description="Voeg een risico toe om te beginnen met risicomanagement."
           />
+        </Card>
+      )}
+
+      {!isLoading && risks && risks.length > 0 && (
+        <Card className="mb-4">
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">Risicokaart</h3>
+          <RiskMatrix mode="view" risks={risks} />
         </Card>
       )}
 
